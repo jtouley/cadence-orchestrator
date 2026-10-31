@@ -335,18 +335,24 @@ FAIL_OPEN = {
                ".claude/skills/tpm/scripts/shim_claude.py", ""),
     "gemini": (".gemini/settings.json", lambda h: h["BeforeTool"][-1]["hooks"][0]["command"],
                ".agents/skills/tpm/scripts/shim_gemini.py", "{}"),
+    "codex": (".codex/hooks.json", lambda h: h["PreToolUse"][-1]["hooks"][0]["command"],
+              ".agents/skills/tpm/scripts/shim_codex.py", ""),
+    "cursor": (".cursor/hooks.json", lambda h: h["preToolUse"][-1]["command"],
+               ".agents/skills/tpm/scripts/shim_cursor.py", '{"permission": "allow"}'),
+    "cursor-prompt": (".cursor/hooks.json", lambda h: h["beforeSubmitPrompt"][-1]["command"],
+                      ".agents/skills/tpm/scripts/shim_cursor.py", '{"continue": true}'),
 }
 
 
 def test_hooks_fail_open_without_python3_or_shim():
-    # Copilot denies on any non-zero exit, and Claude Code and Gemini block on exit 2,
-    # which is what `python3 <missing file>` returns. So a missing python3 or a
-    # missing shim must exit 0 without a deny.
+    # Copilot denies on any non-zero exit; Claude Code, Gemini, Codex and Cursor block
+    # on exit 2, which is what `python3 <missing file>` returns. So a missing python3
+    # or a missing shim must exit 0 without a deny (and valid JSON where required).
     payload = {"hook_event_name": "PreToolUse", "session_id": "s", "tool_name": "Write",
                "tool_input": {}}
     for target, (hook_file, get_cmd, shim_file, expected) in FAIL_OPEN.items():
         repo = scratch_repo()
-        install(repo, target)
+        install(repo, target.split("-")[0])
         cmd = get_cmd(json.load(open(os.path.join(repo, hook_file)))["hooks"])
         env = {"PATH": _path_without_python3(), "CLAUDE_PROJECT_DIR": repo}
         out = subprocess.run(["/bin/bash", "-c", cmd], input=json.dumps(payload), cwd=repo,

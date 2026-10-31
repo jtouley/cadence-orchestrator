@@ -160,9 +160,8 @@ installer again.
 
 ### `warning: python3 is not on PATH`
 
-The install finishes, but the guard can't run until `python3` is installed. Meanwhile, on Claude Code, Copilot and
-Gemini the hooks allow every call (they fail open) instead of blocking; the same applies if the shim script is
-missing.
+The install finishes, but the guard can't run until `python3` is installed. Meanwhile the hooks allow every call
+(they fail open) instead of blocking; the same applies if the shim script is missing.
 
 ## Development
 

@@ -2,10 +2,14 @@
   "version": 1,
   "hooks": {
     "beforeSubmitPrompt": [
-      { "command": "python3 __SKILL__/scripts/shim_cursor.py" }
+      {
+        "command": "f=\"__SKILL__/scripts/shim_cursor.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo '{\"continue\": true}'; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+      }
     ],
     "preToolUse": [
-      { "command": "python3 __SKILL__/scripts/shim_cursor.py" }
+      {
+        "command": "f=\"__SKILL__/scripts/shim_cursor.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo '{\"permission\": \"allow\"}'; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+      }
     ]
   }
 }

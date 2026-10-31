@@ -1,10 +1,24 @@
 {
   "hooks": {
     "UserPromptSubmit": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_codex.py\"" } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$(git rev-parse --show-toplevel 2>/dev/null)/__SKILL__/scripts/shim_codex.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+          }
+        ]
+      }
     ],
     "PreToolUse": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_codex.py\"" } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$(git rev-parse --show-toplevel 2>/dev/null)/__SKILL__/scripts/shim_codex.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+          }
+        ]
+      }
     ]
   }
 }
