@@ -8,6 +8,13 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
+      # main changes only through pull requests (CI skips this; it isn't committing).
+      - id: no-commit-to-branch
+        args: [--branch, main]
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.3
     hooks:
@@ -16,6 +23,10 @@ repos:
       - id: ruff-format
   - repo: local
     hooks:
+      - id: leak-check
+        name: no leaked emails, account UUIDs or session logs
+        entry: python3 checks/leak_check.py
+        language: system
       # Syntax-check the installer with Node itself: no npm dependencies needed.
       - id: node-check
         name: node --check
