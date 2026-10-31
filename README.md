@@ -15,13 +15,15 @@ It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is a
 - **It scopes with you first.** The orchestrator reads what's already decided (CLAUDE.md, ADRs, earlier
   workstream docs) and asks only about decisions still open, one at a time.
 - **Shared state lives on an `orchestration` branch.** Each workstream gets a doc (`workstreams/<slug>.md`: your
-  ask verbatim, scope, your decisions, evidence) and a task file (`workstreams/<slug>.tasks.json`: one owner,
-  state, evidence and token count per task). A scribe subagent writes both. The skill tells the orchestrator
-  never to mark a task done without evidence; nothing checks this automatically yet.
+  ask verbatim, scope, your decisions, evidence) and a task file (`workstreams/<slug>.tasks.json`: owner, state,
+  evidence, tokens, the `doc_sha` the task was given and the worker's `left_out` list). A scribe subagent writes
+  both. The skill tells the orchestrator a task is done only with evidence and a left-out list the reviewer
+  accepted; nothing checks this automatically yet.
 - **Subagents get one-line prompts, and reviewers stay independent.** The prompt names a skill or verb, a target
-  and where the result goes; the details are in the doc. A separate reviewer checks the result against the doc,
-  spec first, then quality. Any claim not backed by a command and its output, a commit or a PR link is reported
-  as unproven.
+  with the doc pinned to a commit (`workstreams/<slug>.md@<sha>`), what's out of scope, and where the result goes;
+  the details are in the doc. Checks are anchored in tests, CI or a repro command. A separate reviewer runs the
+  result itself and judges what the worker left out, spec first, then quality. Any claim not backed by a command
+  and its output, a commit or a PR link is reported as unproven.
 - **A guard keeps the orchestrator out of the work.** Once armed, it blocks the orchestrator from editing files or
   running commands with side effects. Subagents keep all their tools.
 
@@ -29,7 +31,7 @@ Prompts the orchestrator sends its subagents look like this:
 
 ```text
 /code-review on PR #42 and push the full review to the PR as a comment.
-Implement workstreams/finish-bag.md (branch orchestration on origin). Open a PR, don't merge; link it in the doc.
+Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR, don't merge; link it in the doc.
 ```
 
 ## Use cadence-orchestrator
@@ -158,7 +160,9 @@ installer again.
 
 ### `warning: python3 is not on PATH`
 
-The install finishes, but the guard hooks run `python3` and won't work until it's installed.
+The install finishes, but the guard can't run until `python3` is installed. Meanwhile, on Claude Code, Copilot and
+Gemini the hooks allow every call (they fail open) instead of blocking; the same applies if the shim script is
+missing.
 
 ## Development
 
