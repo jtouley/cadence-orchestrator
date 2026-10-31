@@ -1,5 +1,7 @@
 # cadence-orchestrator
 
+Your coding agent plans and delegates; subagents do the work; nothing counts as done without evidence.
+
 cadence-orchestrator is a skill that makes your coding agent act as a technical program manager. You describe
 the work; the orchestrator plans it with you, hands every piece of it to subagents, has separate reviewers check
 what comes back, and reports with evidence. A guard stops the orchestrator from doing the work itself.
@@ -11,6 +13,8 @@ It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is a
 > Version 0.1.0, experimental. The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
 > only.
 
+Issues: [github.com/jtouley/cadence-orchestrator/issues](https://github.com/jtouley/cadence-orchestrator/issues)
+
 ## How It Works
 
 - **It scopes with you first.** The orchestrator reads what's already decided (CLAUDE.md, ADRs, earlier
@@ -19,7 +23,7 @@ It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is a
   ask verbatim, scope, your decisions, evidence) and a task file (`workstreams/<slug>.tasks.json`: owner, state,
   evidence, tokens, the `doc_sha` the task was given and the worker's `left_out` list). A scribe subagent writes
   both. The skill tells the orchestrator a task is done only with evidence and a left-out list the reviewer
-  accepted; nothing checks this automatically yet.
+  accepted; the guard and a pre-commit hook on the orchestration branch reject a `done` task without them.
 - **Subagents get one-line prompts, and reviewers stay independent.** The prompt names a skill or verb, a target
   with the doc pinned to a commit (`workstreams/<slug>.md@<sha>`), what's out of scope, and where the result goes;
   the details are in the doc. Checks are anchored in tests, CI or a repro command. A separate reviewer runs the
@@ -116,9 +120,11 @@ subagent tool calls that mention it.
 ## What the Guard Allows
 
 It allows reading, searching, delegating, task tracking and read-only shell commands, and denies edits, writes,
-other commands and any tool it doesn't recognise. Subagents keep every tool, but a subagent write that would mark
-a task `done` without evidence (an invalid `workstreams/*.tasks.json`) is denied. On Claude Code a Stop hook also
-keeps the orchestrator from ending its turn while agents it started are still running. The exact rules are in
+other commands and any tool it doesn't recognise. Subagents keep every tool, but a file-tool write that would mark
+a task `done` without evidence (an invalid `workstreams/*.tasks.json`) is denied on Claude Code and Copilot and
+warned about on Codex, Cursor and Gemini; shell writes aren't seen, and the orchestration branch's pre-commit hook
+catches those. On Claude Code a Stop hook also blocks the orchestrator once per stop attempt while agents it started
+are still running; the next attempt goes through. The exact rules are in
 [`core/references/guard.md`](core/references/guard.md).
 
 ## Threat Model
@@ -127,7 +133,7 @@ The guard is not a sandbox. It keeps a cooperative orchestrator from drifting in
 
 - Its shell check and its off-switch protection are text filters; a determined model can get around them.
 - It fails open: malformed hook input or a crash in the guard allows the call, so a bug can't lock up a session.
-- It only warns on Codex, Cursor and Gemini, and it doesn't restrict subagents beyond the off switch.
+- It only warns on Codex, Cursor and Gemini. Subagents are restricted only around the off switch and task files.
 
 Use your platform's permissions or a real sandbox to contain an agent you don't trust.
 
@@ -168,21 +174,17 @@ pytest
 ```
 
 The pre-commit hooks also block email addresses, account UUIDs and session logs (`checks/leak_check.py`) and
-direct commits to `main`. To make `main` change only through pull requests on GitHub too, add a ruleset under
-**Settings → Rules → Rulesets** targeting the default branch with **Require a pull request before merging**,
-**Require status checks to pass** (the CI jobs), **Block force pushes** and **Restrict deletions**. The
-orchestration branch needs its own pre-commit setup; see
-[`core/references/workstream.md`](core/references/workstream.md).
-
-The guard and shims use only the Python standard library; pytest, ruff and pre-commit are for development, and
-the installer tests also need Node. CI runs the same checks, gitleaks over the full history, an installer smoke test and `npm pack --dry-run`.
+direct commits to `main`. The guard and shims use only the Python standard library; pytest, ruff and pre-commit
+are for development, and the installer tests also need Node. CI runs the same checks, gitleaks over the full
+history, an installer smoke test and `npm pack --dry-run`.
 If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
 list against `guard.py`. `evals/` holds behaviour cases written against one app repository
 ([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.
 
 ## Contributing
 
-Issues and pull requests are welcome; run `pre-commit run --all-files` and `pytest` before you open one.
+Issues and pull requests are welcome; run `pre-commit run --all-files` and `pytest` before you open one. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
