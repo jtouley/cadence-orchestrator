@@ -20,8 +20,12 @@ Stdlib only.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tasks_check  # noqa: E402
 
 OFF_FILE_NAME = "tpm.off"
 ARM_DIR = "tpm-armed"
@@ -33,6 +37,12 @@ DENY_MESSAGE = (
     "are written by a scribe agent, not by you. "
     "Only the user can lift this guard; do not create .cadence/tpm.off or ask an agent to."
 )
+SUBAGENT_DENY_MESSAGE = "tpm guard (subagent): {what}. Fix it and retry, or report it as blocked."
+
+
+def deny_reason(why: str, is_subagent: bool) -> str:
+    return (SUBAGENT_DENY_MESSAGE if is_subagent else DENY_MESSAGE).format(what=why)
+
 
 # Tools the main thread may use as-is: conversation, light reads, delegation, tracking.
 # Keep this list in step with core/references/guard.md (a test checks it).
@@ -804,7 +814,46 @@ def mentions_guard_state(args) -> bool:
     return OFF_FILE_NAME in text or ARM_DIR in text
 
 
-def evaluate(tool: str, args, is_subagent: bool) -> tuple[bool, str]:
+def _apply_edit(text: str, old, new, replace_all=False) -> str | None:
+    if not isinstance(old, str) or not isinstance(new, str) or old not in text:
+        return None  # the edit itself will fail; nothing to validate
+    return text.replace(old, new) if replace_all else text.replace(old, new, 1)
+
+
+def task_file_problem(tool: str, args: dict, cwd: str = "") -> str:
+    """For a write to a *.tasks.json file, the validation errors of the result, or ""."""
+    path = args.get("file_path") or args.get("path") or ""
+    if not isinstance(path, str) or not path.endswith(tasks_check.SUFFIX):
+        return ""
+    if tool == "Write":
+        content = args.get("content", args.get("file_text"))
+    elif tool in ("Edit", "MultiEdit"):
+        try:
+            with open(os.path.join(cwd, path) if cwd else path, encoding="utf-8") as f:
+                content = f.read()
+        except OSError:
+            return ""  # can't see the current file; the platform will report its own error
+        edits = args.get("edits") if tool == "MultiEdit" else [args]
+        for e in edits if isinstance(edits, list) else []:
+            if not isinstance(e, dict):
+                return ""
+            content = _apply_edit(
+                content,
+                e.get("old_string", e.get("old_str")),
+                e.get("new_string", e.get("new_str")),
+                bool(e.get("replace_all")),
+            )
+            if content is None:
+                return ""
+    else:
+        return ""  # shell writes can't be seen; the pre-commit check covers those
+    if not isinstance(content, str):
+        return ""
+    errors = tasks_check.validate_text(content)
+    return "; ".join(errors)
+
+
+def evaluate(tool: str, args, is_subagent: bool, cwd: str = "") -> tuple[bool, str]:
     """The whole policy for an armed session. Returns (allowed, reason)."""
     args = args if isinstance(args, dict) else {}
     if is_subagent:
@@ -812,6 +861,9 @@ def evaluate(tool: str, args, is_subagent: bool) -> tuple[bool, str]:
         # touch the arming markers.
         if tool not in READ_TOOLS and mentions_guard_state(args):
             return False, "only the user may change .cadence/tpm.off or the arming state"
+        problem = task_file_problem(tool, args, cwd)
+        if problem:
+            return False, f"this would leave an invalid task file ({problem}); see references/workstream.md"
         return True, ""
     return main_thread_decision(tool, args)
 
@@ -827,7 +879,10 @@ def main() -> int:
     ok, why = evaluate(str(req.get("tool", "")), req.get("args"), bool(req.get("is_subagent")))
     print(
         json.dumps(
-            {"decision": "allow" if ok else "deny", "reason": "" if ok else DENY_MESSAGE.format(what=why)}
+            {
+                "decision": "allow" if ok else "deny",
+                "reason": "" if ok else deny_reason(why, bool(req.get("is_subagent"))),
+            }
         )
     )
     return 0

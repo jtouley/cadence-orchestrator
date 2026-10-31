@@ -8,7 +8,17 @@
     "type": "git",
     "url": "git+https://github.com/jtouley/cadence-orchestrator.git"
   },
-  "keywords": ["agents", "orchestration", "subagents", "claude-code", "copilot", "codex", "cursor", "gemini", "skills"],
+  "keywords": [
+    "agents",
+    "orchestration",
+    "subagents",
+    "claude-code",
+    "copilot",
+    "codex",
+    "cursor",
+    "gemini",
+    "skills"
+  ],
   "bin": {
     "cadence-orchestrator": "bin/cadence-orchestrator.mjs"
   },
@@ -18,6 +28,7 @@
     "core/references/",
     "core/scripts/guard.py",
     "core/scripts/runtime.py",
+    "core/scripts/tasks_check.py",
     "adapters/",
     "README.md",
     "LICENSE"

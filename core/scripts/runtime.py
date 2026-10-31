@@ -100,8 +100,8 @@ def handle(platform: Platform, payload: dict) -> Outcome:
         return _allow(platform)
     if os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE)):
         return _allow(platform)
-    ok, why = guard.evaluate(ev.tool, ev.args, ev.is_subagent)
-    reason = "" if ok else guard.DENY_MESSAGE.format(what=why)
+    ok, why = guard.evaluate(ev.tool, ev.args, ev.is_subagent, ev.project_dir)
+    reason = "" if ok else guard.deny_reason(why, ev.is_subagent)
     if platform.enforcing:
         return platform.render_tool(ok, reason)
     if ok:
