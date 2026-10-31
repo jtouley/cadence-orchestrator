@@ -76,6 +76,31 @@ messages to be written to `outputs/`. The scorer reads #01 literally by default,
 `--exclude-outputs` gives the other reading. Choose one and reword the graders before any validation or test
 scoring. A grader change is a change to the eval.
 
+## Runner requirements
+
+A run that breaks any of these is invalid. Record it on `orchestration`, marked INVALID, and don't grade it.
+Round 2 broke the first four.
+
+- **Skill pinned to the commit under test.** Record the skill commit in the run (`worktree_setup.log` or its
+  successor). Before scoring, confirm it is the `main` or `change` commit that the arm names.
+- **One full clone per run.** Use `git clone`, not `git worktree`. Worktrees share refs, so in round 2 the
+  subagents of different runs shared branches and one run's commit landed on another's. Clone the target repo at the
+  case's pinned commit, into a directory no other run uses.
+- **Push disabled.** In each clone, `git remote set-url --push origin no-push` (or remove the remote), so a run can't
+  publish anything, whatever the agent does.
+- **Environment scrubbed.** Start each run from an allowlisted environment, not the runner's own. In particular,
+  unset `CLAUDE_AUTO_BACKGROUND_TASKS`, so Agent calls run in the foreground as they would for a user, and set
+  `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, so `claude -p` waits for any background task instead of stopping it
+  after 10 minutes. Record the environment variables passed in, names only for secrets.
+- **Run-level timeout, recorded.** Each run has one wall-clock limit, the same for every arm of a case, set by the
+  runner. Record the limit and whether it fired (`timing.json`: `timeout_s`, `timed_out`; `exit_code` 124). A run
+  stopped by the timeout or a wait ceiling is invalid, not failed: it says nothing about the skill. Rerun it, and
+  report how many reruns there were per arm.
+- **Isolation check after the run.** Before grading, compare refs across the round's clones: `git for-each-ref
+  --format='%(refname) %(objectname)'` in each clone. No branch or tag created during a run may appear in another
+  run's clone. No run's new commits may be reachable from another run's refs. Each clone's `origin` must still show
+  the pinned commit, with nothing pushed. Record the check's output with the round. A run that fails it is invalid.
+
 ## Scoring and reporting
 
 ```sh
@@ -123,4 +148,6 @@ Results live on the `orchestration` branch under `results/<date>-round<N>/` and 
   `without_skill`. Each run was graded once by one grader (Claude Opus 5.5), mixing script facts and judgment, with
   no second labeler. Recorded pass rates: with_skill 10/18 = 56% (34–75%), without_skill 6/18 = 33% (16–56%). The
   intervals overlap, and the 3 cases are tainted-unknown.
-- **round 2:** running into coffee-data-tracker's `tpm-workspace/iteration-2/`. A placeholder is on `orchestration`.
+- **2026-10-31-round2: INVALID, not graded.** Stale skill (8f6f9bd). Background Agent calls stopped at the
+  10-minute `-p` wait ceiling, so the build run had no reviewer. One run hit the 3600 s timeout. Runs shared branches
+  through worktrees of one repo. Recorded on `orchestration` for inspection only. See Runner requirements.
