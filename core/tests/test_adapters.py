@@ -254,6 +254,32 @@ def test_vendored_hooks_run_from_the_installed_location():
     assert json.loads(out.stdout) == {"permission": "allow"}
 
 
+def test_install_gitignores_only_the_off_switch_and_adds_catalogs():
+    repo = scratch_repo()
+    open(os.path.join(repo, ".gitignore"), "w").write("node_modules/\n.cadence/\n")  # older install
+    cat = os.path.join(tempfile.mkdtemp(), "team.md")
+    open(cat, "w").write("# Team catalog\n\n## Set\n\n- **Source**: x\n- **Skills**:\n  - `a`: b\n")
+    proc = subprocess.run([INSTALL, "--target", "codex", "--repo", repo, "--catalog", cat],
+                          capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    lines = open(os.path.join(repo, ".gitignore")).read().split("\n")
+    assert ".cadence/tpm.off" in lines and ".cadence/" not in lines and "node_modules/" in lines
+    assert open(os.path.join(repo, ".cadence/catalog/team.md")).read().startswith("# Team catalog")
+    ignored = subprocess.run(["git", "-C", repo, "check-ignore", "-q", ".cadence/catalog/team.md"])
+    assert ignored.returncode == 1  # the catalog is committable
+
+
+def test_shipped_catalog_is_labeled_as_an_example_and_documented():
+    refs = os.path.join(ROOT, "core", "references")
+    example = open(os.path.join(refs, "example-registry.md")).read()
+    assert "One user's catalog, shipped as an example" in example
+    assert "## " in example and "- **Source**:" in example and "- **Skills**:" in example
+    lookup = open(os.path.join(refs, "catalogs.md")).read()
+    for where in (".cadence/catalog/", "CADENCE_CATALOG_PATH", "~/.cadence/catalog/",
+                  "example-registry.md"):
+        assert where in lookup, where
+
+
 def test_install_rejects_non_repo():
     proc = subprocess.run([INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()],
                           capture_output=True, text=True)

@@ -30,9 +30,19 @@ the remote, default name `orchestration`, one file per workstream (`workstreams/
 - **Scope**: in, out, target repo and branch, what "done" means, and where to stop (e.g. "PR opened, not
   merged"). Point to the written definition the work is judged against (spec, CLAUDE.md section, guide).
 - **Decisions**: the user's decisions verbatim, dated and labeled as theirs, so a paraphrase never becomes the spec.
-- **Tasks**: one line per task with its state (assigned, claimed, blocked, done) and its one owner, so two
-  agents never work the same thing.
 - **Status and evidence**: links to PRs, PR comments, commits, and repro commands with their output.
+
+Task status lives beside it as JSON, `workstreams/<slug>.tasks.json`: one entry per task with `id`, `owner`,
+`state` (assigned, claimed, blocked, done), `evidence` and `tokens`. Several agents edit it, and models corrupt
+JSON less than a markdown table; it can also be checked mechanically. Three rules for it:
+
+- **One owner per task**, so two agents never work the same thing.
+- **No `done` without evidence.** A task moves to `done` only with an artifact attached (SHA, PR or comment
+  link, command and output). Otherwise "done" is just a claim, and claims are what failed before.
+- **Record the tokens each delegated task spent**, from the agent's usage report. Cost per task shows which
+  work is worth delegating and catches a runaway agent early.
+
+The format and an example are in `references/workstream.md`.
 
 No hypotheses about causes and no file:line pointers to suspects: the doc is read by the agents who will
 investigate. A **scribe agent** writes and pushes these docs; you tell it what to record. That's the one place
@@ -50,7 +60,8 @@ The prompt is a verb or skill, a target, and where the result goes. Everything e
 Results land as durable artifacts (PR comments, commits, doc updates), not as chat you have to relay. Name an
 existing skill when one fits (code review, security review, cleanup, running the app, project skills). For big
 fan-outs, allow a bounded one explicitly ("you may use up to 5 subagents"). For routing work to skill sets (one agent per set, makers
-plus a judge, all-must-pass review panels) and vetting outside skills, read `references/skill-routing.md`.
+plus a judge, all-must-pass review panels) and vetting outside skills, read `references/skill-routing.md`; which
+skill sets exist comes from the user's catalogs (`references/catalogs.md`).
 
 ## Keep the swarm accountable
 
@@ -58,7 +69,7 @@ Self-coordinating agent swarms fail in recognisable ways: in a reported July 202
 duplicated each other's work, pushed through impossible tasks by cheating, recruited more agents, and ran
 unwatched on a shared message board. Four rules prevent each of those:
 
-- **One owner per task.** Record the owner and state of every task in the workstream doc before dispatching.
+- **One owner per task.** Record the owner and state of every task in the tasks JSON before dispatching.
   Duplicate work wastes the budget and produces conflicting results you then have to reconcile.
 - **"Blocked" and "impossible" are valid results.** Say so in every prompt ("if it can't be done as specified,
   stop and report why"). An agent that believes it must succeed will fake success: weaken a test, stub the
@@ -80,9 +91,11 @@ unwatched on a shared message board. Four rules prevent each of those:
 4. **Track and check for drift.** Before adding a subtask, compare it with the ask in the doc. If a protocol the
    work requires can't be run (a sealed test, a skill's eval loop), stop and tell the user rather than
    substituting something similar.
-5. **Verify independently.** A separate reviewer gets the artifact (PR, diff, doc) and the doc, never the
-   maker's conclusion. Fix blockers, re-review only the delta, stop after two or three rounds, then hand to the
-   user to say "merge it".
+5. **Verify independently, in two passes.** A separate reviewer gets the artifact (PR, diff, doc) and the doc,
+   never the maker's conclusion. First pass: spec compliance, does it do what the doc asked, all of it and
+   nothing else. Second pass, only once that passes: quality. Polishing work that solves the wrong problem is
+   wasted, and mixed reviews let style findings bury a missed requirement. Fix blockers, re-review only the
+   delta, stop after two or three rounds, then hand to the user to say "merge it".
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the

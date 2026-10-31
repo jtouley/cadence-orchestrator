@@ -15,11 +15,13 @@ It runs on Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is an o
 - **Scopes with you first.** It reads what's already decided (CLAUDE.md, ADRs, earlier workstream docs) and asks
   only the real forks, one choice at a time.
 - **Shared state lives on an `orchestration` branch.** One doc per workstream (`workstreams/<slug>.md`) holds your
-  ask verbatim, the scope, your decisions, one owner per task, and links to evidence. A scribe agent writes it.
+  ask verbatim, the scope, your decisions and links to evidence. Task status sits beside it as JSON
+  (`workstreams/<slug>.tasks.json`): one owner per task, its state, its evidence and the tokens it cost. A task
+  can't be marked done without evidence. A scribe agent writes both files.
 - **Dispatch prompts are one line.** A verb or skill, a target, and where the result goes. The details are in the
   doc, so agents investigate instead of confirming the orchestrator's guess.
-- **Verification is independent.** A separate reviewer gets the artifact and the doc, never the maker's
-  conclusion. A claim without a command and its output, a commit or a PR link is reported as unproven.
+- **Verification is independent, in two passes.** A separate reviewer gets the artifact and the doc, never the
+  maker's conclusion, and checks spec compliance first, then quality. A claim without a command and its output, a commit or a PR link is reported as unproven.
 - **A guard keeps the orchestrator out of the work.** Once armed, it blocks the main thread from editing files or
   running commands with side effects. Subagents keep all their tools.
 
@@ -49,7 +51,7 @@ Done. Review and commit the changes; see README for per-platform notes.
 ```
 
 Use `--target all` for every platform at once. Re-running is safe: it replaces only its own hook entries and
-keeps everything else in those files. It also adds `.cadence/` to the repo's `.gitignore`.
+keeps everything else in those files. It also adds `.cadence/tpm.off` to the repo's `.gitignore`.
 
 | Platform | `--target` | What it adds | Guard |
 | --- | --- | --- | --- |
@@ -64,6 +66,19 @@ its workers through. Codex, Cursor and Gemini don't, so blocking there would sto
 the guard never blocks: it shows a "tpm advisory" warning, which the skill tells the model to treat as a denial,
 and logs it to `advisory.log` in the state directory (`$CADENCE_STATE_DIR`, or `cadence-orchestrator/` in the
 system temp directory).
+
+### Skill catalogs
+
+The orchestrator routes work to skill sets listed in your catalogs: markdown files in the repo's
+`.cadence/catalog/` (committed, so cloud sessions see them), then in `$CADENCE_CATALOG_PATH` or
+`~/.cadence/catalog/`. The shipped [`example-registry.md`](core/references/example-registry.md) is one user's
+catalog, used only as a format example unless you confirm it fits. To add yours while installing:
+
+```sh
+./install.sh --target claude --repo ~/code/my-app --catalog ~/my-skills.md
+```
+
+The format and lookup rules are in [`core/references/catalogs.md`](core/references/catalogs.md).
 
 ### Claude Code plugin
 

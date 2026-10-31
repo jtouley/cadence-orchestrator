@@ -88,11 +88,27 @@ def add_block(path: str, block: str) -> None:
 
 
 def add_gitignore(repo: str) -> None:
+    # Ignore only the off switch: .cadence/catalog/ is meant to be committed.
     path = os.path.join(repo, ".gitignore")
-    text = open(path).read() if os.path.exists(path) else ""
-    if ".cadence/" not in text.split("\n"):
-        write(path, text + ("" if text.endswith("\n") or not text else "\n")
-              + "# tpm off switch (user-local)\n.cadence/\n")
+    lines = open(path).read().split("\n") if os.path.exists(path) else []
+    lines = [".cadence/tpm.off" if line == ".cadence/" else line for line in lines]  # older installs
+    if ".cadence/tpm.off" not in lines:
+        while lines and lines[-1] == "":
+            lines.pop()
+        lines += ["# tpm off switch (user-local)", ".cadence/tpm.off"]
+    write(path, "\n".join(lines).rstrip("\n") + "\n")
+
+
+def add_catalogs(repo: str, files: list[str]) -> list[str]:
+    dest = os.path.join(repo, ".cadence", "catalog")
+    os.makedirs(dest, exist_ok=True)
+    out = []
+    for f in files:
+        if not f.endswith(".md"):
+            raise SystemExit(f"install: catalog {f} must be a .md file")
+        shutil.copy2(f, os.path.join(dest, os.path.basename(f)))
+        out.append(".cadence/catalog/" + os.path.basename(f))
+    return out
 
 
 def install(repo: str, target: str) -> list[str]:
@@ -117,6 +133,8 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--target", required=True, choices=sorted(TARGETS) + ["all"])
     ap.add_argument("--repo", default=".")
+    ap.add_argument("--catalog", action="append", default=[], metavar="FILE",
+                    help="copy a skill catalog (.md) into <repo>/.cadence/catalog/; repeatable")
     a = ap.parse_args(argv)
     repo = os.path.abspath(a.repo)
     if not os.path.isdir(os.path.join(repo, ".git")):
@@ -124,6 +142,8 @@ def main(argv: list[str]) -> int:
         return 1
     for target in sorted(TARGETS) if a.target == "all" else [a.target]:
         print(f"{target}: " + ", ".join(install(repo, target)))
+    if a.catalog:
+        print("catalog: " + ", ".join(add_catalogs(repo, a.catalog)))
     print("Done. Review and commit the changes; see README for per-platform notes.")
     return 0
 

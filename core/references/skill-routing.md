@@ -1,8 +1,8 @@
 # Routing work to skills
 
 Read this when a workstream would benefit from skills: the ones installed in the session, or outside skill
-repositories the user points you at. `example-registry.md` is a real record from a past project, kept as the
-model for how a catalog of outside skills should look; copy its shape, not its contents.
+repositories the user points you at. Which skill sets exist, and how well they've worked, comes from the
+user's catalogs: see `catalogs.md` for where to find them and their format.
 
 ## Patterns
 
@@ -26,32 +26,5 @@ do. Skip skills that need API keys, network installs (npm/npx/pip), or that ship
 SKILL.md text as guidance or review criteria. A skill's absolutes yield to the user's brief and the repo's rules.
 Installing a skill into the session needs the user's go-ahead.
 
-**Record what was used and skipped.** Keep a catalog (where the project wants one) so the next orchestration
-doesn't re-vet from scratch, and so the skills that actually helped are visible.
-
-## Catalog shape
-
-```markdown
-# Outside skills we've used
-
-## Where they were used
-| Work | Skills |
-| --- | --- |
-| README rewrite (#14) | skill-a, skill-b (two rewrites merged by a judge); reviewed with skill-a, skill-c |
-
-## <Domain> skills
-**<Author · repo>** [github.com/<owner>/<repo>](https://github.com/<owner>/<repo>)
-- skill-a: what it was used for, what was deliberately not applied. <links to PRs/docs>
-- skill-x: Skipped: needs an API key.
-
-## How well they worked
-| Skill | Output | Acceptance | Ideation | Overall | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| skill-a | 5 | 4 | 4 | 4.5 | One line on what its work led to, with evidence. |
-
-## Install status
-Which skills were installed where, with whose approval, and whether a new session has to reinstall them.
-```
-
-Rate from what happened to the work (kept, rejected, reverted, bugs found), not from how the output read, and
-say where the evidence is thin.
+**Record what was used and skipped.** Update the repo's catalog (`.cadence/catalog/`, see `catalogs.md`) so the
+next orchestration doesn't re-vet from scratch, and so the skills that actually helped are visible.
