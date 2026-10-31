@@ -41,6 +41,24 @@ Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR,
 
 ## Use cadence-orchestrator
 
+There are two ways to use it, and only the second enforces anything.
+
+- **Use the instructions.** Any agent that reads [`core/SKILL.md`](core/SKILL.md) (or the installed skill) can
+  follow the playbook. Nothing checks it: no hooks run, and the skill tells you "guard not running in this session —
+  instructions only" when it doesn't see the guard.
+- **Install and activate the guard.**
+  1. Install it into the repo (below) and commit the result.
+  2. Start a **new** session in that repo; hooks load when a session starts.
+  3. Approve the hooks if the agent asks (Codex, for example, asks you to review and trust project hooks in `/hooks`).
+  4. Begin your message with `$tpm` on Codex, `/tpm` everywhere else.
+  5. Confirm it's armed: the agent sees `TPM guard armed (session <id>, log <path>)` on Claude Code, Codex and
+     Gemini. Copilot and Cursor can't show that line, so run `npx cadence-orchestrator status` in the repo.
+
+> [!IMPORTANT]
+> On Codex, Cursor and Gemini the guard is **advisory, not enforcement**: it warns and logs, and never blocks.
+> Hook support and approval may also differ between a platform's local CLI and its cloud agent (for Codex this is
+> unverified); check with `status` in each.
+
 ### Install in a Repo
 
 From the root of the git repository you want to use it in:
@@ -64,11 +82,14 @@ also adds `.cadence/tpm.off` to `.gitignore`. Commit the result so everyone work
 sessions, gets it. From a clone of this repository, run `./install.sh --repo <path>` with the same options.
 
 To check an install, run `npx cadence-orchestrator doctor --target claude` (`all` checks every target that's
-installed). It checks that the files
-and hook config are in place and point at existing scripts, that `python3` is on `PATH`, and runs the installed
-hooks on simulated events: arming, an orchestrator write (denied, or an advisory on Codex, Cursor and Gemini), a
-subagent write (allowed) and, on Claude Code, a stop. It prints one line per check, exits 1 if any fail, and
-changes nothing in the repo.
+installed). It checks that the files and hook config are in place and point at existing scripts, that `python3`
+is on `PATH`, and runs the installed hooks on simulated events: arming, an orchestrator write (denied, or an
+advisory on Codex, Cursor and Gemini), a subagent write (allowed) and, on Claude Code, a stop. It prints one line
+per check, exits 1 if any fail, and changes nothing in the repo. A passing `doctor` doesn't show that the hooks
+fire in a real session; `npx cadence-orchestrator status` does. It lists, separately, the skill files, the hook
+config, the sessions whose hooks have fired in the last 24 hours (`--hours <n>`) and whether each is armed, and the
+advisory log path. It exits 1 when no live hook activity has been seen. To test in a real session, follow
+[`docs/live-testing.md`](docs/live-testing.md).
 
 | Platform | `--target` | What it adds | Guard |
 | --- | --- | --- | --- |
@@ -112,7 +133,7 @@ only; a model loading the skill by itself doesn't arm it. On Claude Code the hoo
 orchestrator is then refused (exit code 2, message shortened here):
 
 ```text
-TPM guard armed for this session: the main thread delegates core work.
+TPM guard armed (session 4f1c…, log /tmp/cadence-orchestrator/advisory.log)
 TPM mode is on: the main thread doesn't do core work (Edit). Delegate it to a subagent: …
 ```
 

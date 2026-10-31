@@ -101,7 +101,8 @@ PLATFORM = Platform(
         else Outcome(stdout=json.dumps({"permissionDecision": "deny", "permissionDecisionReason": reason}))
     ),
     render_advisory=lambda msg: Outcome(),
-    render_prompt=lambda armed: Outcome(),  # Copilot drops userPromptSubmitted output
+    # Copilot drops userPromptSubmitted output, so the model can't be told; `status` shows it.
+    render_prompt=lambda message: Outcome(stderr=message),
 )
 
 if __name__ == "__main__":

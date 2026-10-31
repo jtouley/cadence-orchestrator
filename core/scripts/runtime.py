@@ -65,8 +65,8 @@ class Platform:
     render_tool: Callable[[bool, str], Outcome]
     # warning text or "" -> Outcome, for an advisory tool check
     render_advisory: Callable[[str], Outcome]
-    # armed_now -> Outcome, for a prompt event
-    render_prompt: Callable[[bool], Outcome]
+    # armed message ("TPM guard armed (...)") or "" -> Outcome, for a prompt event
+    render_prompt: Callable[[str], Outcome]
     state_env: tuple[str, ...] = ()
     # block reason or "" -> Outcome, for a stop event (platforms with a Stop hook)
     render_stop: Callable[[str], Outcome] = lambda reason: Outcome()
@@ -144,17 +144,59 @@ def is_armed(state: str, session_id: str) -> bool:
     return bool(path) and os.path.exists(path)
 
 
+SESSIONS_DIR = "sessions"
+
+
+def armed_message(state: str, session_id: str) -> str:
+    """The line the model sees when arming works; the skill looks for it."""
+    return f"TPM guard armed (session {session_id}, log {os.path.join(state, 'advisory.log')})"
+
+
+def heartbeat(platform: Platform, state: str, ev: Event, payload: dict) -> None:
+    """Record that a hook fired in this session: proof the guard runs live, for `status`."""
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", ev.session_id or "")
+    if not safe:
+        return
+    path = os.path.join(state, SESSIONS_DIR, safe)
+    record = {
+        "session": ev.session_id,
+        "platform": platform.name,
+        "last_event": str(payload.get("hook_event_name") or ev.kind),
+        "time": time.time(),
+        "armed": is_armed(state, ev.session_id),
+        "project": os.path.realpath(ev.project_dir or os.getcwd()),
+    }
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.json.{os.getpid()}"
+    with open(tmp, "w") as f:
+        json.dump(record, f)
+    os.replace(tmp, path + ".json")
+
+
 def handle(platform: Platform, payload: dict) -> Outcome:
     ev = platform.parse(payload)
     state = state_dir(platform)
+    try:
+        return _handle(platform, payload, ev, state)
+    finally:
+        try:
+            heartbeat(platform, state, ev, payload)
+        except Exception:
+            pass  # a heartbeat must never affect the decision
+
+
+def _handle(platform: Platform, payload: dict, ev: Event, state: str) -> Outcome:
     if ev.kind == "prompt":
-        armed_now = False
         path = marker_path(state, ev.session_id) if ev.starts_tpm else None
-        if path:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            open(path, "w").close()
-            armed_now = True
-        return platform.render_prompt(armed_now)
+        if not path:
+            return platform.render_prompt("")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        open(path, "w").close()
+        if os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE)):
+            return platform.render_prompt(
+                f"TPM guard switched off by .cadence/tpm.off (session {ev.session_id}): instructions only"
+            )
+        return platform.render_prompt(armed_message(state, ev.session_id))
     if ev.kind == "stop":
         # The off switch wins. Block once per stop: stop_hook_active means we already did, so never loop.
         off = os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE))

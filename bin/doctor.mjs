@@ -27,6 +27,37 @@ export function installed(repo, target, spec) {
   }
 }
 
+// Where the real hooks keep state and advisory.log, asked of the installed runtime.py directly (not the
+// shim, whose import-failure path prints its platform's "allow" output). Only an absolute path on a STATE=
+// line is accepted. -I keeps the cwd, PYTHON* variables and user site-packages off sys.path, so nothing
+// planted in a shared directory (e.g. /tmp/json.py) can be imported; the scripts dir is added explicitly
+// and is also the cwd. A relative CADENCE_STATE_DIR resolves against the repo, where the hooks run.
+// Returns { dir, error }.
+export function resolveStateDir(repo, target, spec) {
+  const resolver =
+    "import sys, types\n" +
+    "sys.dont_write_bytecode = True\n" +
+    "sys.path.insert(0, sys.argv[1])\n" +
+    "import runtime\n" +
+    "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))";
+  const scripts = path.join(repo, spec.skill, "scripts");
+  if (!fs.existsSync(path.join(scripts, "runtime.py"))) {
+    return { dir: "", error: `${spec.skill}/scripts/runtime.py is missing` };
+  }
+  const where = spawnSync("python3", ["-I", "-B", "-c", resolver, scripts, ...(STATE_ENV[target] ?? [])], {
+    encoding: "utf8",
+    cwd: scripts,
+  });
+  if (where.error) return { dir: "", error: `python3 not found (${where.error.code})` };
+  const line = (where.stdout ?? "").split("\n").find((l) => l.startsWith("STATE=")) ?? "";
+  const dir = where.status === 0 ? line.slice("STATE=".length).trim() : "";
+  if (!dir) {
+    const last = (where.stderr || "no output").trim().split("\n").at(-1);
+    return { dir: "", error: `couldn't load ${spec.skill}/scripts/runtime.py: ${last}` };
+  }
+  return { dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir), error: "" };
+}
+
 // Per platform: how to find hook commands in its config, and the events to simulate.
 const PLATFORMS = {
   claude: {
@@ -109,30 +140,7 @@ export function doctor(repo, target, spec) {
   const py = spawnSync("python3", ["--version"], { encoding: "utf8" });
   check("python3 is on PATH", !py.error && py.status === 0, "the hooks run python3; without it they allow everything");
 
-  // Where the real hooks keep state and advisory.log: ask the installed runtime.py directly (not the
-  // shim, whose import-failure path prints its platform's "allow" output). Only an absolute path on a
-  // STATE= line is accepted; if runtime.py is missing or broken this check fails and nothing is created.
-  // -I keeps the cwd, PYTHON* variables and user site-packages off sys.path, so nothing planted in a
-  // shared directory (e.g. /tmp/json.py) can be imported; the scripts dir is added explicitly and is
-  // also the cwd. Imports happen with the user's own interpreter, as in the real hooks.
-  const resolver =
-    "import sys, types\n" +
-    "sys.dont_write_bytecode = True\n" +
-    "sys.path.insert(0, sys.argv[1])\n" +
-    "import runtime\n" +
-    "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))";
-  const scripts = path.join(repo, spec.skill, "scripts");
-  const hasRuntime = fs.existsSync(path.join(scripts, "runtime.py"));
-  const where = hasRuntime
-    ? spawnSync("python3", ["-I", "-B", "-c", resolver, scripts, ...(STATE_ENV[target] ?? [])], {
-        encoding: "utf8",
-        cwd: scripts,
-      })
-    : { status: -1, stdout: "", stderr: "" };
-  const line = (where.stdout ?? "").split("\n").find((l) => l.startsWith("STATE=")) ?? "";
-  let realState = where.status === 0 ? line.slice("STATE=".length).trim() : "";
-  // The real hooks run in the repo, so a relative CADENCE_STATE_DIR is relative to it.
-  if (realState && !path.isAbsolute(realState)) realState = path.resolve(repo, realState);
+  const { dir: realState, error: stateError } = resolveStateDir(repo, target, spec);
   let writable = false;
   if (realState) {
     // Probe without creating anything: an existing dir gets a temporary file; otherwise the nearest
@@ -151,13 +159,7 @@ export function doctor(repo, target, spec) {
       writable = true;
     } catch {}
   }
-  const why = !hasRuntime
-    ? `${spec.skill}/scripts/runtime.py is missing`
-    : where.error
-      ? `python3 not found (${where.error.code})`
-      : !realState
-        ? `couldn't load ${spec.skill}/scripts/runtime.py: ${(where.stderr || "no output").trim().split("\n").at(-1)}`
-        : "not writable: set CADENCE_STATE_DIR to a writable directory";
+  const why = stateError || "not writable: set CADENCE_STATE_DIR to a writable directory";
   check(
     `state dir ${realState || "(unresolved)"} is writable; advisory log: ${realState ? path.join(realState, "advisory.log") : "?"}`,
     writable,
@@ -197,4 +199,27 @@ export function doctor(repo, target, spec) {
     fs.rmSync(state, { recursive: true, force: true });
   }
   return results;
+}
+
+// Which of a target's hook events have an entry pointing at the installed shim.
+// Returns { file, events: [{ event, installed }], error }.
+export function hookEntries(repo, target, spec) {
+  const p = PLATFORMS[target];
+  const file = spec.hooks[0][1];
+  const shim = `${spec.skill}/scripts/shim_${target}.py`;
+  const events = [p.arm[0], p.tool, ...(p.stop ? [p.stop[0]] : [])];
+  let hooks = {};
+  try {
+    hooks = JSON.parse(fs.readFileSync(path.join(repo, file), "utf8")).hooks ?? {};
+  } catch (e) {
+    return { file, events: events.map((event) => ({ event, installed: false })), error: e.code ?? e.message };
+  }
+  return {
+    file,
+    events: events.map((event) => ({
+      event,
+      installed: p.commands(hooks, event).some((c) => typeof c === "string" && c.includes(shim)),
+    })),
+    error: "",
+  };
 }
