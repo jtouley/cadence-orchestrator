@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Docs: in one Codex cloud task on 2026-10-31 (kit 0.1.2), project hooks didn't run and the skill worked as
+  instructions only; OpenAI's docs (as read on 2026-10-31) list local command hooks as not supported in cloud.
+  A second, instructions-only TPM run in Codex cloud delegated the work and had it reviewed independently. Both are
+  recorded in `docs/live-testing.md`.
+
 ## 0.1.2
 
 - Using the instructions and running the guard are now separate, visible states:
