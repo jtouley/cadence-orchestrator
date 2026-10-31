@@ -1,6 +1,6 @@
 """Tests for the normalized core CLI, every platform shim, and the Node installer.
 
-Run with `python3 test_adapters.py` or `pytest`.
+Run with `pytest`.
 """
 from __future__ import annotations
 
@@ -379,11 +379,3 @@ def test_install_rejects_non_repo():
     proc = subprocess.run([INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()],
                           capture_output=True, text=True)
     assert proc.returncode == 1
-
-
-if __name__ == "__main__":
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
-    for t in tests:
-        t()
-        print(f"ok  {t.__name__}")
-    print(f"{len(tests)} passed")

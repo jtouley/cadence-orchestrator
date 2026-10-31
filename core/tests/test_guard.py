@@ -1,4 +1,4 @@
-"""Policy tests, driven through the Claude Code shim (the enforcing reference adapter). Run with `python3 test_guard.py` or `pytest test_guard.py`."""
+"""Policy tests, driven through the Claude Code shim (the enforcing reference adapter). Run with `pytest`."""
 from __future__ import annotations
 
 import importlib.util
@@ -310,11 +310,3 @@ def test_skill_has_no_frontmatter_hooks():
     # Hooks and Claude-only keys live in the adapter layer, not the agent-neutral skill.
     assert "hooks:" not in frontmatter()
     assert "disable-model-invocation" not in frontmatter()
-
-
-if __name__ == "__main__":
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
-    for t in tests:
-        t()
-        print(f"ok  {t.__name__}")
-    print(f"{len(tests)} passed")

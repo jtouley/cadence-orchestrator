@@ -1,0 +1,24 @@
+# Run `pre-commit install` once; `pre-commit run --all-files` checks everything.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      # Syntax-check the installer with Node itself: no npm dependencies needed.
+      - id: node-check
+        name: node --check
+        entry: node --check
+        language: system
+        files: ^bin/.*\.mjs$
