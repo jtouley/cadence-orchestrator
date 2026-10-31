@@ -7,6 +7,7 @@
     "name": "jtouley"
   },
   "repository": "https://github.com/jtouley/cadence-orchestrator",
+  "license": "MIT",
   "keywords": [
     "orchestration",
     "subagents",
