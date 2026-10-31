@@ -242,14 +242,15 @@ def check_run(run: Path, case: str) -> dict:
         else ""
     )
     diff_files = [f for f in re.findall(r"^diff --git a/(\S+)", diff, re.M) if not f.startswith(".claude/")]
-    deleted_lines = [l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")]
     status = (
         (run / "outputs" / "git_status.txt").read_text()
         if (run / "outputs" / "git_status.txt").exists()
         else ""
     )
     untracked = [
-        l[3:] for l in status.splitlines() if l.startswith("??") and not l[3:].startswith("outputs/")
+        line[3:]
+        for line in status.splitlines()
+        if line.startswith("??") and not line[3:].startswith("outputs/")
     ]
     code_changed = [f for f in diff_files + untracked if not f.startswith("outputs/")]
 
@@ -290,8 +291,8 @@ def check_run(run: Path, case: str) -> dict:
             1
             for chunk in re.split(r"^diff --git ", diff, flags=re.M)[1:]
             if not chunk.startswith("a/.claude/")
-            for l in chunk.splitlines()
-            if l.startswith("-") and not l.startswith("---")
+            for line in chunk.splitlines()
+            if line.startswith("-") and not line.startswith("---")
         ),
     }
 

@@ -392,9 +392,10 @@ def test_unarmed_session_allows_everything():
 
 def test_arming_is_per_session_and_only_for_tpm():
     state = tempfile.mkdtemp()
-    write = lambda s: (
-        guard_proc({"session_id": s, "tool_name": "Write", "tool_input": {}}, state=state).returncode
-    )
+
+    def write(s):
+        return guard_proc({"session_id": s, "tool_name": "Write", "tool_input": {}}, state=state).returncode
+
     assert write("a") == ALLOW
     assert arm("a", command_name="cadence-orchestrator:review", state=state).returncode == 0
     assert write("a") == ALLOW

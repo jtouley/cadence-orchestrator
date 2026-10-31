@@ -39,7 +39,6 @@ def _args(value):
 
 
 def parse(p: dict) -> Event:
-    event = p.get("hook_event_name", "")
     session = str(p.get("session_id") or p.get("sessionId") or "")
     project = p.get("cwd") or ""
     if "prompt" in p and "tool_name" not in p and "toolName" not in p:
