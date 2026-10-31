@@ -8,6 +8,7 @@ accepted. Deny = JSON permissionDecision on stdout, exit 0: a command preToolUse
 hook that crashes or exits non-zero denies the call on Copilot, so this never does,
 and the hook command in hooks.json exits 0 even when python3 or this file is missing.
 """
+
 FALLBACK_STDOUT = ""
 import json
 import os
@@ -38,17 +39,21 @@ def _args(value):
 
 
 def parse(p: dict) -> Event:
-    event = p.get("hook_event_name", "")
     session = str(p.get("session_id") or p.get("sessionId") or "")
     project = p.get("cwd") or ""
     if "prompt" in p and "tool_name" not in p and "toolName" not in p:
-        return Event("prompt", session, project,
-                     starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", "")))))
+        return Event(
+            "prompt", session, project, starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", ""))))
+        )
     if "tool_name" in p or "toolName" in p:
-        return Event("tool", session, project,
-                     tool=str(p.get("tool_name") or p.get("toolName") or ""),
-                     args=_args(p.get("tool_input", p.get("toolArgs"))),
-                     is_subagent=bool(p.get("agent_id") or p.get("agentId")))
+        return Event(
+            "tool",
+            session,
+            project,
+            tool=str(p.get("tool_name") or p.get("toolName") or ""),
+            args=_args(p.get("tool_input", p.get("toolArgs"))),
+            is_subagent=bool(p.get("agent_id") or p.get("agentId")),
+        )
     return Event("other", session, project)
 
 
@@ -56,8 +61,11 @@ PLATFORM = Platform(
     name="copilot",
     enforcing=True,
     parse=parse,
-    render_tool=lambda ok, reason: Outcome() if ok else Outcome(stdout=json.dumps(
-        {"permissionDecision": "deny", "permissionDecisionReason": reason})),
+    render_tool=lambda ok, reason: (
+        Outcome()
+        if ok
+        else Outcome(stdout=json.dumps({"permissionDecision": "deny", "permissionDecisionReason": reason}))
+    ),
     render_advisory=lambda msg: Outcome(),
     render_prompt=lambda armed: Outcome(),  # Copilot drops userPromptSubmitted output
 )

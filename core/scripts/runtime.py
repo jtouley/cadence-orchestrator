@@ -16,6 +16,7 @@ Everything else is here, shared:
   session (and Copilot treats a crashing preToolUse hook as a denial).
 Stdlib only.
 """
+
 from __future__ import annotations
 
 import json
@@ -24,8 +25,8 @@ import re
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import guard  # noqa: E402
@@ -37,10 +38,10 @@ TPM_PROMPT = re.compile(r"^\s*[/$]tpm(\s|$)")
 
 @dataclass
 class Event:
-    kind: str                 # "tool", "prompt" or "other"
+    kind: str  # "tool", "prompt" or "other"
     session_id: str = ""
     project_dir: str = ""
-    tool: str = ""            # canonical tool name
+    tool: str = ""  # canonical tool name
     args: dict = field(default_factory=dict)
     is_subagent: bool = False
     starts_tpm: bool = False  # for "prompt": this prompt starts the tpm skill
@@ -106,11 +107,22 @@ def handle(platform: Platform, payload: dict) -> Outcome:
     if ok:
         return platform.render_advisory("")
     with open(os.path.join(state, "advisory.log"), "a") as log:
-        log.write(json.dumps({"time": time.time(), "platform": platform.name,
-                              "session": ev.session_id, "tool": ev.tool, "why": why}) + "\n")
+        log.write(
+            json.dumps(
+                {
+                    "time": time.time(),
+                    "platform": platform.name,
+                    "session": ev.session_id,
+                    "tool": ev.tool,
+                    "why": why,
+                }
+            )
+            + "\n"
+        )
     return platform.render_advisory(
         "tpm advisory (this platform can't tell the orchestrator from its subagents, so "
-        f"nothing was blocked): if you are the orchestrator, delegate this ({why}).")
+        f"nothing was blocked): if you are the orchestrator, delegate this ({why})."
+    )
 
 
 def _allow(platform: Platform) -> Outcome:

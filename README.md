@@ -8,7 +8,8 @@ It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is a
 [cadence-core](https://github.com/jtouley/cadence-core).
 
 > [!NOTE]
-> Version 0.1.0. The repository is private and the npm package is not published yet. macOS and Linux only.
+> Version 0.1.0, experimental. The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
+> only.
 
 ## How It Works
 
@@ -41,7 +42,7 @@ Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR,
 From the root of the git repository you want to use it in:
 
 ```sh
-npx github:jtouley/cadence-orchestrator --target claude
+npx cadence-orchestrator --target claude
 ```
 
 ```console
@@ -50,9 +51,8 @@ Done. Review and commit the changes; see README for per-platform notes.
 ```
 
 You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
-warns if `python3` is missing. Because the repository is private, `npx github:` needs GitHub access: an SSH key
-or a token that git can use. (The npm package won't need this.) Once it's published, the command will be
-`npx cadence-orchestrator --target claude`.
+warns if `python3` is missing. To install from source instead of npm, use
+`npx github:jtouley/cadence-orchestrator --target claude`.
 
 `--repo <path>` installs into another repository; it defaults to the current directory. `--target all` installs
 for every platform. Re-running is safe: the installer replaces only its own entries in the files it touches. It
@@ -75,8 +75,7 @@ directory).
 
 ### Or as a Claude Code Plugin
 
-To use it in your own Claude Code without installing it into a repo, run these inside Claude Code. While the
-repository is private, this also needs GitHub access.
+To use it in your own Claude Code without installing it into a repo, run these inside Claude Code.
 
 ```text
 /plugin marketplace add jtouley/cadence-orchestrator
@@ -140,11 +139,6 @@ Use your platform's permissions or a real sandbox to contain an agent you don't 
 
 ## Troubleshooting
 
-### `npx github:` fails to fetch the package
-
-The repository is private. Give git access to GitHub (an SSH key, or a token through a credential helper), or
-clone it with credentials you already have and run `./install.sh --repo <path>` from the clone.
-
 ### The installer stops with a `SyntaxError` from `JSON.parse`
 
 The hook file it merges into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
@@ -166,13 +160,20 @@ The install finishes, but the guard can't run until `python3` is installed. Mean
 ## Development
 
 ```sh
-python3 core/tests/test_guard.py
-python3 core/tests/test_adapters.py
+pip install pre-commit==4.7.0 pytest==9.1.1    # the versions CI uses
+pre-commit install    # ruff, JSON/YAML checks and `node --check` on every commit
+pytest
 ```
 
-The tests use only the Python standard library (test_adapters.py also needs Node). If you change what the guard
-allows, update `core/references/guard.md` in the same change; a test checks its tool list against `guard.py`. `evals/` holds
-behaviour cases written against one app repository (coffee-data-tracker), so they don't run on their own.
+The guard and shims use only the Python standard library; pytest, ruff and pre-commit are for development, and
+the installer tests also need Node. CI runs the same checks plus an installer smoke test and `npm pack --dry-run`.
+If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
+list against `guard.py`. `evals/` holds behaviour cases written against one app repository
+([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.
+
+## Contributing
+
+Issues and pull requests are welcome; run `pre-commit run --all-files` and `pytest` before you open one.
 
 ## License
 

@@ -6,6 +6,7 @@ orchestrator from its workers; it always answers allow and logs what it would
 have denied. Cursor blocks on invalid JSON from permission hooks, so every path
 prints valid JSON. Session = conversation_id.
 """
+
 FALLBACK_STDOUT = '{"permission": "allow"}'
 import json
 import os
@@ -33,8 +34,9 @@ def parse(p: dict) -> Event:
     roots = p.get("workspace_roots") or []
     project = (roots[0] if roots else "") or p.get("cwd") or ""
     if "prompt" in p and "tool_name" not in p:
-        return Event("prompt", session, project,
-                     starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", "")))))
+        return Event(
+            "prompt", session, project, starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", ""))))
+        )
     if "tool_name" in p:
         name = str(p.get("tool_name", ""))
         if name.startswith("MCP:"):
@@ -45,8 +47,13 @@ def parse(p: dict) -> Event:
                 args = json.loads(args)
             except ValueError:
                 args = {}
-        return Event("tool", session, project, tool=TOOL_MAP.get(name, name),
-                     args=args if isinstance(args, dict) else {})
+        return Event(
+            "tool",
+            session,
+            project,
+            tool=TOOL_MAP.get(name, name),
+            args=args if isinstance(args, dict) else {},
+        )
     return Event("other", session, project)
 
 

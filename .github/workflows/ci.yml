@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - run: pip install pre-commit==4.7.0
+      - run: pre-commit run --all-files --show-diff-on-failure
+
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # The oldest supported pair, so the installer tests also cover Node 18 (package.json engines).
+          - python-version: "3.10"
+            node-version: "18"
+          - python-version: "3.13"
+            node-version: "22"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: pip install pytest==9.1.1
+      - run: pytest
+
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "18"
+      - name: Install every target twice; the second run must change nothing
+        run: .github/scripts/installer-idempotent.sh
+      - name: Package contents stay within the files allowlist
+        run: node .github/scripts/check-pack.mjs

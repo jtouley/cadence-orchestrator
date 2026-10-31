@@ -5,6 +5,7 @@ Codex's PreToolUse input has no subagent marker, so the guard can't tell the
 orchestrator from its workers; blocking would stop the workers too. It warns
 via systemMessage and logs instead. apply_patch maps to Edit.
 """
+
 FALLBACK_STDOUT = ""
 import json
 import os
@@ -32,13 +33,19 @@ def parse(p: dict) -> Event:
     session = str(p.get("session_id", ""))
     project = p.get("cwd") or ""
     if event == "UserPromptSubmit":
-        return Event("prompt", session, project,
-                     starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", "")))))
+        return Event(
+            "prompt", session, project, starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", ""))))
+        )
     if event == "PreToolUse" or "tool_name" in p:
         name = str(p.get("tool_name", ""))
         args = p.get("tool_input")
-        return Event("tool", session, project, tool=TOOL_MAP.get(name, name),
-                     args=args if isinstance(args, dict) else {})
+        return Event(
+            "tool",
+            session,
+            project,
+            tool=TOOL_MAP.get(name, name),
+            args=args if isinstance(args, dict) else {},
+        )
     return Event("other", session, project)
 
 

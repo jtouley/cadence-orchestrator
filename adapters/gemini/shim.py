@@ -5,6 +5,7 @@ Gemini's BeforeTool input has no subagent marker, so the guard can't tell the
 orchestrator from its workers; it warns via systemMessage and logs instead.
 Gemini requires stdout to be exactly one JSON object.
 """
+
 FALLBACK_STDOUT = "{}"
 import json
 import os
@@ -25,9 +26,16 @@ except ImportError as exc:  # fail open, in this platform's "allow" shape
     sys.exit(0)
 
 TOOL_MAP = {
-    "run_shell_command": "Bash", "read_file": "Read", "read_many_files": "Read",
-    "write_file": "Write", "replace": "Edit", "glob": "Glob", "search_file_content": "Grep",
-    "grep_search": "Grep", "list_directory": "LS", "web_fetch": "WebFetch",
+    "run_shell_command": "Bash",
+    "read_file": "Read",
+    "read_many_files": "Read",
+    "write_file": "Write",
+    "replace": "Edit",
+    "glob": "Glob",
+    "search_file_content": "Grep",
+    "grep_search": "Grep",
+    "list_directory": "LS",
+    "web_fetch": "WebFetch",
     "google_web_search": "WebSearch",
 }
 
@@ -37,16 +45,22 @@ def parse(p: dict) -> Event:
     session = str(p.get("session_id", ""))
     project = os.environ.get("GEMINI_PROJECT_DIR") or p.get("cwd") or ""
     if event == "BeforeAgent":
-        return Event("prompt", session, project,
-                     starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", "")))))
+        return Event(
+            "prompt", session, project, starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", ""))))
+        )
     if event == "BeforeTool" or "tool_name" in p:
         name = str(p.get("tool_name", ""))
         if name.startswith("mcp_") and not name.startswith("mcp__"):
             server, _, tool = name[4:].partition("_")
             name = f"mcp__{server}__{tool}"
         args = p.get("tool_input")
-        return Event("tool", session, project, tool=TOOL_MAP.get(name, name),
-                     args=args if isinstance(args, dict) else {})
+        return Event(
+            "tool",
+            session,
+            project,
+            tool=TOOL_MAP.get(name, name),
+            args=args if isinstance(args, dict) else {},
+        )
     return Event("other", session, project)
 
 

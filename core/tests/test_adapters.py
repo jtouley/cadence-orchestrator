@@ -1,7 +1,8 @@
 """Tests for the normalized core CLI, every platform shim, and the Node installer.
 
-Run with `python3 test_adapters.py` or `pytest`.
+Run with `pytest`.
 """
+
 from __future__ import annotations
 
 import json
@@ -26,16 +27,19 @@ def run(path, payload, state, env_extra=None, cwd=None):
     env.pop("CLAUDE_PROJECT_DIR", None)
     env.update(env_extra or {})
     raw = payload if isinstance(payload, str) else json.dumps(payload)
-    return subprocess.run([sys.executable, path], input=raw, capture_output=True, text=True,
-                          env=env, cwd=cwd)
+    return subprocess.run([sys.executable, path], input=raw, capture_output=True, text=True, env=env, cwd=cwd)
 
 
 # ------------------------------------------------------------- core CLI
 
+
 def core(tool, args=None, is_subagent=False):
-    proc = subprocess.run([sys.executable, GUARD], capture_output=True, text=True,
-                          input=json.dumps({"tool": tool, "args": args or {},
-                                            "is_subagent": is_subagent}))
+    proc = subprocess.run(
+        [sys.executable, GUARD],
+        capture_output=True,
+        text=True,
+        input=json.dumps({"tool": tool, "args": args or {}, "is_subagent": is_subagent}),
+    )
     assert proc.returncode == 0
     return json.loads(proc.stdout)
 
@@ -52,12 +56,18 @@ def test_core_normalized_cli():
 
 # ------------------------------------------------------------- enforcing shims
 
+
 def test_copilot_enforces_with_json_and_exit_0():
     st = tempfile.mkdtemp()
     p = shim("copilot")
-    write = {"hook_event_name": "PreToolUse", "session_id": "s", "cwd": st,
-             "tool_name": "Write", "tool_input": {}}
-    assert run(p, write, st).stdout == ""                       # unarmed: allow
+    write = {
+        "hook_event_name": "PreToolUse",
+        "session_id": "s",
+        "cwd": st,
+        "tool_name": "Write",
+        "tool_input": {},
+    }
+    assert run(p, write, st).stdout == ""  # unarmed: allow
     arm = run(p, {"hook_event_name": "UserPromptSubmit", "session_id": "s", "prompt": "/tpm go"}, st)
     assert arm.returncode == 0 and arm.stdout == ""
     out = run(p, write, st)
@@ -76,20 +86,33 @@ def test_copilot_enforces_with_json_and_exit_0():
 
 # ------------------------------------------------------------- advisory shims
 
+
 def arm_with(platform, st, session):
-    events = {"codex": {"hook_event_name": "UserPromptSubmit", "session_id": session},
-              "cursor": {"conversation_id": session, "hook_event_name": "beforeSubmitPrompt"},
-              "gemini": {"hook_event_name": "BeforeAgent", "session_id": session}}
+    events = {
+        "codex": {"hook_event_name": "UserPromptSubmit", "session_id": session},
+        "cursor": {"conversation_id": session, "hook_event_name": "beforeSubmitPrompt"},
+        "gemini": {"hook_event_name": "BeforeAgent", "session_id": session},
+    }
     return run(shim(platform), dict(events[platform], prompt="$tpm build it"), st)
 
 
 def tool_payload(platform, session, cwd, name, args):
     if platform == "cursor":
-        return {"conversation_id": session, "hook_event_name": "preToolUse",
-                "workspace_roots": [cwd], "tool_name": name, "tool_input": args}
+        return {
+            "conversation_id": session,
+            "hook_event_name": "preToolUse",
+            "workspace_roots": [cwd],
+            "tool_name": name,
+            "tool_input": args,
+        }
     event = "BeforeTool" if platform == "gemini" else "PreToolUse"
-    return {"hook_event_name": event, "session_id": session, "cwd": cwd,
-            "tool_name": name, "tool_input": args}
+    return {
+        "hook_event_name": event,
+        "session_id": session,
+        "cwd": cwd,
+        "tool_name": name,
+        "tool_input": args,
+    }
 
 
 ADVISORY_CASES = {
@@ -139,8 +162,11 @@ def test_off_switch_applies_to_every_platform():
         os.makedirs(os.path.join(st, ".cadence"))
         open(os.path.join(st, ".cadence", "tpm.off"), "w").close()
         if platform == "copilot":
-            run(shim(platform), {"hook_event_name": "UserPromptSubmit", "session_id": "s",
-                                 "prompt": "/tpm"}, st)
+            run(
+                shim(platform),
+                {"hook_event_name": "UserPromptSubmit", "session_id": "s", "prompt": "/tpm"},
+                st,
+            )
             payload = {"session_id": "s", "cwd": st, "tool_name": "Write", "tool_input": {}}
         else:
             arm_with(platform, st, "s")
@@ -151,6 +177,7 @@ def test_off_switch_applies_to_every_platform():
 
 # ------------------------------------------------------------- install.sh
 
+
 def scratch_repo():
     d = tempfile.mkdtemp()
     subprocess.run(["git", "init", "-q", d], check=True)
@@ -158,8 +185,7 @@ def scratch_repo():
 
 
 def install(repo, target):
-    proc = subprocess.run([INSTALL, "--target", target, "--repo", repo],
-                          capture_output=True, text=True)
+    proc = subprocess.run([INSTALL, "--target", target, "--repo", repo], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
     return proc.stdout
 
@@ -175,12 +201,14 @@ def snapshot(repo):
 
 
 EXPECTED = {
-    "claude": [".claude/skills/tpm/SKILL.md", ".claude/skills/tpm/scripts/shim_claude.py",
-               ".claude/settings.json"],
+    "claude": [
+        ".claude/skills/tpm/SKILL.md",
+        ".claude/skills/tpm/scripts/shim_claude.py",
+        ".claude/settings.json",
+    ],
     "copilot": [".github/skills/tpm/scripts/shim_copilot.py", ".github/hooks/tpm.json"],
     "codex": [".agents/skills/tpm/scripts/shim_codex.py", ".codex/hooks.json", "AGENTS.md"],
-    "cursor": [".agents/skills/tpm/scripts/shim_cursor.py", ".cursor/hooks.json",
-               ".cursor/rules/tpm.mdc"],
+    "cursor": [".agents/skills/tpm/scripts/shim_cursor.py", ".cursor/hooks.json", ".cursor/rules/tpm.mdc"],
     "gemini": [".agents/skills/tpm/scripts/shim_gemini.py", ".gemini/settings.json", "GEMINI.md"],
 }
 
@@ -199,9 +227,12 @@ def test_install_each_target_is_complete_and_idempotent():
 def test_install_keeps_existing_config_and_replaces_only_its_own_entries():
     repo = scratch_repo()
     os.makedirs(os.path.join(repo, ".claude"))
-    mine = {"permissions": {"allow": ["Bash(npm test)"]},
-            "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
-                {"type": "command", "command": "./my-hook.sh"}]}]}}
+    mine = {
+        "permissions": {"allow": ["Bash(npm test)"]},
+        "hooks": {
+            "PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "./my-hook.sh"}]}]
+        },
+    }
     json.dump(mine, open(os.path.join(repo, ".claude", "settings.json"), "w"))
     open(os.path.join(repo, "AGENTS.md"), "w").write("# Rules\n\nBe nice.\n")
     install(repo, "claude")
@@ -231,27 +262,38 @@ def test_vendored_hooks_run_from_the_installed_location():
     install(repo, "all")
     st = tempfile.mkdtemp()
     # Claude: run the exact command from the merged settings.
-    cmd = json.load(open(os.path.join(repo, ".claude/settings.json")))[
-        "hooks"]["PreToolUse"][-1]["hooks"][0]["command"]
+    cmd = json.load(open(os.path.join(repo, ".claude/settings.json")))["hooks"]["PreToolUse"][-1]["hooks"][0][
+        "command"
+    ]
     env = dict(os.environ, CLAUDE_PROJECT_DIR=repo, CADENCE_STATE_DIR=st)
 
     def sh(command, payload):
-        return subprocess.run(["bash", "-c", command], input=json.dumps(payload), cwd=repo,
-                              capture_output=True, text=True, env=env)
+        return subprocess.run(
+            ["bash", "-c", command],
+            input=json.dumps(payload),
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
 
     sh(cmd, {"hook_event_name": "UserPromptExpansion", "session_id": "v", "command_name": "tpm"})
-    out = sh(cmd, {"hook_event_name": "PreToolUse", "session_id": "v", "tool_name": "Write",
-                   "tool_input": {}})
+    out = sh(
+        cmd, {"hook_event_name": "PreToolUse", "session_id": "v", "tool_name": "Write", "tool_input": {}}
+    )
     assert out.returncode == 2 and "TPM mode" in out.stderr
     # Copilot and Cursor commands, as written into their hook files.
     cop = json.load(open(os.path.join(repo, ".github/hooks/tpm.json")))["hooks"]
     sh(cop["UserPromptSubmit"][0]["bash"], {"session_id": "c", "prompt": "/tpm"})
-    out = sh(cop["PreToolUse"][0]["bash"], {"session_id": "c", "cwd": repo, "tool_name": "Edit",
-                                            "tool_input": {}})
+    out = sh(
+        cop["PreToolUse"][0]["bash"], {"session_id": "c", "cwd": repo, "tool_name": "Edit", "tool_input": {}}
+    )
     assert json.loads(out.stdout)["permissionDecision"] == "deny"
     cur = json.load(open(os.path.join(repo, ".cursor/hooks.json")))["hooks"]
-    out = sh(cur["preToolUse"][0]["command"], {"conversation_id": "k", "tool_name": "Shell",
-                                               "tool_input": {"command": "ls"}})
+    out = sh(
+        cur["preToolUse"][0]["command"],
+        {"conversation_id": "k", "tool_name": "Shell", "tool_input": {"command": "ls"}},
+    )
     assert json.loads(out.stdout) == {"permission": "allow"}
 
 
@@ -260,8 +302,9 @@ def test_install_gitignores_only_the_off_switch_and_adds_catalogs():
     open(os.path.join(repo, ".gitignore"), "w").write("node_modules/\n.cadence/\n")  # older install
     cat = os.path.join(tempfile.mkdtemp(), "team.md")
     open(cat, "w").write("# Team catalog\n\n## Set\n\n- **Source**: x\n- **Skills**:\n  - `a`: b\n")
-    proc = subprocess.run([INSTALL, "--target", "codex", "--repo", repo, "--catalog", cat],
-                          capture_output=True, text=True)
+    proc = subprocess.run(
+        [INSTALL, "--target", "codex", "--repo", repo, "--catalog", cat], capture_output=True, text=True
+    )
     assert proc.returncode == 0, proc.stderr
     lines = open(os.path.join(repo, ".gitignore")).read().split("\n")
     assert ".cadence/tpm.off" in lines and ".cadence/" not in lines and "node_modules/" in lines
@@ -276,15 +319,13 @@ def test_shipped_catalog_is_labeled_as_an_example_and_documented():
     assert "One user's catalog, shipped as an example" in example
     assert "## " in example and "- **Source**:" in example and "- **Skills**:" in example
     lookup = open(os.path.join(refs, "catalogs.md")).read()
-    for where in (".cadence/catalog/", "CADENCE_CATALOG_PATH", "~/.cadence/catalog/",
-                  "example-registry.md"):
+    for where in (".cadence/catalog/", "CADENCE_CATALOG_PATH", "~/.cadence/catalog/", "example-registry.md"):
         assert where in lookup, where
 
 
 def test_install_sh_delegates_to_the_node_installer():
     repo = scratch_repo()
-    proc = subprocess.run([INSTALL_SH, "--target", "cursor", "--repo", repo],
-                          capture_output=True, text=True)
+    proc = subprocess.run([INSTALL_SH, "--target", "cursor", "--repo", repo], capture_output=True, text=True)
     assert proc.returncode == 0 and proc.stdout.startswith("cursor: ")
     assert os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
 
@@ -294,8 +335,12 @@ def test_installer_warns_without_python3_and_checks_arguments():
     node = subprocess.run(["bash", "-c", "command -v node"], capture_output=True, text=True).stdout.strip()
     bare = tempfile.mkdtemp()
     os.symlink(node, os.path.join(bare, "node"))  # PATH with node but no python3
-    proc = subprocess.run([os.path.join(bare, "node"), INSTALL, "--target", "claude", "--repo", repo],
-                          capture_output=True, text=True, env={"PATH": bare})
+    proc = subprocess.run(
+        [os.path.join(bare, "node"), INSTALL, "--target", "claude", "--repo", repo],
+        capture_output=True,
+        text=True,
+        env={"PATH": bare},
+    )
     assert proc.returncode == 0 and "python3 is not on PATH" in proc.stderr
     for argv in (["--target", "nope"], [], ["--repo"], ["--bogus"]):
         assert subprocess.run([INSTALL] + argv, capture_output=True).returncode == 2, argv
@@ -305,6 +350,7 @@ def test_installer_warns_without_python3_and_checks_arguments():
 
 def test_workstream_reference_example_is_valid_and_complete():
     import re
+
     refs = os.path.join(ROOT, "core", "references")
     text = open(os.path.join(refs, "workstream.md")).read()
     data = json.loads(re.search(r"```json\n(.*?)```", text, re.S).group(1))
@@ -329,18 +375,42 @@ def _path_without_python3():
 
 # target: (hook file, (event, index) of the tool hook, how to get the command, shim, expected stdout)
 FAIL_OPEN = {
-    "copilot": (".github/hooks/tpm.json", lambda h: h["PreToolUse"][0]["bash"],
-                ".github/skills/tpm/scripts/shim_copilot.py", ""),
-    "claude": (".claude/settings.json", lambda h: h["PreToolUse"][-1]["hooks"][0]["command"],
-               ".claude/skills/tpm/scripts/shim_claude.py", ""),
-    "gemini": (".gemini/settings.json", lambda h: h["BeforeTool"][-1]["hooks"][0]["command"],
-               ".agents/skills/tpm/scripts/shim_gemini.py", "{}"),
-    "codex": (".codex/hooks.json", lambda h: h["PreToolUse"][-1]["hooks"][0]["command"],
-              ".agents/skills/tpm/scripts/shim_codex.py", ""),
-    "cursor": (".cursor/hooks.json", lambda h: h["preToolUse"][-1]["command"],
-               ".agents/skills/tpm/scripts/shim_cursor.py", '{"permission": "allow"}'),
-    "cursor-prompt": (".cursor/hooks.json", lambda h: h["beforeSubmitPrompt"][-1]["command"],
-                      ".agents/skills/tpm/scripts/shim_cursor.py", '{"continue": true}'),
+    "copilot": (
+        ".github/hooks/tpm.json",
+        lambda h: h["PreToolUse"][0]["bash"],
+        ".github/skills/tpm/scripts/shim_copilot.py",
+        "",
+    ),
+    "claude": (
+        ".claude/settings.json",
+        lambda h: h["PreToolUse"][-1]["hooks"][0]["command"],
+        ".claude/skills/tpm/scripts/shim_claude.py",
+        "",
+    ),
+    "gemini": (
+        ".gemini/settings.json",
+        lambda h: h["BeforeTool"][-1]["hooks"][0]["command"],
+        ".agents/skills/tpm/scripts/shim_gemini.py",
+        "{}",
+    ),
+    "codex": (
+        ".codex/hooks.json",
+        lambda h: h["PreToolUse"][-1]["hooks"][0]["command"],
+        ".agents/skills/tpm/scripts/shim_codex.py",
+        "",
+    ),
+    "cursor": (
+        ".cursor/hooks.json",
+        lambda h: h["preToolUse"][-1]["command"],
+        ".agents/skills/tpm/scripts/shim_cursor.py",
+        '{"permission": "allow"}',
+    ),
+    "cursor-prompt": (
+        ".cursor/hooks.json",
+        lambda h: h["beforeSubmitPrompt"][-1]["command"],
+        ".agents/skills/tpm/scripts/shim_cursor.py",
+        '{"continue": true}',
+    ),
 }
 
 
@@ -348,42 +418,48 @@ def test_hooks_fail_open_without_python3_or_shim():
     # Copilot denies on any non-zero exit; Claude Code, Gemini, Codex and Cursor block
     # on exit 2, which is what `python3 <missing file>` returns. So a missing python3
     # or a missing shim must exit 0 without a deny (and valid JSON where required).
-    payload = {"hook_event_name": "PreToolUse", "session_id": "s", "tool_name": "Write",
-               "tool_input": {}}
+    payload = {"hook_event_name": "PreToolUse", "session_id": "s", "tool_name": "Write", "tool_input": {}}
     for target, (hook_file, get_cmd, shim_file, expected) in FAIL_OPEN.items():
         repo = scratch_repo()
         install(repo, target.split("-")[0])
         cmd = get_cmd(json.load(open(os.path.join(repo, hook_file)))["hooks"])
         env = {"PATH": _path_without_python3(), "CLAUDE_PROJECT_DIR": repo}
-        out = subprocess.run(["/bin/bash", "-c", cmd], input=json.dumps(payload), cwd=repo,
-                             capture_output=True, text=True, env=env)
+        out = subprocess.run(
+            ["/bin/bash", "-c", cmd],
+            input=json.dumps(payload),
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
         assert out.returncode == 0 and out.stdout.strip() == expected, (target, out)
         assert "allowing" in out.stderr, target
         os.remove(os.path.join(repo, shim_file))
         env["PATH"] = os.environ["PATH"]
-        out = subprocess.run(["/bin/bash", "-c", cmd], input=json.dumps(payload), cwd=repo,
-                             capture_output=True, text=True, env=env)
+        out = subprocess.run(
+            ["/bin/bash", "-c", cmd],
+            input=json.dumps(payload),
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
         assert out.returncode == 0 and out.stdout.strip() == expected, (target, out)
 
 
 def test_claude_plugin_hook_fails_open_without_python3():
     hooks = json.load(open(os.path.join(ROOT, "adapters/claude/plugin-hooks.json")))["hooks"]
     cmd = hooks["PreToolUse"][0]["hooks"][0]["command"]
-    for env in ({"PATH": _path_without_python3(), "CLAUDE_PLUGIN_ROOT": ROOT},
-                {"PATH": os.environ["PATH"], "CLAUDE_PLUGIN_ROOT": tempfile.mkdtemp()}):
+    for env in (
+        {"PATH": _path_without_python3(), "CLAUDE_PLUGIN_ROOT": ROOT},
+        {"PATH": os.environ["PATH"], "CLAUDE_PLUGIN_ROOT": tempfile.mkdtemp()},
+    ):
         out = subprocess.run(["/bin/bash", "-c", cmd], input="{}", capture_output=True, text=True, env=env)
         assert out.returncode == 0 and "allowing" in out.stderr
 
 
 def test_install_rejects_non_repo():
-    proc = subprocess.run([INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()],
-                          capture_output=True, text=True)
+    proc = subprocess.run(
+        [INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()], capture_output=True, text=True
+    )
     assert proc.returncode == 1
-
-
-if __name__ == "__main__":
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
-    for t in tests:
-        t()
-        print(f"ok  {t.__name__}")
-    print(f"{len(tests)} passed")
