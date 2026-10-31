@@ -90,6 +90,17 @@ Round 2 broke the first four. Round 3 kept them, except that every build/with_sk
   one shared `/tmp/co-r3/clones/`, where any run could have listed or entered the others.
 - **Push disabled.** In each clone, `git remote set-url --push origin no-push` (or remove the remote), so a run can't
   publish anything, whatever the agent does.
+- **Setup committed in the clone, and the run diffed against it.** After the setup (the kit install for a skill
+  arm, the baseline setup for `without_skill`), commit everything in the clone: `git add -A && git commit -q
+  --no-verify --allow-empty -m "eval setup"`. Do this in every arm, so each arm has the same history shape.
+  Write that commit's SHA to `post_setup_commit` in the run directory. After the run:
+  - take `outputs/git_diff.patch` with `git diff --binary <post_setup_commit>`, which covers the run's commits and
+    its uncommitted changes;
+  - take `outputs/git_status.txt` with `git status --porcelain`, for the untracked files;
+  - write the SHA you diffed against to `outputs/git_diff_base`.
+
+  The diff and the untracked files are then exactly the run's own work, `.claude/` included. The scorer refuses a run
+  whose `git_diff_base` is missing or differs from `post_setup_commit`.
 - **Environment scrubbed.** Start each run from an allowlisted environment, not the runner's own. In particular,
   unset `CLAUDE_AUTO_BACKGROUND_TASKS`, so Agent calls run in the foreground as they would for a user, and set
   `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, so `claude -p` waits for any background task instead of stopping it
@@ -104,7 +115,8 @@ Round 2 broke the first four. Round 3 kept them, except that every build/with_sk
   limit, so the case needs its own limit.
 - **Isolation check after the run: commits and pushes, not names.** Before grading, list each clone's refs with
   `git for-each-ref --format='%(refname) %(objectname)'` and its new commits with `git rev-list --all
-  ^<pinned-commit>`. A run fails the check if:
+  ^<post_setup_commit>`. The setup commit is excluded: the same setup in two clones can produce the same SHA. A run
+  fails the check if:
   - any of its new commits is reachable from another clone's refs;
   - its push URL is not `no-push`;
   - its `origin` no longer shows the pinned commit;
@@ -113,10 +125,10 @@ Round 2 broke the first four. Round 3 kept them, except that every build/with_sk
   The same branch *name* in several clones is fine: each clone has its own refs, and the skill creates the same
   names every time (`orchestration`, `finish-bag`). Record the check's output with the round. A run that fails it is
   invalid.
-- **Layout.** Store runs as `<iteration>/<case>/<arm>/run-<n>/`, and invalid attempts under `<iteration>/_invalid/`,
-  which the scorer counts but doesn't score. A run directory holds `transcript.jsonl`, `final.md`, `timing.json`,
-  `outputs/` (with `git_diff.patch` and `git_status.txt`), the setup log, and the post-setup state
-  (`git_status_post_setup.txt`, plus a `<file>.post_setup` copy of each tracked file the install changed).
+- **Layout.** Store runs as `<iteration>/<case>/<arm>/run-<n>/`, and invalid attempts as
+  `<iteration>/_invalid/<case>/<arm>/<attempt>/`. A run directory holds `transcript.jsonl`, `final.md`,
+  `timing.json`, `post_setup_commit`, `outputs/` (with `git_diff.patch`, `git_diff_base` and `git_status.txt`) and
+  the setup log. A `run-<n>/` directory that lacks a transcript is reported as not scored, not skipped.
 
 ## Scoring and reporting
 
@@ -129,9 +141,12 @@ python3 evals/scripts/score.py recorded <iteration-dir> --set S   # totals of re
 
 `score` prints only totals per arm, summed over all of the arm's runs, and how many cases and runs it saw. It checks
 that each run's assertions match `evals/<case>/graders/`, and it reports agreement with any recorded
-`grading.json`. The kit install doesn't count as a change by the run: nothing under `.claude/` or `.cadence/`
-counts, and neither does a file that the install modified, if the run's diff of it adds only lines in its
-post-setup copy. Its intervals treat each assertion-run as independent, but they cluster by run and case, so report
+`grading.json`. Because the setup is committed, it treats the diff and the untracked files as the run's own work
+and sets aside only `outputs/`. Rounds 1–3 predate the setup commit. For them the scorer sets aside diff files under
+`.claude/`, round 1's own rule, and untracked files that `git_status_post_setup.txt` lists, round 3's uncommitted
+install, by exact path. An edit to an installed file goes unseen in those rounds. Runs it can't score are counted per
+arm, within `--set`, with the reason: under `_invalid/`, missing transcript, or diff not taken against the
+post-setup commit. Its intervals treat each assertion-run as independent, but they cluster by run and case, so report
 case-level rates next to them for any decision. The scorer's tests are in `evals/tests/` (`pytest` runs them).
 
 Report `main` against `change` on every set: deterministic and judgment pass rates, each with a Wilson 95% interval.

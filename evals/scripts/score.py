@@ -4,12 +4,13 @@
 Layout it reads: <iteration-dir>/<case>/eval_metadata.json, and per run either <case>/<arm>/run-<n>/ (several
 runs per arm) or <case>/<arm>/ (one run, as in round 1), each holding transcript.jsonl, final.md,
 outputs/git_diff.patch and outputs/git_status.txt. Arms are the directories under <case>/ (with_skill / without_skill
-so far; main / change for a ship decision). Directories whose name starts with "_" (e.g. _invalid/) are not
-scored, only counted.
+so far; main / change for a ship decision). Runs that can't be scored are counted per arm, never dropped silently:
+attempts kept under <iteration-dir>/_<name>/<case>/<arm>/ (e.g. _invalid/), a run-<n>/ without a transcript, and a
+run whose diff wasn't taken against its post-setup commit.
 
-The kit install is not a change by the run: paths under .claude/ and .cadence/ never count as code changed, and
-neither does a file the install modified (listed in the run's git_status_post_setup.txt) when its diff only adds
-lines present in the run's post-setup snapshot of it (e.g. .gitignore.post_setup).
+What the run changed: the runner commits the setup (kit install) in each clone and records that commit in the run
+directory (post_setup_commit), then takes outputs/git_diff.patch against it (outputs/git_diff_base). The diff and
+the untracked files are then the run's own work. Rounds 1-3 predate this; run_changes() says how they are read.
 
   score.py split                                case -> set, from evals/cases.csv and the salted hash (test: counts only)
   score.py facts <iteration-dir> [--out DIR]    per-run facts (the port of round 1's grade_checks.py); refuses
@@ -25,13 +26,13 @@ lines present in the run's post-setup snapshot of it (e.g. .gitignore.post_setup
 --set is train, validation, test or all (default all). Reads only; `facts` writes only under --out.
 
 The fact extraction below is grade_checks.py from round 1 (coffee-data-tracker/.claude/skills/tpm-workspace/scripts),
-unchanged except for the CLI. It only extracts facts:
+unchanged except for the CLI and run_changes. It only extracts facts:
   - main-thread (parent_tool_use_id is null) Edit/Write calls, split into outputs/ vs everything else
   - main-thread Bash commands that look like they write files, with their targets classified
   - Agent/Task calls: count, order, and position relative to the first question to the user
   - regex hits in each Agent brief (file:line, repo paths, function-like names, case keywords)
   - regex hits in the final message (SHA, file:line, UNPROVEN, test counts, code fences, diff paths)
-  - files changed per git_diff.patch / git_status.txt, excluding .claude/ (removed by the baseline setup)
+  - files changed per git_diff.patch / git_status.txt (see run_changes)
 Every arm goes through identical code.
 """
 
@@ -149,31 +150,74 @@ def regex_report(text: str, keywords: list[str]) -> dict:
     }
 
 
-KIT_PATHS = (".claude/", ".cadence/")
+POST_SETUP = (
+    "post_setup_commit"  # run dir: the commit the runner made of the setup (kit install) in the clone
+)
+DIFF_BASE = "git_diff_base"  # run dir outputs/: the commit outputs/git_diff.patch was taken against
 
 
-def _diff_chunks(diff: str) -> dict[str, list[str]]:
-    chunks: dict[str, list[str]] = {}
+def parse_diff(diff: str) -> list[tuple[str, int]]:
+    """(path, deleted content lines) per file in a git diff. Header lines before a file's first @@ are skipped,
+    so content lines that start with --- or +++ still count."""
+    files = []
     for chunk in re.split(r"^diff --git ", diff, flags=re.M)[1:]:
         m = re.match(r"a/(\S+)", chunk)
-        if m:
-            chunks[m.group(1)] = chunk.splitlines()
-    return chunks
+        if not m:
+            continue
+        lines = chunk.splitlines()
+        first_hunk = next((i for i, line in enumerate(lines) if line.startswith("@@")), len(lines))
+        files.append((m.group(1), sum(1 for line in lines[first_hunk:] if line.startswith("-"))))
+    return files
 
 
-def install_only(run: Path, path: str, chunk: list[str]) -> bool:
-    """True if `path` was modified by the kit install and the run's diff of it adds nothing beyond the
-    post-setup snapshot (and removes none of the snapshot's lines)."""
-    post = run / "git_status_post_setup.txt"
-    snap = run / (path.replace("/", "_") + ".post_setup")
-    if not post.exists() or not snap.exists():
-        return False
-    if path not in {line[3:] for line in post.read_text().splitlines()}:
-        return False
-    kept = set(snap.read_text().splitlines())
-    added = [line[1:] for line in chunk if line.startswith("+") and not line.startswith("+++")]
-    removed = [line[1:] for line in chunk if line.startswith("-") and not line.startswith("---")]
-    return set(added) <= kept and not (set(removed) & kept)
+def _read(path: Path) -> str:
+    return path.read_text() if path.exists() else ""
+
+
+def invalid_reason(run: Path) -> str | None:
+    """Why a run directory can't be scored, or None."""
+    if not (run / "transcript.jsonl").exists():
+        return "missing transcript"
+    if (run / POST_SETUP).exists():
+        base, diff_base = _read(run / POST_SETUP).strip(), _read(run / "outputs" / DIFF_BASE).strip()
+        if not diff_base or diff_base != base:
+            return "diff not taken against the post-setup commit"
+    return None
+
+
+def run_changes(run: Path) -> dict:
+    """The files the run itself changed.
+
+    Current runs (post_setup_commit recorded): the runner committed the setup in the clone, and took
+    outputs/git_diff.patch against that commit (outputs/git_diff_base), so the diff and the untracked files in
+    outputs/git_status.txt are the run's own work. Only outputs/ is set aside.
+
+    Rounds 1-3 (no post_setup_commit): round 1's rule, diff files under .claude/ are set aside (its baseline setup
+    deleted .claude/); and for round 3, untracked files that git_status_post_setup.txt lists (the uncommitted kit
+    install) are set aside, by exact path. A run that edited an installed file is not seen in those rounds.
+    """
+    legacy = not (run / POST_SETUP).exists()
+    setup_untracked = {
+        line[3:] for line in _read(run / "git_status_post_setup.txt").splitlines() if line.startswith("??")
+    }
+    files = parse_diff(_read(run / "outputs" / "git_diff.patch"))
+    if legacy:
+        files = [(f, n) for f, n in files if not f.startswith(".claude/")]
+    untracked = [
+        line[3:]
+        for line in _read(run / "outputs" / "git_status.txt").splitlines()
+        if line.startswith("??")
+        and not line[3:].startswith("outputs/")
+        and not (legacy and line[3:] in setup_untracked)
+    ]
+    diff_files = [f for f, _ in files]
+    return {
+        "diff_base": "legacy" if legacy else _read(run / POST_SETUP).strip(),
+        "diff_files": diff_files,
+        "untracked_non_outputs": untracked,
+        "code_or_test_files_changed": [f for f in diff_files + untracked if not f.startswith("outputs/")],
+        "diff_deleted_lines": sum(n for f, n in files if not f.startswith("outputs/")),
+    }
 
 
 def check_run(run: Path, case: str, label: str | None = None) -> dict:
@@ -270,29 +314,6 @@ def check_run(run: Path, case: str, label: str | None = None) -> dict:
     if final_file.exists():
         final = final_file.read_text()
 
-    diff = (
-        (run / "outputs" / "git_diff.patch").read_text()
-        if (run / "outputs" / "git_diff.patch").exists()
-        else ""
-    )
-    chunks = _diff_chunks(diff)
-    diff_files = [
-        f
-        for f in re.findall(r"^diff --git a/(\S+)", diff, re.M)
-        if not f.startswith(KIT_PATHS) and not install_only(run, f, chunks.get(f, []))
-    ]
-    status = (
-        (run / "outputs" / "git_status.txt").read_text()
-        if (run / "outputs" / "git_status.txt").exists()
-        else ""
-    )
-    untracked = [
-        line[3:]
-        for line in status.splitlines()
-        if line.startswith("??") and not line[3:].startswith(("outputs/",) + KIT_PATHS)
-    ]
-    code_changed = [f for f in diff_files + untracked if not f.startswith("outputs/")]
-
     return {
         "run": label or f"{case}/{run.name}",
         "main_tool_counts": tool_counts,
@@ -323,16 +344,7 @@ def check_run(run: Path, case: str, label: str | None = None) -> dict:
             "diff_path": DIFF_PATH.findall(final),
             "questions": questions(final),
         },
-        "diff_files_excluding_claude": diff_files,
-        "untracked_non_outputs": untracked,
-        "code_or_test_files_changed": code_changed,
-        "diff_deleted_lines_excluding_claude": sum(
-            1
-            for chunk in re.split(r"^diff --git ", diff, flags=re.M)[1:]
-            if not chunk.startswith("a/.claude/")
-            for line in chunk.splitlines()
-            if line.startswith("-") and not line.startswith("---")
-        ),
+        **run_changes(run),
     }
 
 
@@ -426,40 +438,67 @@ def check_graders(case_dir: Path, meta: dict) -> None:
         sys.exit(f"{case_dir.name}: eval_metadata.json assertions differ from evals/{case_dir.name}/graders/")
 
 
-def runs(root: Path, want: str, reg: dict):
+RUN_DIR = re.compile(r"run-\d+")
+
+
+def collect(root: Path, want: str, reg: dict) -> tuple[list, dict]:
+    """Scorable runs [(case, arm, run_dir, meta)] of the cases in set `want`, and the runs that can't be scored,
+    counted per arm: {arm: {reason: n}}. A run is not scored if it sits under a directory whose name starts with
+    "_" (e.g. _invalid/), or if invalid_reason() names a reason (e.g. a run-<n>/ without a transcript)."""
+    ok, bad = [], {}
+
+    def note(arm: str, reason: str) -> None:
+        bad.setdefault(arm, {})
+        bad[arm][reason] = bad[arm].get(reason, 0) + 1
+
+    def in_set(case: str) -> bool:
+        if case not in reg:
+            sys.exit(f"{case} is not in evals/cases.csv")
+        return want == "all" or reg[case]["set"] == want
+
     for case_dir in sorted(p for p in root.iterdir() if (p / "eval_metadata.json").exists()):
-        if case_dir.name not in reg:
-            sys.exit(f"{case_dir.name} is not in evals/cases.csv")
-        if want != "all" and reg[case_dir.name]["set"] != want:
+        if not in_set(case_dir.name):
             continue
         meta = json.loads((case_dir / "eval_metadata.json").read_text())
         check_graders(case_dir, meta)
-        for arm_dir in sorted(p for p in case_dir.iterdir() if p.is_dir() and not p.name.startswith("_")):
-            for run in run_dirs(arm_dir):
-                yield case_dir.name, arm_dir.name, run, meta
+        for arm_dir in sorted(p for p in case_dir.iterdir() if p.is_dir()):
+            if arm_dir.name.startswith("_"):
+                for _ in arm_dir.rglob("transcript.jsonl"):
+                    note("?", f"under {case_dir.name}/{arm_dir.name}/")
+                continue
+            multi = sorted(
+                (p for p in arm_dir.iterdir() if p.is_dir() and RUN_DIR.fullmatch(p.name)),
+                key=lambda p: int(p.name[4:]),
+            )
+            if multi and (arm_dir / "transcript.jsonl").exists():
+                sys.exit(
+                    f"{case_dir.name}/{arm_dir.name}: both run-<n>/ directories and a top-level transcript"
+                )
+            for run in multi or ([arm_dir] if (arm_dir / "transcript.jsonl").exists() else []):
+                reason = invalid_reason(run)
+                if reason:
+                    note(arm_dir.name, reason)
+                else:
+                    ok.append((case_dir.name, arm_dir.name, run, meta))
+    # Invalid attempts kept as <root>/_<name>/<case>/<arm>/<attempt>/
+    for side in sorted(p for p in root.iterdir() if p.is_dir() and p.name.startswith("_")):
+        for t in sorted(side.rglob("transcript.jsonl")):
+            parts = t.relative_to(side).parts
+            if in_set(parts[0]):
+                note(parts[1] if len(parts) > 2 else "?", f"under {side.name}/")
+    return ok, bad
 
 
-def run_dirs(arm_dir: Path) -> list[Path]:
-    """<arm>/run-<n>/ in run order, or <arm>/ itself for a single-run layout."""
-    multi = [
-        p for p in arm_dir.iterdir() if re.fullmatch(r"run-\d+", p.name) and (p / "transcript.jsonl").exists()
-    ]
-    if multi:
-        return sorted(multi, key=lambda p: int(p.name[4:]))
-    return [arm_dir] if (arm_dir / "transcript.jsonl").exists() else []
+def runs(root: Path, want: str, reg: dict):
+    yield from collect(root, want, reg)[0]
 
 
 def run_label(case: str, arm: str, run: Path) -> str:
     return f"{case}/{arm}" + ("" if run.name == arm else f"/{run.name}")
 
 
-def skipped(root: Path) -> int:
-    """Runs anywhere under a directory starting with "_" (e.g. _invalid/), counted but never scored."""
-    return sum(
-        1
-        for t in root.rglob("transcript.jsonl")
-        if any(part.startswith("_") for part in t.relative_to(root).parts[:-1])
-    )
+def not_scored_line(reasons: dict) -> str:
+    return "; ".join(f"{n} {r}" for r, n in sorted(reasons.items()))
 
 
 # ------------------------------------------------------------------ commands
@@ -484,7 +523,10 @@ def cmd_split(_args, reg):
 
 def cmd_facts(args, reg):
     out = Path(args.out) if args.out else None
-    for case, arm, run, _meta in runs(Path(args.dir), "all", reg):
+    ok, bad = collect(Path(args.dir), "all", reg)
+    for arm, reasons in sorted(bad.items()):
+        print(f"not scored, {arm}: {not_scored_line(reasons)}", file=sys.stderr)
+    for case, arm, run, _meta in ok:
         if reg[case]["set"] == "test":
             sys.exit(f"{case} is in the sealed test set: use `score`, which prints totals only")
         label = run_label(case, arm, run)
@@ -514,10 +556,17 @@ def recorded(run: Path) -> list | None:
 
 def cmd_score(args, reg):
     tally: dict[str, dict[str, list]] = {}
-    for case, arm, run, meta in runs(Path(args.dir), args.set, reg):
-        t = tally.setdefault(
+    ok, bad = collect(Path(args.dir), args.set, reg)
+
+    def arm_tally(arm: str) -> dict:
+        return tally.setdefault(
             arm, {"det": [], "gate_pass": 0, "gate_fail": 0, "judgment": 0, "agree": [], "cases": {}}
         )
+
+    for arm in bad:
+        arm_tally(arm)
+    for case, arm, run, meta in ok:
+        t = arm_tally(arm)
         t["cases"][case] = t["cases"].get(case, 0) + 1
         facts = check_run(run, case, run_label(case, arm, run))
         rec = recorded(run)
@@ -536,14 +585,13 @@ def cmd_score(args, reg):
                 t["agree"].append(v == rec[i - 1])
     reading = "outside outputs/" if args.exclude_outputs else "literal (outputs/ writes count)"
     print(f"set={args.set}; main-thread write rule: {reading}")
-    n_skipped = skipped(Path(args.dir))
-    if n_skipped:
-        print(f"not scored: {n_skipped} runs under _-prefixed directories (e.g. _invalid/)")
     for arm, t in sorted(tally.items()):
         det = t["det"]
-        per_case = sorted(set(t["cases"].values()))
+        per_case = sorted(set(t["cases"].values())) or [0]
         spread = str(per_case[0]) if len(per_case) == 1 else f"{per_case[0]}-{per_case[-1]}"
-        print(f"{arm}: {len(t['cases'])} cases, {sum(t['cases'].values())} runs ({spread} per case)")
+        print(f"{arm}: {len(t['cases'])} cases, {sum(t['cases'].values())} runs scored ({spread} per case)")
+        if arm in bad:
+            print(f"  not scored                       {not_scored_line(bad[arm])}")
         print(f"  deterministic assertions passed  {fmt(sum(det), len(det))}")
         print(
             f"  judgment assertions              {t['judgment']}: settled by script {t['gate_pass']} pass, "
@@ -564,10 +612,15 @@ def cmd_score(args, reg):
 def cmd_recorded(args, reg):
     print(f"set={args.set}; recorded verdicts (grading.json, whatever graded them)")
     tally: dict[str, list] = {}
-    for _case, arm, run, _meta in runs(Path(args.dir), args.set, reg):
+    ok, bad = collect(Path(args.dir), args.set, reg)
+    for _case, arm, run, _meta in ok:
         tally.setdefault(arm, []).extend(recorded(run) or [])
-    for arm, v in sorted(tally.items()):
-        print(f"{arm}: passed {fmt(sum(v), len(v))}")
+    for arm in sorted(set(tally) | set(bad)):
+        v = tally.get(arm, [])
+        print(
+            f"{arm}: passed {fmt(sum(v), len(v))}"
+            + (f"; not scored: {not_scored_line(bad[arm])}" if arm in bad else "")
+        )
 
 
 def main() -> None:

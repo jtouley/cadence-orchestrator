@@ -61,11 +61,11 @@ def make_case(root: Path, case: str = CASE) -> Path:
     return d
 
 
-def run_score(root: Path, **kw) -> str:
-    args = argparse.Namespace(dir=str(root), set="all", exclude_outputs=False, **kw)
+def run_score(root: Path, reg: dict | None = None, **kw) -> str:
+    args = argparse.Namespace(**{"dir": str(root), "set": "all", "exclude_outputs": False, **kw})
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
-        score.cmd_score(args, score.registry())
+        score.cmd_score(args, reg or score.registry())
     return out.getvalue()
 
 
@@ -81,10 +81,11 @@ def test_run_n_layout_totals_across_runs_per_arm():
         make_run(case / "with_skill" / "run-10")
         make_run(case / "without_skill" / "run-1", edit="app/views.py")
         out = run_score(root)
-        assert "with_skill: 1 cases, 3 runs (3 per case)" in out, out
+        assert "with_skill: 1 cases, 3 runs scored (3 per case)" in out, out
         assert "deterministic assertions passed  2/3 = 67%" in out, out
-        assert "without_skill: 1 cases, 1 runs (1 per case)" in out, out
+        assert "without_skill: 1 cases, 1 runs scored (1 per case)" in out, out
         assert "deterministic assertions passed  0/1 = 0%" in out, out
+        assert "not scored" not in out, out
         labels = [score.run_label(c, a, r) for c, a, r, _ in score.runs(root, "all", score.registry())]
         assert labels == [
             f"{CASE}/with_skill/run-1",
@@ -101,77 +102,195 @@ def test_single_run_layout_still_read():
         make_run(case / "with_skill")
         (case / "with_skill" / "session_log").mkdir()  # other subdirectories are not runs
         out = run_score(root)
-        assert "with_skill: 1 cases, 1 runs (1 per case)" in out, out
+        assert "with_skill: 1 cases, 1 runs scored (1 per case)" in out, out
         assert score.run_label(CASE, "with_skill", case / "with_skill") == f"{CASE}/with_skill"
 
 
-def test_underscore_dirs_counted_not_scored():
+def test_both_layouts_in_one_arm_is_an_error():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         case = make_case(root)
         make_run(case / "with_skill" / "run-1")
-        make_run(root / "_invalid" / CASE / "with_skill" / "run-1-attempt-1", edit="app/views.py")
+        (case / "with_skill" / "transcript.jsonl").write_text(_transcript(str(case)))
+        try:
+            run_score(root)
+        except SystemExit as e:
+            assert "both run-<n>/" in str(e), e
+        else:
+            raise AssertionError("expected SystemExit")
+
+
+# ------------------------------------------------------------------ runs that can't be scored (findings 5, 7)
+
+
+def test_invalid_attempts_counted_per_arm():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        case = make_case(root)
+        make_run(case / "with_skill" / "run-1")
+        make_run(case / "without_skill" / "run-1")
+        for attempt in ("run-1-attempt-1", "run-1-attempt-2"):
+            make_run(root / "_invalid" / CASE / "with_skill" / attempt, edit="app/views.py")
+        make_run(root / "_invalid" / CASE / "without_skill" / "run-2-attempt-1")
+        out = run_score(root)
+        with_part, without_part = out.split("without_skill:")
+        assert "not scored                       2 under _invalid/" in with_part, out
+        assert "not scored                       1 under _invalid/" in without_part, out
+        assert "with_skill: 1 cases, 1 runs scored" in out and "1/1 = 100%" in with_part, out
+
+
+def test_arm_with_only_invalid_runs_is_still_reported():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        case = make_case(root)
+        make_run(case / "without_skill" / "run-1")
+        (case / "with_skill").mkdir()
+        make_run(root / "_invalid" / CASE / "with_skill" / "run-1-attempt-1")
+        out = run_score(root)
+        assert "with_skill: 0 cases, 0 runs scored" in out, out
+        assert "1 under _invalid/" in out, out
+
+
+def test_not_scored_respects_set():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        case = make_case(root)
+        make_run(case / "with_skill" / "run-1")
+        make_run(root / "_invalid" / CASE / "with_skill" / "run-1-attempt-1")
+        reg = score.registry()
+        assert reg[CASE]["set"] == "train"
+        assert "not scored" not in run_score(root, set="validation")
+        assert "1 under _invalid/" in run_score(root, set="train")
+        reg[CASE]["set"] = "validation"
+        assert "1 under _invalid/" in run_score(root, reg=reg, set="validation")
+        assert "not scored" not in run_score(root, reg=reg, set="train")
+
+
+def test_run_dir_without_transcript_is_counted_not_dropped():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        case = make_case(root)
+        make_run(case / "with_skill" / "run-1")
+        (case / "with_skill" / "run-2" / "outputs").mkdir(parents=True)  # crashed before the transcript
+        out = run_score(root)
+        assert "with_skill: 1 cases, 1 runs scored (1 per case)" in out, out
+        assert "not scored                       1 missing transcript" in out, out
+
+
+def test_underscore_dir_inside_a_case_is_counted():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        case = make_case(root)
+        make_run(case / "with_skill" / "run-1")
         make_run(case / "_scratch" / "run-1", edit="app/views.py")
         out = run_score(root)
-        assert "not scored: 2 runs" in out, out
-        assert "with_skill: 1 cases, 1 runs" in out and "1/1 = 100%" in out, out
-        assert "_scratch" not in out and "_invalid:" not in out, out
+        assert "?: 0 cases, 0 runs scored" in out and f"1 under {CASE}/_scratch/" in out, out
+        assert "1/1 = 100%" in out, out
 
 
-# ------------------------------------------------------------------ kit install is not a code change
+# ------------------------------------------------------------------ what the run changed (findings 1-4, 6, 8)
 
+APP_DIFF = """diff --git a/app/views.py b/app/views.py
+index 1111111..2222222 100644
+--- a/app/views.py
++++ b/app/views.py
+@@ -1,3 +1,3 @@
+ a = 1
+----- a markdown rule or a SQL comment, deleted
++b = 2
+"""
+CLAUDE_DIFF = """diff --git a/.claude/skills/tpm/SKILL.md b/.claude/skills/tpm/SKILL.md
+--- a/.claude/skills/tpm/SKILL.md
++++ b/.claude/skills/tpm/SKILL.md
+@@ -1 +1 @@
+-old rule
++new rule
+"""
 GITIGNORE_DIFF = """diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -1,2 +1,4 @@
+@@ -1,3 +1,2 @@
  .venv/
-+# tpm off switch (user-local)
-+.cadence/tpm.off
+-.cadence/tpm.off
 """
-KIT_STATUS = """ M .gitignore
-?? .claude/settings.json
-?? .claude/skills/tpm/SKILL.md
-?? .cadence/tpm.off
-?? outputs/01-message.md
-"""
-POST_SETUP = {
-    "git_status_post_setup.txt": " M .gitignore\n?? .claude/settings.json\n?? .claude/skills/tpm/SKILL.md\n",
-    ".gitignore.post_setup": ".venv/\n# tpm off switch (user-local)\n.cadence/tpm.off\n",
-}
+SHA = "0123456789abcdef0123456789abcdef01234567"
 
 
-def _changed(run: Path) -> list[str]:
-    return score.check_run(run, CASE)["code_or_test_files_changed"]
+def _post_setup(run: Path, base: str | None = SHA) -> None:
+    (run / "post_setup_commit").write_text(SHA + "\n")
+    if base:
+        (run / "outputs" / "git_diff_base").write_text(base + "\n")
 
 
-def test_kit_install_not_counted_as_code_changed():
+def _changes(run: Path) -> dict:
+    return score.check_run(run, CASE)
+
+
+def test_post_setup_commit_diff_is_the_runs_own_work():
+    """With the install committed, every file in the diff and every untracked file is the run's,
+    .claude/ and .cadence/ included: there is no special case left to hide an edit."""
     with tempfile.TemporaryDirectory() as tmp:
         run = Path(tmp) / "r"
-        make_run(run, diff=GITIGNORE_DIFF, status=KIT_STATUS, files=POST_SETUP)
-        assert _changed(run) == []
-
-
-def test_real_changes_still_counted_next_to_the_install():
-    with tempfile.TemporaryDirectory() as tmp:
-        run = Path(tmp) / "r"
-        app = "diff --git a/app/views.py b/app/views.py\n--- a/app/views.py\n+++ b/app/views.py\n+x = 1\n"
         make_run(
-            run, diff=GITIGNORE_DIFF + app, status=KIT_STATUS + "?? tests/test_new.py\n", files=POST_SETUP
+            run,
+            diff=APP_DIFF + CLAUDE_DIFF + GITIGNORE_DIFF,
+            status=" M .gitignore\n?? .cadence/tpm.off\n?? outputs/01-message.md\n?? tests/test_new.py\n",
         )
-        assert _changed(run) == ["app/views.py", "tests/test_new.py"]
+        _post_setup(run)
+        f = _changes(run)
+        assert f["diff_base"] == SHA
+        assert f["code_or_test_files_changed"] == [
+            "app/views.py",
+            ".claude/skills/tpm/SKILL.md",
+            ".gitignore",
+            ".cadence/tpm.off",
+            "tests/test_new.py",
+        ], f["code_or_test_files_changed"]
+        # 1 + 1 + 1: the content line starting with "----" counts, the "--- a/..." headers don't
+        assert f["diff_deleted_lines"] == 3, f["diff_deleted_lines"]
 
 
-def test_gitignore_counts_when_the_run_changed_it_beyond_the_install():
-    extra = GITIGNORE_DIFF + "+build/\n"
-    removed = GITIGNORE_DIFF.replace(" .venv/", "-.venv/")
+def test_post_setup_commit_with_no_run_changes():
     with tempfile.TemporaryDirectory() as tmp:
-        for i, diff in enumerate((extra, removed)):
-            run = Path(tmp) / f"r{i}"
-            make_run(run, diff=diff, status=KIT_STATUS, files=POST_SETUP)
-            assert _changed(run) == [".gitignore"], diff
-        run = Path(tmp) / "no-snapshot"  # without the post-setup record nothing is excused
-        make_run(run, diff=GITIGNORE_DIFF, status=KIT_STATUS)
-        assert _changed(run) == [".gitignore"]
+        run = Path(tmp) / "r"
+        make_run(run, status="?? outputs/01-message.md\n")
+        _post_setup(run)
+        assert _changes(run)["code_or_test_files_changed"] == []
+
+
+def test_diff_not_against_post_setup_commit_is_not_scored():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        case = make_case(root)
+        for n, base in ((1, SHA), (2, None), (3, "f" * 40)):
+            run = case / "with_skill" / f"run-{n}"
+            make_run(run)
+            _post_setup(run, base)
+        out = run_score(root)
+        assert "with_skill: 1 cases, 1 runs scored" in out, out
+        assert "2 diff not taken against the post-setup commit" in out, out
+
+
+def test_legacy_rounds_read_as_before():
+    """Rounds 1-3 have no post_setup_commit: diff files under .claude/ are set aside (round 1), and so are
+    untracked files listed in git_status_post_setup.txt (round 3's uncommitted install), by exact path only."""
+    with tempfile.TemporaryDirectory() as tmp:
+        run = Path(tmp) / "r"
+        make_run(
+            run,
+            diff=CLAUDE_DIFF + GITIGNORE_DIFF,
+            status="?? .claude/settings.json\n?? .claude/skills/tpm/extra.md\n?? outputs/m.md\n",
+            files={"git_status_post_setup.txt": " M .gitignore\n?? .claude/settings.json\n"},
+        )
+        f = _changes(run)
+        assert f["diff_base"] == "legacy"
+        assert f["code_or_test_files_changed"] == [".gitignore", ".claude/skills/tpm/extra.md"], f
+        assert f["diff_deleted_lines"] == 1, f
+
+
+def test_parse_diff_skips_only_headers():
+    files = score.parse_diff(APP_DIFF + GITIGNORE_DIFF)
+    assert files == [("app/views.py", 1), (".gitignore", 1)], files
 
 
 # ------------------------------------------------------------------ statistics
