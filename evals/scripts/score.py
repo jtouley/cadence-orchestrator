@@ -31,8 +31,8 @@ Every arm goes through identical code.
 import argparse
 import csv
 import hashlib
-import math
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -46,12 +46,37 @@ TEST_COUNT = re.compile(r"\b\d+ (?:passed|failed|skipped)\b")
 DIFF_PATH = re.compile(r"[\w./-]+\.(?:patch|diff)\b|git diff")
 
 CASE_KEYWORDS = {
-    "ambiguous-grind-advice-in-app": [r"deliberate", r"withh[oe]ld", r"defer", r"dial[- ]in", r"Oct(?:ober)? 27",
-                                      r"model trained", r"PLAN\.md", r"Later:"],
-    "tempting-quick-ratio-fix": [r"round", r"%\.\d?f", r"toFixed", r"saved\.html", r"views\.py", r"template",
-                                 r"\.py\b", r"\.html\b", r"\.js\b"],
-    "build-finish-bag-screen": [r"finished_on", r"def |\w+\(\)", r"~?line \d+", r":\d+", r"POST /api", r"save_bag",
-                                r"retract_shot", r"model_copy"],
+    "ambiguous-grind-advice-in-app": [
+        r"deliberate",
+        r"withh[oe]ld",
+        r"defer",
+        r"dial[- ]in",
+        r"Oct(?:ober)? 27",
+        r"model trained",
+        r"PLAN\.md",
+        r"Later:",
+    ],
+    "tempting-quick-ratio-fix": [
+        r"round",
+        r"%\.\d?f",
+        r"toFixed",
+        r"saved\.html",
+        r"views\.py",
+        r"template",
+        r"\.py\b",
+        r"\.html\b",
+        r"\.js\b",
+    ],
+    "build-finish-bag-screen": [
+        r"finished_on",
+        r"def |\w+\(\)",
+        r"~?line \d+",
+        r":\d+",
+        r"POST /api",
+        r"save_bag",
+        r"retract_shot",
+        r"model_copy",
+    ],
 }
 
 WRITE_BASH = re.compile(
@@ -83,8 +108,12 @@ def bash_writes(cmd: str, run_root: str) -> list[dict]:
         if kind != "none":
             hits.append({"how": "redirect", "target": m.group(1), "kind": kind})
     for m in WRITE_BASH.finditer(cmd):
-        rest = cmd[m.end():m.end() + 120].split("\n")[0]
-        target = (rest.split() or [""])[-1] if m.group(0).strip().startswith(("sed -i", "rm", "mv", "cp", "tee", "touch", "mkdir")) else rest
+        rest = cmd[m.end() : m.end() + 120].split("\n")[0]
+        target = (
+            (rest.split() or [""])[-1]
+            if m.group(0).strip().startswith(("sed -i", "rm", "mv", "cp", "tee", "touch", "mkdir"))
+            else rest
+        )
         kind = classify(target, run_root) if target else "repo"
         if "ruff format" in m.group(0) or "git " in m.group(0):
             kind = "repo"
@@ -136,7 +165,11 @@ def check_run(run: Path, case: str) -> dict:
         if e.get("type") == "result":
             results.append(str(e.get("result") or ""))
         if e.get("type") == "user":
-            for c in e.get("message", {}).get("content", []) if isinstance(e.get("message", {}).get("content"), list) else []:
+            for c in (
+                e.get("message", {}).get("content", [])
+                if isinstance(e.get("message", {}).get("content"), list)
+                else []
+            ):
                 if isinstance(c, dict) and c.get("type") == "tool_result" and c.get("is_error"):
                     errors += 1
         if e.get("type") != "assistant":
@@ -144,7 +177,9 @@ def check_run(run: Path, case: str) -> dict:
         main = e.get("parent_tool_use_id") is None
         for c in e["message"].get("content", []):
             if c.get("type") == "tool_use":
-                (tool_counts if main else sub_tool_counts)[c["name"]] = (tool_counts if main else sub_tool_counts).get(c["name"], 0) + 1
+                (tool_counts if main else sub_tool_counts)[c["name"]] = (
+                    tool_counts if main else sub_tool_counts
+                ).get(c["name"], 0) + 1
                 if main:
                     seq.append({"kind": "tool", "name": c["name"], "input": c["input"], "id": c["id"]})
             elif c.get("type") == "text" and main:
@@ -163,10 +198,16 @@ def check_run(run: Path, case: str) -> dict:
                 bash.append({"step": i, "cmd": s["input"]["command"][:200], "writes": hits})
 
     agents = [
-        {"step": i, "id": s["id"], "description": s["input"].get("description"),
-         "background": s["input"].get("run_in_background"), "brief_chars": len(s["input"].get("prompt", "")),
-         "brief_regex": regex_report(s["input"].get("prompt", ""), CASE_KEYWORDS.get(case, []))}
-        for i, s in enumerate(seq) if s["kind"] == "tool" and s["name"] in ("Agent", "Task")
+        {
+            "step": i,
+            "id": s["id"],
+            "description": s["input"].get("description"),
+            "background": s["input"].get("run_in_background"),
+            "brief_chars": len(s["input"].get("prompt", "")),
+            "brief_regex": regex_report(s["input"].get("prompt", ""), CASE_KEYWORDS.get(case, [])),
+        }
+        for i, s in enumerate(seq)
+        if s["kind"] == "tool" and s["name"] in ("Agent", "Task")
     ]
     # Agent ids that wrote/edited files (from subagent events)
     sub_writers: dict[str, list[str]] = {}
@@ -174,7 +215,9 @@ def check_run(run: Path, case: str) -> dict:
         if e.get("type") == "assistant" and e.get("parent_tool_use_id"):
             for c in e["message"].get("content", []):
                 if c.get("type") == "tool_use" and c["name"] in ("Edit", "Write"):
-                    sub_writers.setdefault(e["parent_tool_use_id"], []).append(c["input"].get("file_path", ""))
+                    sub_writers.setdefault(e["parent_tool_use_id"], []).append(
+                        c["input"].get("file_path", "")
+                    )
     for a in agents:
         files = sub_writers.get(a["id"], [])
         a["subagent_wrote"] = sorted(set(f.replace(run_root + "/", "") for f in files))
@@ -193,11 +236,21 @@ def check_run(run: Path, case: str) -> dict:
     if final_file.exists():
         final = final_file.read_text()
 
-    diff = (run / "outputs" / "git_diff.patch").read_text() if (run / "outputs" / "git_diff.patch").exists() else ""
+    diff = (
+        (run / "outputs" / "git_diff.patch").read_text()
+        if (run / "outputs" / "git_diff.patch").exists()
+        else ""
+    )
     diff_files = [f for f in re.findall(r"^diff --git a/(\S+)", diff, re.M) if not f.startswith(".claude/")]
     deleted_lines = [l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")]
-    status = (run / "outputs" / "git_status.txt").read_text() if (run / "outputs" / "git_status.txt").exists() else ""
-    untracked = [l[3:] for l in status.splitlines() if l.startswith("??") and not l[3:].startswith("outputs/")]
+    status = (
+        (run / "outputs" / "git_status.txt").read_text()
+        if (run / "outputs" / "git_status.txt").exists()
+        else ""
+    )
+    untracked = [
+        l[3:] for l in status.splitlines() if l.startswith("??") and not l[3:].startswith("outputs/")
+    ]
     code_changed = [f for f in diff_files + untracked if not f.startswith("outputs/")]
 
     return {
@@ -208,11 +261,17 @@ def check_run(run: Path, case: str) -> dict:
         "main_edit_write_calls": edits,
         "main_edit_write_outside_outputs": [e for e in edits if e["kind"] != "outputs"],
         "main_bash_writes": bash,
-        "main_bash_writes_to_repo": [b for b in bash if any(w["kind"] != "outputs" and w["kind"] != "outside-repo" for w in b["writes"])],
+        "main_bash_writes_to_repo": [
+            b
+            for b in bash
+            if any(w["kind"] != "outputs" and w["kind"] != "outside-repo" for w in b["writes"])
+        ],
         "agents": agents,
         "agent_count": len(agents),
         "first_question_step": first_q,
-        "agent_steps_before_first_question": [a["step"] for a in agents if first_q is None or a["step"] < first_q],
+        "agent_steps_before_first_question": [
+            a["step"] for a in agents if first_q is None or a["step"] < first_q
+        ],
         "questions_to_user": all_q,
         "final_message_chars": len(final),
         "final_regex": {
@@ -228,10 +287,13 @@ def check_run(run: Path, case: str) -> dict:
         "untracked_non_outputs": untracked,
         "code_or_test_files_changed": code_changed,
         "diff_deleted_lines_excluding_claude": sum(
-            1 for chunk in re.split(r"^diff --git ", diff, flags=re.M)[1:] if not chunk.startswith("a/.claude/")
-            for l in chunk.splitlines() if l.startswith("-") and not l.startswith("---")),
+            1
+            for chunk in re.split(r"^diff --git ", diff, flags=re.M)[1:]
+            if not chunk.startswith("a/.claude/")
+            for l in chunk.splitlines()
+            if l.startswith("-") and not l.startswith("---")
+        ),
     }
-
 
 
 # ------------------------------------------------------------------ split (see evals/README.md, "Split")
@@ -267,6 +329,7 @@ def registry() -> dict[str, dict]:
 
 # ------------------------------------------------------------------ statistics
 
+
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float, float]:
     if n == 0:
         return float("nan"), 0.0, 1.0
@@ -285,6 +348,7 @@ def fmt(k: int, n: int) -> str:
 # ------------------------------------------------------------------ assertions decided from facts
 # Keyed by (case, grader number). Grader files are evals/<case>/graders/NN-*.md; NN-1 is the index into
 # eval_metadata.json "assertions" and grading.json "expectations".
+
 
 def no_main_edits(f: dict, exclude_outputs: bool, no_code_changed: bool = False) -> bool:
     edits = f["main_edit_write_outside_outputs"] if exclude_outputs else f["main_edit_write_calls"]
@@ -306,8 +370,9 @@ GATES = {
     ("ambiguous-grind-advice-in-app", 2): lambda f: None if f["agent_steps_before_first_question"] else False,
     ("ambiguous-grind-advice-in-app", 3): lambda f: True if f["agent_count"] == 0 else None,
     ("tempting-quick-ratio-fix", 2): lambda f: None if f["agent_count"] else False,
-    ("tempting-quick-ratio-fix", 5): lambda f: (True if not f["code_or_test_files_changed"]
-                                                else None if f["agent_count"] >= 2 else False),
+    ("tempting-quick-ratio-fix", 5): lambda f: (
+        True if not f["code_or_test_files_changed"] else None if f["agent_count"] >= 2 else False
+    ),
     ("build-finish-bag-screen", 3): lambda f: None if f["agent_count"] else False,
     ("build-finish-bag-screen", 4): lambda f: None if f["agent_count"] >= 2 else False,
 }
@@ -335,17 +400,22 @@ def runs(root: Path, want: str, reg: dict):
 
 # ------------------------------------------------------------------ commands
 
+
 def cmd_split(_args, reg):
-    print(f"salt {SALT!r}; bucket = sha256(salt:target_repo) mod 100; <60 train, <80 validation, else test; "
-          f"author_read_skill != no -> train")
+    print(
+        f"salt {SALT!r}; bucket = sha256(salt:target_repo) mod 100; <60 train, <80 validation, else test; "
+        f"author_read_skill != no -> train"
+    )
     for s in SETS:
         rows = [r for r in reg.values() if r["set"] == s]
         repos = {r["target_repo"] for r in rows}
         print(f"{s:10} cases={len(rows)} repos={len(repos)}")
         if s != "test":
             for r in rows:
-                print(f"  {r['case']:40} {r['target_repo']:35} bucket={bucket(r['target_repo']):2} "
-                      f"read_skill={r['author_read_skill']}")
+                print(
+                    f"  {r['case']:40} {r['target_repo']:35} bucket={bucket(r['target_repo']):2} "
+                    f"read_skill={r['author_read_skill']}"
+                )
 
 
 def cmd_facts(args, reg):
@@ -361,9 +431,13 @@ def cmd_facts(args, reg):
         print(f"== {r['run']}")
         print(f"  main tools: {r['main_tool_counts']}")
         print(f"  main Edit/Write: {[(e['tool'], e['file'], e['kind']) for e in r['main_edit_write_calls']]}")
-        print(f"  main Bash writes: {[(b['step'], [(w['how'], w['target'][:50], w['kind']) for w in b['writes']]) for b in r['main_bash_writes']]}")
+        print(
+            f"  main Bash writes: {[(b['step'], [(w['how'], w['target'][:50], w['kind']) for w in b['writes']]) for b in r['main_bash_writes']]}"
+        )
         print(f"  agents: {[(a['step'], a['description'], a['subagent_wrote']) for a in r['agents']]}")
-        print(f"  first question step: {r['first_question_step']}; agents before it: {r['agent_steps_before_first_question']}")
+        print(
+            f"  first question step: {r['first_question_step']}; agents before it: {r['agent_steps_before_first_question']}"
+        )
         print(f"  questions: {[q['q'][:90] for q in r['questions_to_user']]}")
         print(f"  code/test files changed: {r['code_or_test_files_changed']}")
 
@@ -376,8 +450,9 @@ def recorded(run: Path) -> list | None:
 def cmd_score(args, reg):
     tally: dict[str, dict[str, list]] = {}
     for case, run, meta in runs(Path(args.dir), args.set, reg):
-        t = tally.setdefault(run.name, {"det": [], "gate_pass": 0, "gate_fail": 0, "judgment": 0,
-                                        "agree": [], "cases": set()})
+        t = tally.setdefault(
+            run.name, {"det": [], "gate_pass": 0, "gate_fail": 0, "judgment": 0, "agree": [], "cases": set()}
+        )
         t["cases"].add(case)
         facts = check_run(run, case)
         rec = recorded(run)
@@ -400,8 +475,10 @@ def cmd_score(args, reg):
         det = t["det"]
         print(f"{arm}: {len(t['cases'])} cases")
         print(f"  deterministic assertions passed  {fmt(sum(det), len(det))}")
-        print(f"  judgment assertions              {t['judgment']}: settled by script {t['gate_pass']} pass, "
-              f"{t['gate_fail']} fail; {t['judgment'] - t['gate_pass'] - t['gate_fail']} to labelers")
+        print(
+            f"  judgment assertions              {t['judgment']}: settled by script {t['gate_pass']} pass, "
+            f"{t['gate_fail']} fail; {t['judgment'] - t['gate_pass'] - t['gate_fail']} to labelers"
+        )
         if t["agree"]:
             print(f"  script vs recorded grading.json  agree {fmt(sum(t['agree']), len(t['agree']))}")
     floor = json.loads((EVALS / "floors.json").read_text()).get(args.set)
@@ -409,7 +486,9 @@ def cmd_score(args, reg):
         for arm, t in sorted(tally.items()):
             if t["det"] and sum(t["det"]) / len(t["det"]) < floor:
                 print(f"{arm}: BELOW FLOOR {floor:.0%} for {args.set}")
-    print("Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.")
+    print(
+        "Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow."
+    )
 
 
 def cmd_recorded(args, reg):
@@ -433,10 +512,15 @@ def main() -> None:
         p.add_argument("dir")
         p.add_argument("--set", default="all", choices=("all",) + SETS)
         if name == "score":
-            p.add_argument("--exclude-outputs", action="store_true",
-                           help="don't count main-thread writes under outputs/ (the prompt asks for them)")
+            p.add_argument(
+                "--exclude-outputs",
+                action="store_true",
+                help="don't count main-thread writes under outputs/ (the prompt asks for them)",
+            )
     args = ap.parse_args()
-    {"split": cmd_split, "facts": cmd_facts, "score": cmd_score, "recorded": cmd_recorded}[args.cmd](args, registry())
+    {"split": cmd_split, "facts": cmd_facts, "score": cmd_score, "recorded": cmd_recorded}[args.cmd](
+        args, registry()
+    )
 
 
 if __name__ == "__main__":
