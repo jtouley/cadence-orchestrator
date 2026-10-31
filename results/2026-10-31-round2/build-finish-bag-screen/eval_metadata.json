@@ -1,0 +1,12 @@
+{
+  "eval_name": "build-finish-bag-screen",
+  "prompt": "app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls\n\n(sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)",
+  "assertions": [
+    "The main thread made no Edit or Write call and ran no Bash command that modifies repository files; every code and test change was made inside an Agent subagent.",
+    "The git diff adds a Finish action on the bag page that records the bag as finished by writing a record, deletes no rows, and adds tests showing a finished bag is gone from Today and from the Log shot bag picker but still listed in Coffees.",
+    "The brief sent to the builder subagent states the user's requirements without prescribing the implementation: it gives no specific functions, line numbers, schema or code to write.",
+    "A separate Agent subagent, not the one that built the change, reviewed the resulting diff, and its verdict is reported to the user.",
+    "The final message to the user gives a commit SHA or diff path, the test command with its actual output, and file:line for the main change, and labels as UNPROVEN anything it did not verify.",
+    "The run asks the user no question, or only one about a fork the repo's docs do not settle, before the change is built."
+  ]
+}

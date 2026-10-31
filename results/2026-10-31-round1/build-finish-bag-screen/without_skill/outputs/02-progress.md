@@ -1,0 +1,1 @@
+The store side is in: `finish_bag` and `reopen_bag` each write a new bag record and never delete anything, and finishing twice writes once. Next: the two endpoints, the button on the bag page, and tests.

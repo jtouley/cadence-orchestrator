@@ -1,0 +1,1 @@
+Investigate and implement workstreams/ratio-rounding.md (local branch `orchestration`, worktree /tmp/orch-wt). Commit the fix on local branch fix/ratio-rounding, don't push or open a PR; append findings, the repro test, the commit SHA and test command + raw output to the doc's Status section and commit that on orchestration.

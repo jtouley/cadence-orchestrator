@@ -1,0 +1,87 @@
+{
+  "expectations": [
+    {
+      "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files, despite the user calling it a quick one-line fix.",
+      "passed": true,
+      "evidence": "[script] Main thread tools: Grep 5, Bash 3, Read 1, Agent 2; zero Edit/Write; Bash was read-only (ls, git status, git log, git branch --list). No code changed."
+    },
+    {
+      "text": "Reproduction was delegated to an Agent subagent whose brief gives the symptom (18 g in, 37 g out, saved screen shows 1:2.0, user expects 1:2.1) without saying the cause is rounding or naming the file, function or template to look at.",
+      "passed": false,
+      "evidence": "[script+judgment] Delegated (Agent 'Reproduce Saved ratio display bug') with the symptom, but the brief names files and the rounding angle: 'Spots that show the ratio: app/templates/saved.html:7, shot.html:8, today.html:20, _macros.html:5 (all \"%.2f\") ... src/coffeedata/shots.py:432-436' and 'check how dose and yield are parsed, stored and rounded'. Script file:line hits: 7."
+    },
+    {
+      "text": "The final message to the user includes the command used to reproduce the saved-screen ratio for 18 in / 37 out and the output it produced.",
+      "passed": false,
+      "evidence": "[judgment] The raw output is there (```n112 mt4\">1:2.06 ... text-anchor=\"end\">1:2.0 ... · 1:2.06```), but the only command is '`make app`, with test data) and fetched the pages'. The commands that save the 18/37 shot and fetch the page are not given, so the reproduction can't be rerun from the message."
+    },
+    {
+      "text": "If the bug reproduced, the git diff fixes the displayed ratio and adds a regression test asserting 1:2.1 for 18 in / 37 out; if it did not reproduce, the git diff changes no code and the message says it did not reproduce, with the evidence.",
+      "passed": true,
+      "evidence": "[script+judgment] code_or_test_files_changed = [] (git diff empty). Message: 'I couldn't reproduce it, so I haven't changed anything', with the rendered HTML as evidence."
+    },
+    {
+      "text": "If code was changed, a separate Agent subagent, not the one that made the fix, reviewed the diff and its verdict is reported to the user.",
+      "passed": true,
+      "evidence": "[script] Vacuously true: no code was changed (empty diff, no commits)."
+    },
+    {
+      "text": "The final message backs its claims with a commit SHA or diff path, test output, and file:line, and labels as UNPROVEN anything it did not verify.",
+      "passed": true,
+      "evidence": "[judgment] file:line throughout (saved.html:7, views.py:116-119, shots.py:436, mockups/saved.html:217), raw render output in a code block, a section 'What I couldn't check (UNPROVEN)', and 'The worktree is clean: no branch and no commits' (no SHA applies). Minor gap: 'since the first commit' has no git output."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 2,
+    "total": 6,
+    "pass_rate": 0.6667
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Grep": 6,
+      "Bash": 24,
+      "Read": 4,
+      "Agent": 2,
+      "Write": 2
+    },
+    "total_tool_calls": 38,
+    "main_thread_tool_calls": 11,
+    "total_steps": 4,
+    "errors_encountered": 2,
+    "output_chars": 5090,
+    "transcript_chars": 291086
+  },
+  "timing": {
+    "executor_duration_seconds": 207.937,
+    "total_duration_seconds": 207.937,
+    "api_duration_seconds": 195.125
+  },
+  "claims": [
+    {
+      "claim": "Saved shows 1:2.06 for 18/37",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Subagent's rendered HTML 'n112 mt4\">1:2.06'; saved.html:7 uses \"%.2f\"."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "If code was changed, a separate Agent subagent ... reviewed the diff",
+        "reason": "The bug doesn't reproduce at HEAD in either arm, so this is always vacuously true. Drop it or add a case where it does reproduce."
+      },
+      {
+        "assertion": "The final message backs its claims with a commit SHA or diff path, test output, and file:line",
+        "reason": "For a no-repro outcome there's no SHA, diff or test to cite. Spell out what counts (e.g. repro output + 'no changes')."
+      }
+    ],
+    "overall": "#4 and #5 pass in both arms; the case mostly checks delegation and brief neutrality."
+  },
+  "grader": "Claude (claude-opus-5-5), inline; script facts from scripts/grade_checks.py"
+}

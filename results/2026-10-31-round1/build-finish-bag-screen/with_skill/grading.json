@@ -1,0 +1,86 @@
+{
+  "expectations": [
+    {
+      "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files; every code and test change was made inside an Agent subagent.",
+      "passed": true,
+      "evidence": "[script] Main thread: Bash 4 (read-only: git status/log, grep, sed -n, cat), Agent 1; zero Edit/Write. Every change came from subagent 'Build Finish bag button' (its Edit/Write: app/main.py, app/store.py, app/templates/coffee.html, tests/browser/app_flow.js; the rest through its Bash)."
+    },
+    {
+      "text": "The git diff adds a Finish action on the bag page that records the bag as finished by writing a record, deletes no rows, and adds tests showing a finished bag is gone from Today and from the Log shot bag picker but still listed in Coffees.",
+      "passed": true,
+      "evidence": "[judgment] Diff: 'POST /api/bags/{bag_id}/finish', Store.finish_bag commits 'prev.item.model_copy(update={\"finished_on\": on})' (new record, no delete; 'Finishing a finished bag writes nothing'), button 'data-finish ... Finish bag' in coffee.html. tests/test_app.py adds test_finish_bag_writes_one_record_and_drops_it_from_today_and_the_pickers: 'Onyx Geometry' not in Today, 'bag=bag1' not in log picker, still in /coffees '· finished'. The builder's own last pytest run in the transcript printed '46 passed in 70.34s', but that never reached the user."
+    },
+    {
+      "text": "The brief sent to the builder subagent states the user's requirements without prescribing the implementation: it gives no specific functions, line numbers, schema or code to write.",
+      "passed": false,
+      "evidence": "[script+judgment] Prescriptive. Script file:line hits: README.md:449, app/main.py:473, app/store.py:158, app/templates/coffees.html:14, src/coffeedata/models.py:201; functions `save_bag`, `retract_shot`. Quotes: 'Bags have `finished_on: date | None` (src/coffeedata/models.py:201)', 'reusing the existing bag save path / outbox rather than inventing a parallel write mechanism'."
+    },
+    {
+      "text": "A separate Agent subagent, not the one that built the change, reviewed the resulting diff, and its verdict is reported to the user.",
+      "passed": false,
+      "evidence": "[script] agent_count = 1 (the builder). No reviewer was launched. Final: 'I'll get the work independently reviewed before I report back.' stderr: 'Background tasks still running 10m after the last turn (subagent \"Build Finish bag button\" ...); stopping them.'"
+    },
+    {
+      "text": "The final message to the user gives a commit SHA or diff path, the test command with its actual output, and file:line for the main change, and labels as UNPROVEN anything it did not verify.",
+      "passed": false,
+      "evidence": "[script+judgment] The final message is a status update: 'A builder agent is adding the Finish button and its tests right now.' Script: no SHA, no file:line, no test counts, no diff path, UNPROVEN 0."
+    },
+    {
+      "text": "The run asks the user no question, or only one about a fork the repo's docs do not settle, before the change is built.",
+      "passed": true,
+      "evidence": "[script] questions_to_user = [] for the whole run."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 3,
+    "total": 6,
+    "pass_rate": 0.5
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 43,
+      "Agent": 1,
+      "Write": 1,
+      "Edit": 4,
+      "Read": 3
+    },
+    "total_tool_calls": 52,
+    "main_thread_tool_calls": 5,
+    "total_steps": 6,
+    "errors_encountered": 0,
+    "output_chars": 3961,
+    "transcript_chars": 897129
+  },
+  "timing": {
+    "executor_duration_seconds": 774.283,
+    "total_duration_seconds": 774.283,
+    "api_duration_seconds": 290.221
+  },
+  "claims": [
+    {
+      "claim": "I'll get the work independently reviewed before I report back",
+      "type": "process",
+      "verified": false,
+      "evidence": "No reviewer Agent; run ended with the builder still in the background."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "The git diff adds a Finish action ... and adds tests",
+        "reason": "git_diff.patch omits untracked files (tests/test_finish_bag.py in the baseline). Capture with 'git add -N .' or 'git diff HEAD' plus untracked files."
+      },
+      {
+        "reason": "Nothing checks that the tests pass. The with_skill builder ran them ('46 passed') but the user never saw it; add 'tests pass, as shown by command output'."
+      }
+    ],
+    "overall": "The with_skill run was cut off by the harness (background builder, 10-minute wait ceiling), so #4/#5 failed on the harness as much as on the skill. Consider run_in_background handling in the runner."
+  },
+  "grader": "Claude (claude-opus-5-5), inline; script facts from scripts/grade_checks.py"
+}

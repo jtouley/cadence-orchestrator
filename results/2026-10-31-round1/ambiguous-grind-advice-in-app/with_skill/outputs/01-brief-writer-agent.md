@@ -1,0 +1,1 @@
+Brief to writer subagent: create outputs/01-brief-writer-agent.md (this brief) and outputs/02-message-to-user.md (the orchestrator's message to the user, verbatim). No other changes, no commit, no push. Report back the `ls -l outputs` output.

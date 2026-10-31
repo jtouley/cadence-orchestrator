@@ -1,0 +1,3 @@
+?? outputs/00-message-to-user.md
+?? outputs/01-brief-scribe.md
+?? outputs/02-brief-implementer.md

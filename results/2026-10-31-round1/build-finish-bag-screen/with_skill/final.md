@@ -1,0 +1,1 @@
+A builder agent is adding the Finish button and its tests right now. One thing I found: the Edit bag form already has a "Finished" option, and Today and Log shot already hide finished bags. So the actual gap is a one-tap button on the bag's page. I'll get the work independently reviewed before I report back.

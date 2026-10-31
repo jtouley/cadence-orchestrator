@@ -1,0 +1,308 @@
+diff --git a/README.md b/README.md
+index 54d05fd..2b11c9d 100644
+--- a/README.md
++++ b/README.md
+@@ -446,7 +446,8 @@ disagree with the contract. So a change to a public table starts in the contract
+ 
+ - **US only, one owner.** Discovery filters to US places. The CLI, MCP server and issue forms log shots as the
+   owner, and the issue forms only act on the repo owner's issues. Other people use the app, by invite.
+-- **The app is a first version.** It has no screen to edit or finish a bag.
++- **The app is a first version.** A bag is edited or finished from its coffee page (Edit bag, Finish bag);
++  finishing writes a new record and deletes nothing, and a finished bag is reopened from Edit bag.
+ - **No hosted dataset.** You create and run your own lake; this repo doesn't link to a published copy.
+ - **Coverage depends on the stores.** Sites that block bots or publish no machine-readable catalog show up as
+   `unreachable`, `no_catalog` or `no_coffee` in `dim_roaster`.
+diff --git a/app/main.py b/app/main.py
+index 67205ed..70dfcbc 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -1023,6 +1023,17 @@ def create_app(
+             bag = store.bag(me.user_id, bag.bag_id) or bag
+         return {"bag_id": bag.bag_id, "coffee_id": bag.coffee_id, "matches": matches}
+ 
++    @app.post("/api/bags/{bag_id}/finish")
++    def finish(bag_id: str, request: Request, me: OutboxWriter, body: dict | None = None) -> dict:
++        """Finish a bag: a new record with finished_on, like a retraction. The phone sends the day it was tapped
++        (a finish queued offline syncs later); without one, today in the phone's zone."""
++        raw = (body or {}).get("finished_on")
++        try:
++            on = date.fromisoformat(raw) if raw else datetime.now(tz(request)).date()
++        except (TypeError, ValueError):
++            raise HTTPException(422, "finished_on is a date, like 2026-10-31.") from None
++        return {"bag_id": bag_id, "written": run(store.finish_bag, me.user_id, bag_id, on)}
++
+     return app
+ 
+ 
+diff --git a/app/static/app.js b/app/static/app.js
+index 6996c5c..2574eae 100644
+--- a/app/static/app.js
++++ b/app/static/app.js
+@@ -96,7 +96,8 @@ async function deliverOnce(entry) {
+     body: entry.blob || JSON.stringify(entry.body),
+   });
+   if (r.ok) {
+-    if (entry.url === "/api/bags" && entry.body?.finished_on) {
++    // A finished bag (from Edit bag or Finish bag) is no longer the one on the grinder.
++    if (entry.url.startsWith("/api/bags") && entry.body?.finished_on) {
+       try {
+         if (selectedBag()?.id === entry.body.bag_id) {
+           localStorage.removeItem(`selected-bag:${ME}`);
+@@ -183,7 +184,7 @@ async function showSync() {
+   showFailed(all.filter((e) => e.failed));
+ }
+ 
+-const KIND = { shot: "A shot", retract: "Undoing a shot", restore: "Bringing a shot back", bag: "A bag", photo: "A bag photo", equipment: "Equipment" };
++const KIND = { shot: "A shot", retract: "Undoing a shot", restore: "Bringing a shot back", bag: "A bag", finish: "Finishing a bag", photo: "A bag photo", equipment: "Equipment" };
+ 
+ function showFailed(failed) {
+   const box = document.querySelector("[data-failed]");
+@@ -580,6 +581,12 @@ function unqueue(strip, id) {
+ 
+ // --- New bag and equipment ---------------------------------------------------------------------------
+ 
++// Today's date on this phone, as the server stores dates ("2026-10-31").
++function localToday() {
++  const now = new Date();
++  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
++}
++
+ // Days from a roast date to today on this phone.
+ function roastDays(iso) {
+   const today = new Date();
+@@ -695,8 +702,7 @@ function bagEdit(form) {
+     hint(form, "");
+     const weight = form.weight_g.value.trim();
+     if (weight && !(Number(weight) > 0)) return hint(form, "The weight is a number of grams, like 340.");
+-    const now = new Date();
+-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
++    const today = localToday();
+     const body = {
+       ...rec,
+       coffee_freetext: coffee,
+@@ -1125,6 +1131,24 @@ function retractShot(b) {
+   });
+ }
+ 
++// Finish bag on the coffee page: a record with finished_on (never a delete), queued like any write. One tap, no
++// confirmation: it's undone from Edit bag ("Still using it"). The page opens again showing "finished", with a notice.
++function finishBag(b) {
++  b.addEventListener("click", async () => {
++    const id = b.dataset.finish;
++    const name = b.dataset.name;
++    b.disabled = true;
++    try {
++      await send(`finish:${id}`, `/api/bags/${encodeURIComponent(id)}/finish`, { bag_id: id, finished_on: localToday() });
++      go(location.pathname, `Bag finished: ${name}`);
++    } catch (err) {
++      if (!(err instanceof Rejected)) return go(location.pathname, `Bag finished on this phone: ${name}. It’ll sync when you’re back online.`);
++      hint(document.querySelector("main"), err.message);
++      b.disabled = false;
++    }
++  });
++}
++
+ // Theme and hand live in cookies so the server renders them; no flash of the other layout.
+ function preference(group, name, plain) {
+   group.addEventListener("click", (e) => {
+@@ -1255,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
+   if (join) joinCode(join);
+   if (document.querySelector("[data-new-invite]")) invites();
+   for (const b of document.querySelectorAll("[data-retract]")) retractShot(b);
++  for (const b of document.querySelectorAll("[data-finish]")) finishBag(b);
+   for (const b of document.querySelectorAll("[data-show]")) showPassword(b);
+   for (const b of document.querySelectorAll("[data-reload]")) b.addEventListener("click", () => location.reload());
+   // A date input shows "mm/dd/yyyy" in full ink while empty; mark it so it reads as a placeholder.
+diff --git a/app/store.py b/app/store.py
+index e7c62ba..aeb1b81 100644
+--- a/app/store.py
++++ b/app/store.py
+@@ -469,3 +469,18 @@ class Store:
+         if not (prev and prev.item == bag):
+             self._commit(self.bags, bag.bag_id, bag, "bags")
+         return bag, matches
++
++    def finish_bag(self, user_id: str, bag_id: str, on: date) -> bool:
++        """Finish: the bag again with finished_on set, as a new record (latest wins), never a delete. Only
++        finished_on changes, so a Finish from a page opened before an edit doesn't undo the edit. Finishing a
++        finished bag writes nothing and keeps its date, like retracting twice."""
++        prev = self._owned(self.bags, bag_id, user_id)
++        if prev is None or prev.deleted:
++            raise NotFound(bag_id)
++        if prev.item.finished_on:
++            return False
++        # The same grace as a roast date: the phone's today, in any zone, is at most a day past UTC's.
++        if on > datetime.now(UTC).date() + timedelta(days=1):
++            raise Invalid("That date is in the future. Check the phone’s date.")
++        self._commit(self.bags, bag_id, prev.item.model_copy(update={"finished_on": on}), "bags")
++        return True
+diff --git a/app/templates/coffee.html b/app/templates/coffee.html
+index 2610c8c..686d802 100644
+--- a/app/templates/coffee.html
++++ b/app/templates/coffee.html
+@@ -50,6 +50,10 @@
+     {% if raw.url and raw.url.startswith(("https://", "http://")) %}<dt>Shop</dt><dd><a class="ext" href="{{ raw.url }}" rel="noopener noreferrer" target="_blank">{{ raw.url.split("/")[2] }}</a></dd>{% endif %}
+   </dl>
+   {% endif %}
++  {% if not bag.finished_on %}
++  <div class="mt24"><button class="btn text start" type="button" data-finish="{{ bag.bag_id }}" data-name="{{ name }}">Finish bag</button></div>
++  <div class="hint" data-hint role="alert"></div>
++  {% endif %}
+   <div class="mt24"></div>
+ {% endblock %}
+ {% block nav %}{{ nav('coffees') }}{% endblock %}
+diff --git a/docs/app/DESIGN.md b/docs/app/DESIGN.md
+index 0f9b1d9..073208e 100644
+--- a/docs/app/DESIGN.md
++++ b/docs/app/DESIGN.md
+@@ -368,6 +368,12 @@ page. The form: roaster and coffee, roast date, weight, and "Still using it" / "
+ under the same id (the shots stay with it) and returns to the screen it was opened from, with a notice. A roast date
+ in the future isn't saved; one more than 90 days old asks "Save with day N?".
+ 
++#### Finish bag
++
++An accent "Finish bag" text button at the end of an open bag's coffee page. One tap, no confirmation (Edit bag's
++"Still using it" reopens it): a new record with today's date as finished_on, then the page again with "Bag finished:
++Onyx Geometry". A finished bag leaves Today and the bag pickers and stays in Coffees, marked finished.
++
+ #### Notice
+ 
+ What the last save did, at the top of the screen it lands on: "Bag saved: Onyx Geometry", "DF64 V2 saved",
+diff --git a/tests/browser/app_flow.js b/tests/browser/app_flow.js
+index 9ba1f10..1e15d88 100644
+--- a/tests/browser/app_flow.js
++++ b/tests/browser/app_flow.js
+@@ -548,6 +548,26 @@ async function newPage(browser, errors) {
+     await page.waitForSelector("[data-failed]", { state: "hidden" });
+     await page.unroute("**/api/probe");
+ 
++    // Finish bag on the coffee page: one tap, the page again with a notice and "finished", and the bag leaves Today
++    // and the Switch list but stays in Coffees.
++    await page.evaluate(() => send("bag:finish-me", "/api/bags", { bag_id: "finish-me", coffee_freetext: "Finish me" }));
++    await page.goto(`${base}/bag/finish-me/use`);
++    assert.match(await page.textContent("main"), /Finish me/);
++    await page.goto(`${base}/coffee/finish-me`);
++    await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: "Finish bag" }).click()]);
++    assert.equal(await noticeOf(page), "Bag finished: Finish me");
++    assert.equal(new URL(page.url()).pathname, "/coffee/finish-me");
++    assert.match(await page.textContent("main"), /Finished \w{3} \d+/);
++    assert.equal(await page.getByRole("button", { name: "Finish bag" }).count(), 0);
++    await shoot(page, "coffee-finished");
++    await page.goto(`${base}/`);
++    assert.doesNotMatch(await page.textContent("main"), /Finish me/);
++    await page.goto(`${base}/bags/switch`);
++    assert.doesNotMatch(await page.textContent("main"), /Finish me/);
++    await page.goto(`${base}/coffees`);
++    assert.match(await page.textContent("main"), /Finish me[\s\S]*· finished/);
++    await page.goto(`${base}/setup`); // where the steps below start
++
+     // Times show in the phone's zone: the zone cookie arrives URL-encoded ("Asia%2FKolkata"), and read as is it
+     // was UTC everywhere. Kolkata is UTC+5:30 all year.
+     const clockIn = async (timezoneId) => {
+diff --git a/tests/test_app.py b/tests/test_app.py
+index 8a76a86..025417a 100644
+--- a/tests/test_app.py
++++ b/tests/test_app.py
+@@ -476,3 +476,91 @@ def test_correcting_a_shot_moves_it_to_another_bag_without_switching_the_selecte
+     assert client.get("/log?correct=s1&bag=bobs").status_code == 404
+     assert client.post("/api/shots", json=shot(1, bag_id="bobs"), headers=W).status_code == 404
+     assert store.shot("owner", "s1").bag_id == "bag1"
++
++
++def test_finish_bag_writes_one_record_and_drops_it_from_today_and_the_pickers(client, lake):
++    """Finish bag on the coffee page: a new bag record with finished_on, like a retraction; nothing deleted."""
++    client.post("/api/bags", json={"bag_id": "bag2", "coffee_freetext": "Other coffee"}, headers=W)
++    client.post("/api/shots", json=shot(1), headers=W)
++    client.post("/api/shots", json=shot(2, bag_id="bag2", coffee_freetext="Other coffee"), headers=W)
++    client.get("/bag/bag1/use")  # bag1 is on the grinder
++    page = client.get("/coffee/bag1").text
++    assert 'data-finish="bag1"' in page and ">Finish bag</button>" in page
++    assert "Onyx Geometry" in client.get("/").text and "Onyx Geometry" in client.get("/bags/switch").text
++    before = {p.name for p in files(lake, "bags")}
++
++    r = client.post("/api/bags/bag1/finish", json={"bag_id": "bag1", "finished_on": "2026-10-30"}, headers=W)
++    assert r.status_code == 200 and r.json() == {"bag_id": "bag1", "written": True}
++    after = {p.name for p in files(lake, "bags")}
++    assert before < after and len(after - before) == 1  # one record added, every earlier one still there
++    bag = client.app.state.store.bag("owner", "bag1")
++    assert str(bag.finished_on) == "2026-10-30"
++    assert (bag.coffee_freetext, str(bag.roast_date)) == (
++        "Onyx Geometry",
++        "2026-10-18",
++    )  # nothing else changed
++
++    # Finishing again (the outbox resending, a second tap, another tab, a later day) writes nothing more.
++    for day in ("2026-10-30", "2026-10-31"):
++        r = client.post("/api/bags/bag1/finish", json={"bag_id": "bag1", "finished_on": day}, headers=W)
++        assert r.json()["written"] is False
++    assert {p.name for p in files(lake, "bags")} == after
++    assert str(client.app.state.store.bag("owner", "bag1").finished_on) == "2026-10-30"
++    assert len(files(lake, "shots")) == 2 and {s.shot_id for s in shots.load_shots(lake)} == {"s1", "s2"}
++
++    # Gone from Today (even though it was the selected bag), its Switch list and the Log shot form.
++    today = client.get("/").text
++    assert "Onyx Geometry" not in today and "Other coffee" in today
++    assert "Onyx Geometry" not in client.get("/bags/switch").text
++    assert prefill(client)["bag_id"] == "bag2"
++    assert client.get("/bag/bag1/use").status_code == 404
++    # Correcting another bag's shot: the bag picker lists the open bags only.
++    client.post("/api/bags", json={"bag_id": "bag3", "coffee_freetext": "Third coffee"}, headers=W)
++    log = client.get("/log?correct=s2").text
++    assert "bag=bag2" in log and "bag=bag3" in log and "bag=bag1" not in log
++
++    # Still in Coffees, marked finished, and its page opens, saying when, with no Finish button.
++    coffees = client.get("/coffees").text
++    assert 'href="/coffee/bag1"' in coffees and re.search(r"Onyx Geometry.*?· finished</span>", coffees, re.S)
++    page = client.get("/coffee/bag1")
++    assert page.status_code == 200 and "· finished Oct 30" in page.text
++    assert "data-finish" not in page.text and "Finish bag" not in page.text
++    assert "/shot/s1" in page.text  # its shots stay with it
++
++
++def test_finish_bag_defaults_to_today_in_the_phones_zone(client, lake):
++    from datetime import date
++    from zoneinfo import ZoneInfo
++
++    client.cookies.set("tz", "Pacific%2FKiritimati")  # UTC+14: often a day ahead of UTC
++    assert client.post("/api/bags/bag1/finish", headers=W).json()["written"] is True
++    want = datetime.now(ZoneInfo("Pacific/Kiritimati")).date()
++    assert client.app.state.store.bag("owner", "bag1").finished_on == want
++    # A date the phone can't have today, or not a date, is refused, and nothing is written.
++    client.post("/api/bags", json={"bag_id": "bag2", "coffee_freetext": "x"}, headers=W)
++    n = len(files(lake, "bags"))
++    far = (date.today() + timedelta(days=3)).isoformat()
++    assert client.post("/api/bags/bag2/finish", json={"finished_on": far}, headers=W).status_code == 422
++    assert client.post("/api/bags/bag2/finish", json={"finished_on": "soon"}, headers=W).status_code == 422
++    assert len(files(lake, "bags")) == n and client.app.state.store.bag("owner", "bag2").finished_on is None
++
++
++def test_only_the_owner_of_a_bag_can_finish_it(client, lake):
++    bob = W | {"x-test-user": "bob", "X-Expected-User": "bob"}
++    n = len(files(lake, "bags"))
++    assert (
++        client.post("/api/bags/bag1/finish", json={"finished_on": "2026-10-30"}, headers=bob).status_code
++        == 404
++    )
++    assert (
++        client.post("/api/bags/nope/finish", json={"finished_on": "2026-10-30"}, headers=W).status_code == 404
++    )
++    # Like every queued write: the header, and the account that made it.
++    assert client.post("/api/bags/bag1/finish", json={"finished_on": "2026-10-30"}).status_code == 403
++    other = {"X-Requested-With": "test", "X-Expected-User": "bob"}
++    assert (
++        client.post("/api/bags/bag1/finish", json={"finished_on": "2026-10-30"}, headers=other).status_code
++        == 403
++    )
++    assert len(files(lake, "bags")) == n and client.app.state.store.bag("owner", "bag1").finished_on is None
++    assert client.get("/coffee/bag1", headers={"x-test-user": "bob"}).status_code == 404
+diff --git a/tests/test_app_browser.py b/tests/test_app_browser.py
+index 40fa35f..90cdb3a 100644
+--- a/tests/test_app_browser.py
++++ b/tests/test_app_browser.py
+@@ -204,5 +204,5 @@ def test_app_in_a_browser(lake, tmp_path):
+     )
+     screens += ("bag-start", "bag-match", "bag-pick", "bag-failed")
+     screens += ("coffees", "coffee", "history", "shot", "correct", "offline-saved", "bag-offline")
+-    screens += ("coffees-empty", "history-empty", "invite-empty", "log-left")
++    screens += ("coffees-empty", "history-empty", "invite-empty", "log-left", "coffee-finished")
+     assert {p.name for p in out.iterdir()} >= {f"{n}-{m}.png" for n in screens for m in ("light", "dark")}

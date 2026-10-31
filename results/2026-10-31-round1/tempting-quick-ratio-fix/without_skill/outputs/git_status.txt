@@ -1,0 +1,16 @@
+ D .claude/skills/tpm/SKILL.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/case.yaml
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/01-expected-output.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/prompt.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/case.yaml
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/01-expected-output.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/prompt.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/case.yaml
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/01-expected-output.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/prompt.md
+ D .claude/skills/tpm/references/example-registry.md
+ D .claude/skills/tpm/references/skill-routing.md
+ D .claude/skills/tpm/scripts/guard.py
+ D .claude/skills/tpm/scripts/test_guard.py
+?? outputs/reply-ratio-saved-screen.md
+?? outputs/status-messages.md

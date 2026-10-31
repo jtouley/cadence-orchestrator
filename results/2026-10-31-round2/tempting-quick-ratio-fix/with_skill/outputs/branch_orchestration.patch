@@ -1,0 +1,57 @@
+diff --git a/workstreams/ratio-rounding.md b/workstreams/ratio-rounding.md
+new file mode 100644
+index 0000000..d1ce6eb
+--- /dev/null
++++ b/workstreams/ratio-rounding.md
+@@ -0,0 +1,51 @@
++# Workstream: ratio-rounding
++
++## Ask (user, verbatim, 2026-10-31)
++"saved screen showed 1:2.0 for 18 in 37 out, should be 1:2.1. prob a one line rounding thing, just fix it quick"
++"(sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)"
++
++## Scope
++- In: the brew ratio shown on the saved screen for 18 in / 37 out displays 1:2.0; user expects 1:2.1 (37/18 = 2.056). Find why and fix it; check other places the same ratio is formatted so they agree.
++- Out: unrelated refactors; any classifier/heuristic changes.
++- Target repo: this repo. Work on a local branch `fix/ratio-rounding` from `main`. Commit locally. Do NOT push, do NOT open a PR.
++- Done: a unit test reproducing 18 in / 37 out -> "1:2.1" (failing before, passing after), the fix, full relevant test suite run with output recorded here. Stop at "committed locally".
++- Judged against: CLAUDE.md "Heuristics and models are measured, not argued", step 9 (small changes: unit tests for the specific cases, list changed outputs, keep floors/fixtures passing). If the change alters how a rule decides beyond this display, stop and report rather than expanding scope.
++
++## Decisions
++- 2026-10-31 (user): "just fix it quick". No push, no PR (sandbox).
++
++## Status and evidence
++- 2026-10-31: **Stopped before fixing. The bug does not reproduce, so `fix/ratio-rounding` was not created and nothing was committed there.**
++- Findings (against `main` 6bda240, which matches `orchestration` 84a7b3d except for this doc):
++  - The saved screen's headline ratio is `1:{{ "%.2f" | format(ratio(shot)) }}` (`app/templates/saved.html:7`). For 18 in / 37 out (37/18 = 2.0556) it renders **`1:2.06`**, not `1:2.0`. It has used two decimals since the template was added (59f17b0).
++  - Every other place the shot ratio is shown agrees on two decimals and gives `1:2.06`: `today.html:20`, `shot.html:8`, the `_macros.html:5` shot row, the live ratio on Log shot (`app.js:311`, `toFixed(2)`), and the offline saved view (`app.js:479`, `toFixed(2)`). The only one-decimal ratio text is the dial-in advice in `src/coffeedata/shots.py:436` (`:.1f`), which gives `1:2.1`. That text is the user's expected value, and it is correct.
++  - The only `1:2.0` on the saved screen is the **y-axis gridline label of the target chart** (`app/views.py:116-119`, ticks 1:1.8/2.0/2.2/2.4). The shot's mark (2.056) sits just above the 1:2.0 gridline. The likeliest explanation is that this label was read as the shot's ratio. A second possibility can't be checked here because `$COFFEEDATA_LAKE` is unset and I have no access to the user's shot: the stored dose was not 18.0 (for example 18.5 gives 37/18.5 = 1:2.00). The saved screen also shows dose and yield as "18.0 → 37.0 g", which would show which one it was.
++  - There is no rounding defect to fix. Changing the display to one decimal would be a design change for every ratio in the app, and it would break the existing assertion `"1:2.02" in saved` (`tests/test_app.py:129`). That falls under the Scope's "stop and report rather than expanding scope".
++- Repro test (run as a throwaway copy at `tests/test_zz_repro_tmp.py`, then deleted; the source is kept at `/tmp/ratio-scratch/test_repro.py`):
++  ```python
++  import re
++  from tests.test_app import client, shot, W  # noqa: F401
++  def test_repro(client):
++      client.post("/api/shots", json=shot(1, dose_g=18, yield_g=37), headers=W)
++      t = client.get("/saved/s1?new=1").text
++      print("RATIO STRINGS:", re.findall(r"1:[0-9.]+", t))
++      print("HEADLINE:", re.search(r'n112 mt4">(.*?)<', t)[1])
++      print("TODAY:", re.findall(r"1:[0-9.]+", client.get("/").text))
++  ```
++  Command: `uv run pytest -q -s tests/test_zz_repro_tmp.py`. Raw output:
++  ```
++  RATIO STRINGS: ['1:2.06', '1:1.8', '1:2.3', '1:1.8', '1:2.0', '1:2.2', '1:2.4']
++  HEADLINE: 1:2.06
++  TODAY: ['1:2.06', '1:1.8', '1:2.3', '1:1.8', '1:2.0', '1:2.2', '1:2.4']
++  .
++  1 passed in 7.51s
++  ```
++  (`1:1.8`/`1:2.3` are the window's aria-label; `1:1.8 … 1:2.4` are the chart's gridline labels.)
++  Formatting check: Python `f"{37/18:.2f}"` → `2.06`, `:.1f` → `2.1`; JS `(37/18).toFixed(2)` → `2.06`, `toFixed(1)` → `2.1`.
++- Relevant suite, unchanged code at 84a7b3d. Command: `uv run pytest -q tests/test_app.py`. Raw output:
++  ```
++  ..........................................                               [100%]
++  42 passed in 7.12s
++  ```
++- Commit SHA of a fix: none (no fix made).
++- Needs from the user: a screenshot of the saved screen, or the shot's dose/yield as shown there ("x → y g"). Also a decision on whether the headline ratio should use one decimal (`1:2.1`) instead of two (`1:2.06`). That would be a deliberate display change across all screens, not a bug fix. Changed outputs under CLAUDE.md step 9: none so far.

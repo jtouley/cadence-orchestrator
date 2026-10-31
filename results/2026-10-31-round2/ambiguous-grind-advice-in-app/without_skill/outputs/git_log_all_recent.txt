@@ -1,0 +1,7 @@
+8f6f9bd tpm skill round 2: light prompts, orchestration-branch docs, no self-investigation
+2957237 tpm evals: add graders (6 assertions per case)
+a7099b0 tpm guard: per-command option allowlists instead of denylists
+9b850e8 tpm guard: fix review findings and add regression tests
+ff77681 Add tpm skill eval cases (prompts only, no assertions yet)
+d2a16ec tpm skill: fold in lessons from past orchestration sessions
+4a0fec1 Add tpm skill: orchestrator mode with a PreToolUse guard

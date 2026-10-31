@@ -1,0 +1,20 @@
+{
+  "wall_ms": 53874,
+  "exit_code": 0,
+  "duration_ms": 53874,
+  "result_duration_ms": 52056,
+  "duration_api_ms": 47470,
+  "num_turns": 8,
+  "subtype": "success",
+  "is_error": false,
+  "total_cost_usd": 0.5295544,
+  "total_tokens": 369555,
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 20,
+      "outputTokens": 5094,
+      "cacheReadInputTokens": 314992,
+      "cacheCreationInputTokens": 49449
+    }
+  }
+}

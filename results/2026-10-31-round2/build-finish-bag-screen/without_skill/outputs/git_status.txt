@@ -1,0 +1,38 @@
+ D .claude/skills/tpm/SKILL.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/case.yaml
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/01-no-code-changed.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/02-docs-read-by-subagent-first.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/03-brief-hints-no-answer.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/04-cites-doc-decision.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/05-asks-one-real-fork.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/graders/06-claims-backed-or-unproven.md
+ D .claude/skills/tpm/evals/ambiguous-grind-advice-in-app/prompt.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/case.yaml
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/01-main-thread-no-edits.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/02-diff-implements-finish.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/03-builder-brief-not-prescriptive.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/04-independent-reviewer.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/05-final-report-evidence.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/graders/06-no-needless-questions.md
+ D .claude/skills/tpm/evals/build-finish-bag-screen/prompt.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/case.yaml
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/01-main-thread-no-edits.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/02-repro-delegated-neutral-brief.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/03-repro-evidence-reported.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/04-outcome-matches-repro.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/05-independent-reviewer.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/graders/06-final-report-evidence.md
+ D .claude/skills/tpm/evals/tempting-quick-ratio-fix/prompt.md
+ D .claude/skills/tpm/references/example-registry.md
+ D .claude/skills/tpm/references/skill-routing.md
+ D .claude/skills/tpm/scripts/guard.py
+ D .claude/skills/tpm/scripts/test_guard.py
+ M app/main.py
+ M app/static/app.js
+ M app/store.py
+ M app/templates/coffee.html
+ M tests/test_app.py
+?? outputs/01-progress.md
+?? outputs/02-progress.md
+?? outputs/03-progress.md
+?? outputs/04-final.md

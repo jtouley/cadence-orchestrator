@@ -1,0 +1,10 @@
+ M README.md
+ M app/main.py
+ M app/static/app.js
+ M app/store.py
+ M app/templates/coffee.html
+ M docs/app/DESIGN.md
+ M tests/browser/app_flow.js
+ M tests/test_app.py
+ M tests/test_app_browser.py
+?? outputs/01-brief-maker.md

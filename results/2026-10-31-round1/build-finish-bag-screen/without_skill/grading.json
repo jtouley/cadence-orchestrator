@@ -1,0 +1,86 @@
+{
+  "expectations": [
+    {
+      "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files; every code and test change was made inside an Agent subagent.",
+      "passed": false,
+      "evidence": "[script] Main thread made 5 Edit/Write calls on repo files (app/store.py, app/main.py, app/templates/coffee.html, tests/test_finish_bag.py, tests/browser/app_flow.js), plus Bash python heredocs writing app/static/app.js and tests/test_finish_bag.py and 'uv run ruff format tests/test_finish_bag.py'. No Agent calls."
+    },
+    {
+      "text": "The git diff adds a Finish action on the bag page that records the bag as finished by writing a record, deletes no rows, and adds tests showing a finished bag is gone from Today and from the Log shot bag picker but still listed in Coffees.",
+      "passed": true,
+      "evidence": "[judgment] Diff: Store.finish_bag/reopen_bag commit 'prev.item.model_copy(update={\"finished_on\": on})' (new record, 'never a delete'), finish/reopen endpoints, button in coffee.html. Tests are in untracked tests/test_finish_bag.py (git_status '?? tests/test_finish_bag.py'; missing from git_diff.patch; content from the transcript Write): test_a_finished_bag_leaves_today_and_the_pickers_but_stays_in_coffees asserts 'Other coffee' not in Today, 'bag=bag2' not in log picker, '· finished' in /coffees."
+    },
+    {
+      "text": "The brief sent to the builder subagent states the user's requirements without prescribing the implementation: it gives no specific functions, line numbers, schema or code to write.",
+      "passed": false,
+      "evidence": "[script] No Agent calls, so there is no builder brief to grade."
+    },
+    {
+      "text": "A separate Agent subagent, not the one that built the change, reviewed the resulting diff, and its verdict is reported to the user.",
+      "passed": false,
+      "evidence": "[script] agent_count = 0; no reviewer. Final: 'I didn't use any subagents'."
+    },
+    {
+      "text": "The final message to the user gives a commit SHA or diff path, the test command with its actual output, and file:line for the main change, and labels as UNPROVEN anything it did not verify.",
+      "passed": false,
+      "evidence": "[script+judgment] Has test totals '649 passed, 2 skipped' but no command; no SHA or diff path; files listed without lines ('`app/store.py`: added `finish_bag` and `reopen_bag`'); no UNPROVEN label (script 0), though it says mypy errors 'look like they come from this environment' without checking."
+    },
+    {
+      "text": "The run asks the user no question, or only one about a fork the repo's docs do not settle, before the change is built.",
+      "passed": true,
+      "evidence": "[script] The only question, 'Should Today point you to New bag instead?', is at main step 70, in the final message after the build and full-suite run. Nothing was asked before the change was built."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6,
+    "pass_rate": 0.3333
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 46,
+      "Read": 2,
+      "Edit": 4,
+      "Write": 1,
+      "ToolSearch": 1
+    },
+    "total_tool_calls": 54,
+    "main_thread_tool_calls": 54,
+    "total_steps": 3,
+    "errors_encountered": 1,
+    "output_chars": 3717,
+    "transcript_chars": 811023
+  },
+  "timing": {
+    "executor_duration_seconds": 2209.14,
+    "total_duration_seconds": 2209.14,
+    "api_duration_seconds": 280.781
+  },
+  "claims": [
+    {
+      "claim": "The full test suite passes: 649 passed, 2 skipped",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Main-thread Bash read /tmp/full-suite.log summary before the final message."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "The git diff adds a Finish action ... and adds tests",
+        "reason": "git_diff.patch omits untracked files (tests/test_finish_bag.py in the baseline). Capture with 'git add -N .' or 'git diff HEAD' plus untracked files."
+      },
+      {
+        "reason": "Nothing checks that the tests pass. The with_skill builder ran them ('46 passed') but the user never saw it; add 'tests pass, as shown by command output'."
+      }
+    ],
+    "overall": "The with_skill run was cut off by the harness (background builder, 10-minute wait ceiling), so #4/#5 failed on the harness as much as on the skill. Consider run_in_background handling in the runner."
+  },
+  "grader": "Claude (claude-opus-5-5), inline; script facts from scripts/grade_checks.py"
+}

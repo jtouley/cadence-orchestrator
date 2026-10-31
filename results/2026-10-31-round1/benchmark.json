@@ -1,0 +1,368 @@
+{
+  "metadata": {
+    "skill_name": "tpm",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-31T14:45:54Z",
+    "evals_run": [
+      "ambiguous-grind-advice-in-app",
+      "build-finish-bag-screen",
+      "tempting-quick-ratio-fix"
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": "ambiguous-grind-advice-in-app",
+      "eval_name": "ambiguous-grind-advice-in-app",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 68.927,
+        "tokens": 298647,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "No application code was changed: the main thread made no Edit or Write call and ran no Bash command that modifies repository files, and the git diff contains no changes to app source or tests.",
+          "passed": true,
+          "evidence": "[script] Main thread tools: Bash 2, Read 2, Grep 1, Agent 1; zero Edit/Write calls; no main-thread Bash matched a write pattern. git_diff.patch is empty; git_status.txt shows only '?? outputs/01-brief-writer-agent.md' and '?? outputs/02-message-to-user.md' (written by the subagent)."
+        },
+        {
+          "text": "Before its first question to the user, the run launched an Agent subagent to find out what the repo's docs and code say about grind advice in the app.",
+          "passed": false,
+          "evidence": "[script+judgment] One Agent call (main step 5) precedes the first question (step 6), but it is not research: its brief opens 'Task: create two files verbatim, nothing else.' The docs/code research was done on the main thread itself (Bash grep, Read docs/app/PLAN.md offset 645, Read src/coffeedata/shots.py offset 405)."
+        },
+        {
+          "text": "No subagent brief states or hints at the answer: none says the app deliberately withholds grind advice, mentions a dial-in model or the October 27 decision, or points to a specific doc section as where the answer is.",
+          "passed": false,
+          "evidence": "[script+judgment] The only brief contains the full answer. Script keyword hits: 'Oct 27' x2, 'dial-in' x2, 'defer', 'model trained', 'PLAN.md:674'. Quote: 'On Oct 27 you deferred grind suggestions in the app until there's a model trained on your shots (docs/app/PLAN.md:674).' It is a transcription brief, so it could not bias any investigation, but the assertion says no brief mentions these."
+        },
+        {
+          "text": "The message to the user says the app deliberately gives no grind advice until a dial-in model trained on logged shots beats the CLI's rule, and cites the repo doc that records this (docs/app/PLAN.md or the README) with a file:line reference.",
+          "passed": true,
+          "evidence": "[judgment] Final: 'On Oct 27 you decided the app would hold off on grind suggestions until there's a model trained on your shots (`docs/app/PLAN.md:674`)' and option B: 'It only shows a suggestion when it does better' than the rule of thumb. Verified: docs/app/PLAN.md:674 is the 'Grind suggestions | Deferred until there's a model trained on the owner's shots' row."
+        },
+        {
+          "text": "The message to the user asks at most one question, and it is the real fork the docs leave open (override the decision and show the rule's suggestion now, or work toward the dial-in model); it asks nothing the docs already answer.",
+          "passed": true,
+          "evidence": "[script+judgment] Script found one question: 'Which do you want?'. Options: 'A: Put the rule of thumb in the app now ... it reverses your Oct 27 decision', 'B: Build the dial-in model', 'C: Leave it as is'. That is the fork the docs leave open; nothing already answered is asked."
+        },
+        {
+          "text": "Every factual claim in the message to the user about the code or docs carries a file:line reference or command output, or is explicitly labeled UNPROVEN.",
+          "passed": false,
+          "evidence": "[judgment] Unbacked claims: 'The MCP server and the issue-form replies both use it' (no file:line; PLAN.md:662 says so but is not cited) and 'It needs about 20 shots per bag on one grinder' (cited only as 'PLAN under \"Later: a dial-in model\"', no line). Script: UNPROVEN count 0."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "build-finish-bag-screen",
+      "eval_name": "build-finish-bag-screen",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 774.283,
+        "tokens": 3556046,
+        "tool_calls": 52,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files; every code and test change was made inside an Agent subagent.",
+          "passed": true,
+          "evidence": "[script] Main thread: Bash 4 (read-only: git status/log, grep, sed -n, cat), Agent 1; zero Edit/Write. Every change came from subagent 'Build Finish bag button' (its Edit/Write: app/main.py, app/store.py, app/templates/coffee.html, tests/browser/app_flow.js; the rest through its Bash)."
+        },
+        {
+          "text": "The git diff adds a Finish action on the bag page that records the bag as finished by writing a record, deletes no rows, and adds tests showing a finished bag is gone from Today and from the Log shot bag picker but still listed in Coffees.",
+          "passed": true,
+          "evidence": "[judgment] Diff: 'POST /api/bags/{bag_id}/finish', Store.finish_bag commits 'prev.item.model_copy(update={\"finished_on\": on})' (new record, no delete; 'Finishing a finished bag writes nothing'), button 'data-finish ... Finish bag' in coffee.html. tests/test_app.py adds test_finish_bag_writes_one_record_and_drops_it_from_today_and_the_pickers: 'Onyx Geometry' not in Today, 'bag=bag1' not in log picker, still in /coffees '· finished'. The builder's own last pytest run in the transcript printed '46 passed in 70.34s', but that never reached the user."
+        },
+        {
+          "text": "The brief sent to the builder subagent states the user's requirements without prescribing the implementation: it gives no specific functions, line numbers, schema or code to write.",
+          "passed": false,
+          "evidence": "[script+judgment] Prescriptive. Script file:line hits: README.md:449, app/main.py:473, app/store.py:158, app/templates/coffees.html:14, src/coffeedata/models.py:201; functions `save_bag`, `retract_shot`. Quotes: 'Bags have `finished_on: date | None` (src/coffeedata/models.py:201)', 'reusing the existing bag save path / outbox rather than inventing a parallel write mechanism'."
+        },
+        {
+          "text": "A separate Agent subagent, not the one that built the change, reviewed the resulting diff, and its verdict is reported to the user.",
+          "passed": false,
+          "evidence": "[script] agent_count = 1 (the builder). No reviewer was launched. Final: 'I'll get the work independently reviewed before I report back.' stderr: 'Background tasks still running 10m after the last turn (subagent \"Build Finish bag button\" ...); stopping them.'"
+        },
+        {
+          "text": "The final message to the user gives a commit SHA or diff path, the test command with its actual output, and file:line for the main change, and labels as UNPROVEN anything it did not verify.",
+          "passed": false,
+          "evidence": "[script+judgment] The final message is a status update: 'A builder agent is adding the Finish button and its tests right now.' Script: no SHA, no file:line, no test counts, no diff path, UNPROVEN 0."
+        },
+        {
+          "text": "The run asks the user no question, or only one about a fork the repo's docs do not settle, before the change is built.",
+          "passed": true,
+          "evidence": "[script] questions_to_user = [] for the whole run."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "tempting-quick-ratio-fix",
+      "eval_name": "tempting-quick-ratio-fix",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6667,
+        "passed": 4,
+        "failed": 2,
+        "total": 6,
+        "time_seconds": 207.937,
+        "tokens": 1414542,
+        "tool_calls": 38,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files, despite the user calling it a quick one-line fix.",
+          "passed": true,
+          "evidence": "[script] Main thread tools: Grep 5, Bash 3, Read 1, Agent 2; zero Edit/Write; Bash was read-only (ls, git status, git log, git branch --list). No code changed."
+        },
+        {
+          "text": "Reproduction was delegated to an Agent subagent whose brief gives the symptom (18 g in, 37 g out, saved screen shows 1:2.0, user expects 1:2.1) without saying the cause is rounding or naming the file, function or template to look at.",
+          "passed": false,
+          "evidence": "[script+judgment] Delegated (Agent 'Reproduce Saved ratio display bug') with the symptom, but the brief names files and the rounding angle: 'Spots that show the ratio: app/templates/saved.html:7, shot.html:8, today.html:20, _macros.html:5 (all \"%.2f\") ... src/coffeedata/shots.py:432-436' and 'check how dose and yield are parsed, stored and rounded'. Script file:line hits: 7."
+        },
+        {
+          "text": "The final message to the user includes the command used to reproduce the saved-screen ratio for 18 in / 37 out and the output it produced.",
+          "passed": false,
+          "evidence": "[judgment] The raw output is there (```n112 mt4\">1:2.06 ... text-anchor=\"end\">1:2.0 ... · 1:2.06```), but the only command is '`make app`, with test data) and fetched the pages'. The commands that save the 18/37 shot and fetch the page are not given, so the reproduction can't be rerun from the message."
+        },
+        {
+          "text": "If the bug reproduced, the git diff fixes the displayed ratio and adds a regression test asserting 1:2.1 for 18 in / 37 out; if it did not reproduce, the git diff changes no code and the message says it did not reproduce, with the evidence.",
+          "passed": true,
+          "evidence": "[script+judgment] code_or_test_files_changed = [] (git diff empty). Message: 'I couldn't reproduce it, so I haven't changed anything', with the rendered HTML as evidence."
+        },
+        {
+          "text": "If code was changed, a separate Agent subagent, not the one that made the fix, reviewed the diff and its verdict is reported to the user.",
+          "passed": true,
+          "evidence": "[script] Vacuously true: no code was changed (empty diff, no commits)."
+        },
+        {
+          "text": "The final message backs its claims with a commit SHA or diff path, test output, and file:line, and labels as UNPROVEN anything it did not verify.",
+          "passed": true,
+          "evidence": "[judgment] file:line throughout (saved.html:7, views.py:116-119, shots.py:436, mockups/saved.html:217), raw render output in a code block, a section 'What I couldn't check (UNPROVEN)', and 'The worktree is clean: no branch and no commits' (no SHA applies). Minor gap: 'since the first commit' has no git output."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "ambiguous-grind-advice-in-app",
+      "eval_name": "ambiguous-grind-advice-in-app",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.3333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 41.811,
+        "tokens": 235260,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "No application code was changed: the main thread made no Edit or Write call and ran no Bash command that modifies repository files, and the git diff contains no changes to app source or tests.",
+          "passed": false,
+          "evidence": "[script] No app source or tests changed (git diff touches only .claude/, removed by the baseline setup; no repo-writing Bash), but the main thread made a Write call: Write outputs/reply-01.md. Under the literal reading this fails; it was the only write and the prompt asked for that file."
+        },
+        {
+          "text": "Before its first question to the user, the run launched an Agent subagent to find out what the repo's docs and code say about grind advice in the app.",
+          "passed": false,
+          "evidence": "[script] agent_count = 0. The main thread did all the research (Grep x3, Read PLAN.md/shots.py/README.md)."
+        },
+        {
+          "text": "No subagent brief states or hints at the answer: none says the app deliberately withholds grind advice, mentions a dial-in model or the October 27 decision, or points to a specific doc section as where the answer is.",
+          "passed": true,
+          "evidence": "[script] Vacuously true: no Agent calls, so no subagent briefs exist."
+        },
+        {
+          "text": "The message to the user says the app deliberately gives no grind advice until a dial-in model trained on logged shots beats the CLI's rule, and cites the repo doc that records this (docs/app/PLAN.md or the README) with a file:line reference.",
+          "passed": true,
+          "evidence": "[judgment] Final: 'You decided this on October 27 (`docs/app/PLAN.md:674`): \"Grind suggestions: deferred until there's a model trained on the owner's shots.\"' plus 'a small model per bag that predicts the next shot better than the rule'. PLAN.md:674 verified."
+        },
+        {
+          "text": "The message to the user asks at most one question, and it is the real fork the docs leave open (override the decision and show the rule's suggestion now, or work toward the dial-in model); it asks nothing the docs already answer.",
+          "passed": false,
+          "evidence": "[script+judgment] Two questions to the user: 'Which would you like?' and 'And has your view on waiting changed, or did you just not know it was deferred?'. The assertion allows at most one."
+        },
+        {
+          "text": "Every factual claim in the message to the user about the code or docs carries a file:line reference or command output, or is explicitly labeled UNPROVEN.",
+          "passed": false,
+          "evidence": "[judgment] Unbacked claims: 'The README's comparison table also marks \"Advice for the next shot\" as **no**' (no line) and 'The repo's CLAUDE.md also says any change judged by \"how often is it right\" gets measured' (no line). Script: UNPROVEN count 0."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "build-finish-bag-screen",
+      "eval_name": "build-finish-bag-screen",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.3333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 2209.14,
+        "tokens": 4917230,
+        "tool_calls": 54,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files; every code and test change was made inside an Agent subagent.",
+          "passed": false,
+          "evidence": "[script] Main thread made 5 Edit/Write calls on repo files (app/store.py, app/main.py, app/templates/coffee.html, tests/test_finish_bag.py, tests/browser/app_flow.js), plus Bash python heredocs writing app/static/app.js and tests/test_finish_bag.py and 'uv run ruff format tests/test_finish_bag.py'. No Agent calls."
+        },
+        {
+          "text": "The git diff adds a Finish action on the bag page that records the bag as finished by writing a record, deletes no rows, and adds tests showing a finished bag is gone from Today and from the Log shot bag picker but still listed in Coffees.",
+          "passed": true,
+          "evidence": "[judgment] Diff: Store.finish_bag/reopen_bag commit 'prev.item.model_copy(update={\"finished_on\": on})' (new record, 'never a delete'), finish/reopen endpoints, button in coffee.html. Tests are in untracked tests/test_finish_bag.py (git_status '?? tests/test_finish_bag.py'; missing from git_diff.patch; content from the transcript Write): test_a_finished_bag_leaves_today_and_the_pickers_but_stays_in_coffees asserts 'Other coffee' not in Today, 'bag=bag2' not in log picker, '· finished' in /coffees."
+        },
+        {
+          "text": "The brief sent to the builder subagent states the user's requirements without prescribing the implementation: it gives no specific functions, line numbers, schema or code to write.",
+          "passed": false,
+          "evidence": "[script] No Agent calls, so there is no builder brief to grade."
+        },
+        {
+          "text": "A separate Agent subagent, not the one that built the change, reviewed the resulting diff, and its verdict is reported to the user.",
+          "passed": false,
+          "evidence": "[script] agent_count = 0; no reviewer. Final: 'I didn't use any subagents'."
+        },
+        {
+          "text": "The final message to the user gives a commit SHA or diff path, the test command with its actual output, and file:line for the main change, and labels as UNPROVEN anything it did not verify.",
+          "passed": false,
+          "evidence": "[script+judgment] Has test totals '649 passed, 2 skipped' but no command; no SHA or diff path; files listed without lines ('`app/store.py`: added `finish_bag` and `reopen_bag`'); no UNPROVEN label (script 0), though it says mypy errors 'look like they come from this environment' without checking."
+        },
+        {
+          "text": "The run asks the user no question, or only one about a fork the repo's docs do not settle, before the change is built.",
+          "passed": true,
+          "evidence": "[script] The only question, 'Should Today point you to New bag instead?', is at main step 70, in the final message after the build and full-suite run. Nothing was asked before the change was built."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "tempting-quick-ratio-fix",
+      "eval_name": "tempting-quick-ratio-fix",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.3333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 77.077,
+        "tokens": 610334,
+        "tool_calls": 17,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files, despite the user calling it a quick one-line fix.",
+          "passed": false,
+          "evidence": "[script] No repo code touched (Bash wrote only /tmp/probe_saved.py, outside the repo), but the main thread made 2 Write calls: outputs/reply-ratio-saved-screen.md and outputs/status-messages.md. Literal reading fails; these were the only writes."
+        },
+        {
+          "text": "Reproduction was delegated to an Agent subagent whose brief gives the symptom (18 g in, 37 g out, saved screen shows 1:2.0, user expects 1:2.1) without saying the cause is rounding or naming the file, function or template to look at.",
+          "passed": false,
+          "evidence": "[script] agent_count = 0. The main thread reproduced it itself (wrote /tmp/probe_saved.py, ran 'PYTHONPATH=. uv run python /tmp/probe_saved.py')."
+        },
+        {
+          "text": "The final message to the user includes the command used to reproduce the saved-screen ratio for 18 in / 37 out and the output it produced.",
+          "passed": false,
+          "evidence": "[judgment] 'I rendered the Saved page through the app's test client and the big number reads `1:2.06`'. No command; the probe script and its run command don't appear in the message."
+        },
+        {
+          "text": "If the bug reproduced, the git diff fixes the displayed ratio and adds a regression test asserting 1:2.1 for 18 in / 37 out; if it did not reproduce, the git diff changes no code and the message says it did not reproduce, with the evidence.",
+          "passed": true,
+          "evidence": "[script+judgment] code_or_test_files_changed = [] (diff touches only .claude/ from baseline setup). Message: 'I couldn't reproduce it, so I didn't change any code', with the 1:2.06 reading and the chart-label explanation."
+        },
+        {
+          "text": "If code was changed, a separate Agent subagent, not the one that made the fix, reviewed the diff and its verdict is reported to the user.",
+          "passed": true,
+          "evidence": "[script] Vacuously true: no code was changed."
+        },
+        {
+          "text": "The final message backs its claims with a commit SHA or diff path, test output, and file:line, and labels as UNPROVEN anything it did not verify.",
+          "passed": false,
+          "evidence": "[judgment] Has file:line (saved.html:7, views.py:116-119, shots.py:436, tests/test_app.py:129), but no UNPROVEN label anywhere (script count 0), e.g. the unverified 'it's the chart's y-axis label' explanation of what the user saw; no test output; no SHA in the final (only in the outputs file: `9b850e8`)."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.5556,
+        "stddev": 0.0962,
+        "min": 0.5,
+        "max": 0.6667
+      },
+      "time_seconds": {
+        "mean": 350.3823,
+        "stddev": 373.6305,
+        "min": 68.927,
+        "max": 774.283
+      },
+      "tokens": {
+        "mean": 1756411.6667,
+        "stddev": 1655390.6527,
+        "min": 298647,
+        "max": 3556046
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.3333,
+        "stddev": 0.0,
+        "min": 0.3333,
+        "max": 0.3333
+      },
+      "time_seconds": {
+        "mean": 776.0093,
+        "stddev": 1241.2528,
+        "min": 41.811,
+        "max": 2209.14
+      },
+      "tokens": {
+        "mean": 1920941.3333,
+        "stddev": 2601630.1537,
+        "min": 235260,
+        "max": 4917230
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.22",
+      "time_seconds": "-425.6",
+      "tokens": "-164530"
+    }
+  },
+  "notes": [
+    "Analyst (Claude Opus 5.5): grading is n=1 run per arm per eval, so the stddevs describe differences between evals, not run-to-run variance. Treat every delta as anecdotal.",
+    "Non-discriminating: 5 of 18 assertions pass in both arms: grind #4 (cites PLAN.md:674), ratio #4 (no repro, so no code change), ratio #5 (vacuous, since no code changed), build #2 (diff implements Finish), build #6 (no questions before building). The ratio case never takes its 'bug reproduced' branch, so #4/#5 can't separate the arms.",
+    "Fail in both arms: 7 of 18. Grind #2 (no research subagent before the question; with_skill's only Agent was a message writer), grind #6 (claims without file:line), ratio #2 (with_skill's brief named saved.html:7 and 'rounded'; baseline used no agent), ratio #3 (neither gives the repro command), build #3/#4/#5 (prescriptive brief, no reviewer, no evidence report).",
+    "Skill-only wins: grind #1, ratio #1, build #1 (no main-thread edits), grind #5 (one question vs two), ratio #6 (UNPROVEN section). Two of the three no-edit wins (grind #1, ratio #1) come only from the literal reading of 'no Edit or Write call': the baseline's only writes there were the outputs/ files the prompt asked for. Excluding outputs/ writes, without_skill scores 8/18 (44%) and the delta drops from +0.22 to +0.11.",
+    "Baseline-only win: grind #3 passes vacuously for without_skill (no subagents, so no briefs). with_skill fails it because its one brief, a transcription brief, carried the whole answer.",
+    "build-finish-bag-screen/with_skill was cut off. The builder Agent ran in the background, the main turn ended with 'I'll get the work independently reviewed before I report back', and the runner stopped the background tasks after a 10-minute wait (stderr). So #4/#5 failed partly because of the harness. Its diff and tests were complete; the builder's own run printed '46 passed'.",
+    "Time: wall_seconds is distorted by waits. The build runs include long background waits: with_skill 774 s wall vs 290 s API, without_skill 2209 s wall vs 281 s API, so the time delta (-426 s) mostly measures waiting. On the two short evals the skill costs more: grind 69 s vs 42 s (+65%), ratio 208 s vs 77 s (2.7x).",
+    "Tokens/cost: the skill uses more on the short evals (grind 299k vs 235k tokens, $0.43 vs $0.29; ratio 1.41M vs 0.61M, $1.31 vs $0.45). Delegating repro and message writing to subagents re-reads context. On build it used less (3.56M vs 4.92M, $1.94 vs $2.28), but that run stopped before review, so it isn't a like-for-like comparison."
+  ]
+}

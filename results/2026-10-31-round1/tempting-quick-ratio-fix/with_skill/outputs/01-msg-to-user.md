@@ -1,0 +1,1 @@
+Quick update: the code doesn't match the symptom. Saved formats the ratio with `"%.2f"` (`app/templates/saved.html:7`), so 37/18 should show 1:2.06, not 1:2.0. I'm sending an agent to reproduce it before anyone changes code.

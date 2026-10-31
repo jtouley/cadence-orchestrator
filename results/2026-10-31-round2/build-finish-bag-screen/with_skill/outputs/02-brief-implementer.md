@@ -1,0 +1,3 @@
+First, write this entire brief verbatim to /tmp/tpm-eval/iteration-2-build-finish-bag-screen-with_skill/outputs/02-brief-implementer.md (don't commit it).
+
+Implement /tmp/tpm-eval/orch-wt-finish-bag/workstreams/finish-bag.md in the repo at /tmp/tpm-eval/iteration-2-build-finish-bag-screen-with_skill, on a new local branch `feature/finish-bag` off `main` (use a separate worktree at /tmp/tpm-eval/wt-finish-bag). Commit locally; never push or open a PR. When done, append to that doc's "Status and evidence" the branch, commit SHAs, and the full test command with its raw output, and commit the doc in /tmp/tpm-eval/orch-wt-finish-bag.

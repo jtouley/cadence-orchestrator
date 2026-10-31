@@ -1,0 +1,2 @@
+f918298 84a7b3d 2026-10-31 15:34:55 +0000 ratio-rounding: record findings; saved screen already shows 1:2.06 for 18/37
+84a7b3d 6bda240 2026-10-31 15:33:08 +0000 Add ratio-rounding workstream doc

@@ -1,0 +1,26 @@
+{
+  "wall_ms": 35422,
+  "exit_code": 0,
+  "duration_ms": 35422,
+  "result_duration_ms": 33656,
+  "duration_api_ms": 30465,
+  "num_turns": 8,
+  "subtype": "success",
+  "is_error": false,
+  "total_cost_usd": 0.2664814,
+  "total_tokens": 252762,
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 1258,
+      "outputTokens": 20,
+      "cacheReadInputTokens": 0,
+      "cacheCreationInputTokens": 0
+    },
+    "claude-opus-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 3036,
+      "cacheReadInputTokens": 228448,
+      "cacheCreationInputTokens": 19984
+    }
+  }
+}

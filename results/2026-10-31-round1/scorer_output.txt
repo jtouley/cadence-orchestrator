@@ -1,0 +1,28 @@
+$ python3 evals/scripts/score.py score results/2026-10-31-round1   # eval-setup branch scorer
+set=all; main-thread write rule: literal (outputs/ writes count)
+with_skill: 3 cases
+  deterministic assertions passed  3/3 = 100% (95% CI 44%-100%)
+  judgment assertions              15: settled by script 1 pass, 1 fail; 13 to labelers
+  script vs recorded grading.json  agree 5/5 = 100% (95% CI 57%-100%)
+without_skill: 3 cases
+  deterministic assertions passed  0/3 = 0% (95% CI 0%-56%)
+  judgment assertions              15: settled by script 2 pass, 4 fail; 9 to labelers
+  script vs recorded grading.json  agree 9/9 = 100% (95% CI 70%-100%)
+Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.
+
+$ ... score results/2026-10-31-round1 --exclude-outputs
+set=all; main-thread write rule: outside outputs/
+with_skill: 3 cases
+  deterministic assertions passed  3/3 = 100% (95% CI 44%-100%)
+  judgment assertions              15: settled by script 1 pass, 1 fail; 13 to labelers
+  script vs recorded grading.json  agree 5/5 = 100% (95% CI 57%-100%)
+without_skill: 3 cases
+  deterministic assertions passed  2/3 = 67% (95% CI 21%-94%)
+  judgment assertions              15: settled by script 2 pass, 4 fail; 9 to labelers
+  script vs recorded grading.json  agree 7/9 = 78% (95% CI 45%-94%)
+Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.
+
+$ ... recorded results/2026-10-31-round1
+set=all; recorded verdicts (grading.json, whatever graded them)
+with_skill: passed 10/18 = 56% (95% CI 34%-75%)
+without_skill: passed 6/18 = 33% (95% CI 16%-56%)

@@ -1,0 +1,1 @@
+claude -p --allowedTools Read\,Glob\,Grep\,Skill\,Write\,Edit\,Bash\,Agent --verbose --output-format stream-json --max-turns 80 --permission-mode dontAsk <prompt_sent.txt>  (cwd=/tmp/tpm-eval/tempting-quick-ratio-fix-without_skill, timeout 2400s)

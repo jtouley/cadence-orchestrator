@@ -1,0 +1,1 @@
+Still reading the code. Found that bags already have a `finished_on` field and the Edit bag form has a "Finished" toggle; Today, the bag switcher and Log shot already hide finished bags. So the Finish button on the coffee (bag) page should be a one-tap path onto that same record-writing mechanism. Building it now.

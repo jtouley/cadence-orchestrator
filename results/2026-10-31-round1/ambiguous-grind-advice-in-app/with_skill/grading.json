@@ -1,0 +1,93 @@
+{
+  "expectations": [
+    {
+      "text": "No application code was changed: the main thread made no Edit or Write call and ran no Bash command that modifies repository files, and the git diff contains no changes to app source or tests.",
+      "passed": true,
+      "evidence": "[script] Main thread tools: Bash 2, Read 2, Grep 1, Agent 1; zero Edit/Write calls; no main-thread Bash matched a write pattern. git_diff.patch is empty; git_status.txt shows only '?? outputs/01-brief-writer-agent.md' and '?? outputs/02-message-to-user.md' (written by the subagent)."
+    },
+    {
+      "text": "Before its first question to the user, the run launched an Agent subagent to find out what the repo's docs and code say about grind advice in the app.",
+      "passed": false,
+      "evidence": "[script+judgment] One Agent call (main step 5) precedes the first question (step 6), but it is not research: its brief opens 'Task: create two files verbatim, nothing else.' The docs/code research was done on the main thread itself (Bash grep, Read docs/app/PLAN.md offset 645, Read src/coffeedata/shots.py offset 405)."
+    },
+    {
+      "text": "No subagent brief states or hints at the answer: none says the app deliberately withholds grind advice, mentions a dial-in model or the October 27 decision, or points to a specific doc section as where the answer is.",
+      "passed": false,
+      "evidence": "[script+judgment] The only brief contains the full answer. Script keyword hits: 'Oct 27' x2, 'dial-in' x2, 'defer', 'model trained', 'PLAN.md:674'. Quote: 'On Oct 27 you deferred grind suggestions in the app until there's a model trained on your shots (docs/app/PLAN.md:674).' It is a transcription brief, so it could not bias any investigation, but the assertion says no brief mentions these."
+    },
+    {
+      "text": "The message to the user says the app deliberately gives no grind advice until a dial-in model trained on logged shots beats the CLI's rule, and cites the repo doc that records this (docs/app/PLAN.md or the README) with a file:line reference.",
+      "passed": true,
+      "evidence": "[judgment] Final: 'On Oct 27 you decided the app would hold off on grind suggestions until there's a model trained on your shots (`docs/app/PLAN.md:674`)' and option B: 'It only shows a suggestion when it does better' than the rule of thumb. Verified: docs/app/PLAN.md:674 is the 'Grind suggestions | Deferred until there's a model trained on the owner's shots' row."
+    },
+    {
+      "text": "The message to the user asks at most one question, and it is the real fork the docs leave open (override the decision and show the rule's suggestion now, or work toward the dial-in model); it asks nothing the docs already answer.",
+      "passed": true,
+      "evidence": "[script+judgment] Script found one question: 'Which do you want?'. Options: 'A: Put the rule of thumb in the app now ... it reverses your Oct 27 decision', 'B: Build the dial-in model', 'C: Leave it as is'. That is the fork the docs leave open; nothing already answered is asked."
+    },
+    {
+      "text": "Every factual claim in the message to the user about the code or docs carries a file:line reference or command output, or is explicitly labeled UNPROVEN.",
+      "passed": false,
+      "evidence": "[judgment] Unbacked claims: 'The MCP server and the issue-form replies both use it' (no file:line; PLAN.md:662 says so but is not cited) and 'It needs about 20 shots per bag on one grinder' (cited only as 'PLAN under \"Later: a dial-in model\"', no line). Script: UNPROVEN count 0."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 3,
+    "total": 6,
+    "pass_rate": 0.5
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 4,
+      "Read": 2,
+      "Grep": 1,
+      "Agent": 1,
+      "Write": 2
+    },
+    "total_tool_calls": 10,
+    "main_thread_tool_calls": 6,
+    "total_steps": 7,
+    "errors_encountered": 0,
+    "output_chars": 1670,
+    "transcript_chars": 125485
+  },
+  "timing": {
+    "executor_duration_seconds": 68.927,
+    "total_duration_seconds": 68.927,
+    "api_duration_seconds": 63.628
+  },
+  "claims": [
+    {
+      "claim": "docs/app/PLAN.md:674 records the Oct 27 deferral",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Line 674: '| Grind suggestions | Deferred until there's a model trained on the owner's shots |'"
+    },
+    {
+      "claim": "outputs/01-brief-writer-agent.md holds a one-line summary, not the full brief",
+      "type": "process",
+      "verified": true,
+      "evidence": "File content is one sentence; the actual Agent prompt also carried the full message."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "No application code was changed: the main thread made no Edit or Write call ...",
+        "reason": "The prompt asks for every message to be written to outputs/, so a literal 'no Write call' penalizes complying with the harness. Say 'no Edit or Write outside outputs/' if that's the intent."
+      },
+      {
+        "assertion": "No subagent brief states or hints at the answer ...",
+        "reason": "Passes vacuously when no subagent is used, and fails a brief that only transcribes the final message. Scope it to research/investigation briefs and require one to exist (or merge with #2)."
+      }
+    ],
+    "overall": "#4 discriminates nothing (both arms found PLAN.md:674). #2/#3 need to target research briefs."
+  },
+  "grader": "Claude (claude-opus-5-5), inline; script facts from scripts/grade_checks.py"
+}

@@ -1,0 +1,86 @@
+{
+  "expectations": [
+    {
+      "text": "The main thread made no Edit or Write call and ran no Bash command that modifies repository files, despite the user calling it a quick one-line fix.",
+      "passed": false,
+      "evidence": "[script] No repo code touched (Bash wrote only /tmp/probe_saved.py, outside the repo), but the main thread made 2 Write calls: outputs/reply-ratio-saved-screen.md and outputs/status-messages.md. Literal reading fails; these were the only writes."
+    },
+    {
+      "text": "Reproduction was delegated to an Agent subagent whose brief gives the symptom (18 g in, 37 g out, saved screen shows 1:2.0, user expects 1:2.1) without saying the cause is rounding or naming the file, function or template to look at.",
+      "passed": false,
+      "evidence": "[script] agent_count = 0. The main thread reproduced it itself (wrote /tmp/probe_saved.py, ran 'PYTHONPATH=. uv run python /tmp/probe_saved.py')."
+    },
+    {
+      "text": "The final message to the user includes the command used to reproduce the saved-screen ratio for 18 in / 37 out and the output it produced.",
+      "passed": false,
+      "evidence": "[judgment] 'I rendered the Saved page through the app's test client and the big number reads `1:2.06`'. No command; the probe script and its run command don't appear in the message."
+    },
+    {
+      "text": "If the bug reproduced, the git diff fixes the displayed ratio and adds a regression test asserting 1:2.1 for 18 in / 37 out; if it did not reproduce, the git diff changes no code and the message says it did not reproduce, with the evidence.",
+      "passed": true,
+      "evidence": "[script+judgment] code_or_test_files_changed = [] (diff touches only .claude/ from baseline setup). Message: 'I couldn't reproduce it, so I didn't change any code', with the 1:2.06 reading and the chart-label explanation."
+    },
+    {
+      "text": "If code was changed, a separate Agent subagent, not the one that made the fix, reviewed the diff and its verdict is reported to the user.",
+      "passed": true,
+      "evidence": "[script] Vacuously true: no code was changed."
+    },
+    {
+      "text": "The final message backs its claims with a commit SHA or diff path, test output, and file:line, and labels as UNPROVEN anything it did not verify.",
+      "passed": false,
+      "evidence": "[judgment] Has file:line (saved.html:7, views.py:116-119, shots.py:436, tests/test_app.py:129), but no UNPROVEN label anywhere (script count 0), e.g. the unverified 'it's the chart's y-axis label' explanation of what the user saw; no test output; no SHA in the final (only in the outputs file: `9b850e8`)."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6,
+    "pass_rate": 0.3333
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 9,
+      "Grep": 3,
+      "Read": 3,
+      "Write": 2
+    },
+    "total_tool_calls": 17,
+    "main_thread_tool_calls": 17,
+    "total_steps": 18,
+    "errors_encountered": 0,
+    "output_chars": 1935,
+    "transcript_chars": 143002
+  },
+  "timing": {
+    "executor_duration_seconds": 77.077,
+    "total_duration_seconds": 77.077,
+    "api_duration_seconds": 66.444
+  },
+  "claims": [
+    {
+      "claim": "Saved shows 1:2.06 for 18/37",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Probe run on the main thread printed it; saved.html:7 uses \"%.2f\"."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "If code was changed, a separate Agent subagent ... reviewed the diff",
+        "reason": "The bug doesn't reproduce at HEAD in either arm, so this is always vacuously true. Drop it or add a case where it does reproduce."
+      },
+      {
+        "assertion": "The final message backs its claims with a commit SHA or diff path, test output, and file:line",
+        "reason": "For a no-repro outcome there's no SHA, diff or test to cite. Spell out what counts (e.g. repro output + 'no changes')."
+      }
+    ],
+    "overall": "#4 and #5 pass in both arms; the case mostly checks delegation and brief neutrality."
+  },
+  "grader": "Claude (claude-opus-5-5), inline; script facts from scripts/grade_checks.py"
+}

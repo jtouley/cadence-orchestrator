@@ -1,0 +1,4 @@
+?? outputs/brief-01-scribe.md
+?? outputs/brief-02-implementer.md
+?? outputs/brief-03-scribe.md
+?? outputs/message-01-user.md
