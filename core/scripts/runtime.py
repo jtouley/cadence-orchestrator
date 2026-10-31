@@ -38,13 +38,15 @@ TPM_PROMPT = re.compile(r"^\s*[/$]tpm(\s|$)")
 
 @dataclass
 class Event:
-    kind: str  # "tool", "prompt" or "other"
+    kind: str  # "tool", "prompt", "stop" or "other"
     session_id: str = ""
     project_dir: str = ""
     tool: str = ""  # canonical tool name
     args: dict = field(default_factory=dict)
     is_subagent: bool = False
     starts_tpm: bool = False  # for "prompt": this prompt starts the tpm skill
+    stop_hook_active: bool = False  # for "stop": already continuing because of a stop hook
+    background_tasks: list = field(default_factory=list)  # for "stop": in-flight tasks
 
 
 @dataclass
@@ -66,6 +68,37 @@ class Platform:
     # armed_now -> Outcome, for a prompt event
     render_prompt: Callable[[bool], Outcome]
     state_env: tuple[str, ...] = ()
+    # block reason or "" -> Outcome, for a stop event (platforms with a Stop hook)
+    render_stop: Callable[[str], Outcome] = lambda reason: Outcome()
+
+
+# Background task types the orchestrator itself starts, and statuses that mean finished.
+AGENT_TASK_TYPES = {"subagent", "teammate", "workflow", "cloud session"}
+FINISHED = {"completed", "complete", "done", "failed", "error", "killed", "cancelled", "canceled", "stopped"}
+
+
+def outstanding_agents(tasks) -> list[dict]:
+    if not isinstance(tasks, list):
+        return []
+    return [
+        t
+        for t in tasks
+        if isinstance(t, dict)
+        and t.get("type") in AGENT_TASK_TYPES
+        and str(t.get("status", "")).lower() not in FINISHED
+    ]
+
+
+def stop_reason(tasks: list[dict]) -> str:
+    names = "; ".join(
+        f"{t.get('type')} {t.get('id', '?')}: {str(t.get('description') or t.get('agent_type') or '')[:80]}"
+        for t in tasks
+    )
+    return (
+        f"TPM mode: {len(tasks)} agent task(s) you started are still running ({names}). Don't end the turn "
+        "with work outstanding: wait for them and check their results, or tell the user exactly what is "
+        "still running and what hasn't started."
+    )
 
 
 def state_dir(platform: Platform) -> str:
@@ -96,6 +129,12 @@ def handle(platform: Platform, payload: dict) -> Outcome:
             open(path, "w").close()
             armed_now = True
         return platform.render_prompt(armed_now)
+    if ev.kind == "stop":
+        # Block once per stop; stop_hook_active means we already did, so never loop.
+        if ev.stop_hook_active or not is_armed(state, ev.session_id):
+            return platform.render_stop("")
+        running = outstanding_agents(ev.background_tasks)
+        return platform.render_stop(stop_reason(running) if running else "")
     if ev.kind != "tool" or not is_armed(state, ev.session_id):
         return _allow(platform)
     if os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE)):
@@ -137,10 +176,17 @@ def main(platform: Platform, argv: list[str] | None = None) -> int:
             raise ValueError("payload is not an object")
         out = handle(platform, payload)
     except Exception as exc:  # fail open: a guard bug must not brick the session
-        out = _allow(platform)
+        out = platform.render_stop("") if _is_stop(raw) else _allow(platform)
         out.stderr = f"tpm guard: {type(exc).__name__}: {exc}; allowing."
     if out.stdout:
         print(out.stdout)
     if out.stderr:
         print(out.stderr, file=sys.stderr)
     return out.code
+
+
+def _is_stop(raw: str) -> bool:
+    try:
+        return json.loads(raw).get("hook_event_name") == "Stop"
+    except Exception:
+        return False
