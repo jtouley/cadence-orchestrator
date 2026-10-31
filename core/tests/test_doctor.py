@@ -127,9 +127,9 @@ def test_missing_runtime_fails_the_state_check_and_changes_nothing():
         before = snapshot(repo)
         out = doctor(repo, target)
         assert out.returncode == 1, target
-        assert f"FAIL {target}: state dir (unresolved)" in out.stdout and "couldn't load" in out.stdout, (
-            target
-        )
+        assert (
+            f"FAIL {target}: state dir (unresolved)" in out.stdout and "runtime.py is missing" in out.stdout
+        ), target
         assert snapshot(repo) == before, target  # e.g. no `{}` directory from Gemini's fallback output
 
 
@@ -162,3 +162,61 @@ def test_doctor_rejects_catalog():
         text=True,
     )
     assert out.returncode == 2 and "doctor doesn't take --catalog" in out.stderr
+
+
+# ------------------------------------------------------------- PR #4 round 2
+
+
+def _bare_path(tools=("node", "bash", "git", "dirname")):
+    bare = tempfile.mkdtemp()
+    for tool in tools:
+        found = subprocess.run(
+            ["bash", "-c", f"command -v {tool}"], capture_output=True, text=True
+        ).stdout.strip()
+        if found:
+            os.symlink(found, os.path.join(bare, tool))
+    return bare
+
+
+def test_resolver_ignores_modules_planted_in_the_temp_dir():
+    repo = repo_with("gemini")
+    shared = tempfile.mkdtemp()  # stands in for a world-writable /tmp
+    marker = os.path.join(tempfile.mkdtemp(), "planted-ran")
+    for name in ("json", "tempfile", "types", "dataclasses"):
+        open(os.path.join(shared, f"{name}.py"), "w").write(f"open({marker!r}, 'w').close()\n")
+    # Sanity: the old invocation (cwd = temp dir, no -I) does pick the planted module up.
+    subprocess.run(["python3", "-B", "-c", "import json"], cwd=shared, capture_output=True)
+    assert os.path.exists(marker)
+    os.remove(marker)
+    out = doctor(repo, "gemini", env=dict(os.environ, TMPDIR=shared, TMP=shared, TEMP=shared))
+    assert out.returncode == 0, out.stdout
+    assert not os.path.exists(marker)
+
+
+def test_relative_state_dir_resolves_against_the_repo_without_creating_it():
+    repo = repo_with("codex")
+    before = snapshot(repo)
+    out = doctor(repo, "codex", env=dict(os.environ, CADENCE_STATE_DIR=".cadence/state"))
+    assert out.returncode == 0, out.stdout
+    assert f"state dir {os.path.join(repo, '.cadence/state')} is writable" in out.stdout
+    assert snapshot(repo) == before and not os.path.exists(os.path.join(repo, ".cadence"))
+
+
+def test_unreadable_hook_file_is_a_fail_line_not_a_crash():
+    repo = repo_with()
+    os.makedirs(os.path.join(repo, ".codex", "hooks.json"))  # a directory where the file should be
+    out = doctor(repo, "all")
+    assert out.returncode == 1 and "Error" not in out.stderr
+    assert "FAIL codex: can't read .codex/hooks.json (EISDIR)" in out.stdout
+
+
+def test_missing_python3_is_reported_as_python3():
+    repo = repo_with("claude")
+    bare = _bare_path()
+    out = subprocess.run(
+        [os.path.join(bare, "node"), CLI, "doctor", "--target", "claude", "--repo", repo],
+        capture_output=True,
+        text=True,
+        env={"PATH": bare},
+    )
+    assert out.returncode == 1 and "python3 not found" in out.stdout and "couldn't load" not in out.stdout

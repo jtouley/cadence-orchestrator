@@ -172,16 +172,21 @@ if (isDoctor) {
   if (opts.catalog.length) fail(`doctor doesn't take --catalog\n${USAGE}`, 2);
   const { doctor, installed } = await import("./doctor.mjs");
   let targets = [opts.target];
+  const results = [];
   if (opts.target === "all") {
-    targets = Object.keys(TARGETS)
+    const found = Object.keys(TARGETS)
       .sort()
-      .filter((t) => installed(repo, t, TARGETS[t]) || (console.log(`skip ${t}: not installed`), false));
-    if (!targets.length) {
-      console.log(`FAIL no target is installed in ${repo}`);
-      process.exit(1);
+      .map((t) => ({ t, ...installed(repo, t, TARGETS[t]) }));
+    for (const f of found.filter((f) => f.error)) results.push({ name: `${f.t}: ${f.error}`, ok: false });
+    for (const f of found.filter((f) => !f.installed && !f.error)) {
+      results.push({ name: `${f.t}: not installed`, ok: true, skip: true });
+    }
+    targets = found.filter((f) => f.installed).map((f) => f.t);
+    if (!targets.length && !results.some((r) => !r.ok)) {
+      results.push({ name: `no target is installed in ${repo}`, ok: false });
     }
   }
-  const results = targets.flatMap((t) => doctor(repo, t, TARGETS[t]));
+  results.push(...targets.flatMap((t) => doctor(repo, t, TARGETS[t])));
   for (const r of results) {
     const mark = r.skip ? "skip" : r.ok ? "ok  " : "FAIL";
     console.log(`${mark} ${r.name}${r.ok || !r.detail ? "" : `: ${r.detail}`}`);

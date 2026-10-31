@@ -14,11 +14,17 @@ const SCRIPTS = ["guard.py", "runtime.py", "tasks_check.py"];
 // Environment variables a platform's runtime consults for its state dir (see each shim's state_env).
 const STATE_ENV = { claude: ["CLAUDE_PLUGIN_DATA"] };
 
-// A target counts as installed if its shim or its hook entries are present.
+// A target counts as installed if its shim or its hook entries are present. Returns
+// { installed, error }; error is set when the hook file exists but can't be read.
 export function installed(repo, target, spec) {
-  if (fs.existsSync(path.join(repo, spec.skill, "scripts", `shim_${target}.py`))) return true;
+  if (fs.existsSync(path.join(repo, spec.skill, "scripts", `shim_${target}.py`))) return { installed: true };
   const hookFile = path.join(repo, spec.hooks[0][1]);
-  return fs.existsSync(hookFile) && fs.readFileSync(hookFile, "utf8").includes(`shim_${target}.py`);
+  if (!fs.existsSync(hookFile)) return { installed: false };
+  try {
+    return { installed: fs.readFileSync(hookFile, "utf8").includes(`shim_${target}.py`) };
+  } catch (e) {
+    return { installed: false, error: `can't read ${spec.hooks[0][1]} (${e.code ?? e.message})` };
+  }
 }
 
 // Per platform: how to find hook commands in its config, and the events to simulate.
@@ -106,6 +112,9 @@ export function doctor(repo, target, spec) {
   // Where the real hooks keep state and advisory.log: ask the installed runtime.py directly (not the
   // shim, whose import-failure path prints its platform's "allow" output). Only an absolute path on a
   // STATE= line is accepted; if runtime.py is missing or broken this check fails and nothing is created.
+  // -I keeps the cwd, PYTHON* variables and user site-packages off sys.path, so nothing planted in a
+  // shared directory (e.g. /tmp/json.py) can be imported; the scripts dir is added explicitly and is
+  // also the cwd. Imports happen with the user's own interpreter, as in the real hooks.
   const resolver =
     "import sys, types\n" +
     "sys.dont_write_bytecode = True\n" +
@@ -113,28 +122,42 @@ export function doctor(repo, target, spec) {
     "import runtime\n" +
     "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))";
   const scripts = path.join(repo, spec.skill, "scripts");
-  const where = spawnSync("python3", ["-B", "-c", resolver, scripts, ...(STATE_ENV[target] ?? [])], {
-    encoding: "utf8",
-    cwd: os.tmpdir(),
-  });
+  const hasRuntime = fs.existsSync(path.join(scripts, "runtime.py"));
+  const where = hasRuntime
+    ? spawnSync("python3", ["-I", "-B", "-c", resolver, scripts, ...(STATE_ENV[target] ?? [])], {
+        encoding: "utf8",
+        cwd: scripts,
+      })
+    : { status: -1, stdout: "", stderr: "" };
   const line = (where.stdout ?? "").split("\n").find((l) => l.startsWith("STATE=")) ?? "";
-  const realState = where.status === 0 ? line.slice("STATE=".length).trim() : "";
+  let realState = where.status === 0 ? line.slice("STATE=".length).trim() : "";
+  // The real hooks run in the repo, so a relative CADENCE_STATE_DIR is relative to it.
+  if (realState && !path.isAbsolute(realState)) realState = path.resolve(repo, realState);
   let writable = false;
-  if (realState && path.isAbsolute(realState)) {
+  if (realState) {
+    // Probe without creating anything: an existing dir gets a temporary file; otherwise the nearest
+    // existing ancestor must be a writable directory (the runtime creates the rest when it arms).
     try {
-      // Same as the runtime: create the directory if needed, then prove a file can be written there.
-      fs.mkdirSync(realState, { recursive: true });
-      const probe = path.join(realState, `.doctor-${process.pid}`);
-      fs.writeFileSync(probe, "");
-      fs.unlinkSync(probe);
+      if (fs.existsSync(realState)) {
+        const probe = path.join(realState, `.doctor-${process.pid}`);
+        fs.writeFileSync(probe, "");
+        fs.unlinkSync(probe);
+      } else {
+        let parent = path.dirname(realState);
+        while (!fs.existsSync(parent)) parent = path.dirname(parent);
+        if (!fs.statSync(parent).isDirectory()) throw new Error("not a directory");
+        fs.accessSync(parent, fs.constants.W_OK);
+      }
       writable = true;
     } catch {}
   }
-  const why = !realState
-    ? `couldn't load ${spec.skill}/scripts/runtime.py: ${(where.stderr || "no output").trim().split("\n").at(-1)}`
-    : !path.isAbsolute(realState)
-      ? `runtime returned a relative path (${realState})`
-      : "not writable: set CADENCE_STATE_DIR to a writable directory";
+  const why = !hasRuntime
+    ? `${spec.skill}/scripts/runtime.py is missing`
+    : where.error
+      ? `python3 not found (${where.error.code})`
+      : !realState
+        ? `couldn't load ${spec.skill}/scripts/runtime.py: ${(where.stderr || "no output").trim().split("\n").at(-1)}`
+        : "not writable: set CADENCE_STATE_DIR to a writable directory";
   check(
     `state dir ${realState || "(unresolved)"} is writable; advisory log: ${realState ? path.join(realState, "advisory.log") : "?"}`,
     writable,
