@@ -12,6 +12,8 @@ import json
 import os
 import sys
 
+# Hooks run inside the user's repo; don't leave __pycache__ next to the vendored scripts.
+sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Vendored: runtime.py sits beside this file. Repo or plugin layout: core/scripts.
 for _d in (HERE, os.path.join(HERE, "..", "..", "core", "scripts")):

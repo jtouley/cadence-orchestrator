@@ -65,6 +65,8 @@ function copySkill(repo, target, skill) {
   }
   write(path.join(dest, "SKILL.md"), text);
   copyDir(path.join(CORE, "references"), path.join(dest, "references"));
+  // 0.1.0 hooks left bytecode caches next to the vendored scripts; remove them (only inside the skill dir).
+  fs.rmSync(path.join(dest, "scripts", "__pycache__"), { recursive: true, force: true });
   fs.mkdirSync(path.join(dest, "scripts"), { recursive: true });
   for (const name of ["guard.py", "runtime.py", "tasks_check.py"]) {
     fs.copyFileSync(path.join(CORE, "scripts", name), path.join(dest, "scripts", name));
@@ -138,8 +140,10 @@ function fail(message, code = 1) {
 }
 
 const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
+       cadence-orchestrator doctor --target <...|all> [--repo <path>]
 
-Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.`;
+Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
+\`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.`;
 
 function parseArgs(argv) {
   const opts = { repo: ".", catalog: [] };
@@ -159,9 +163,39 @@ function parseArgs(argv) {
   return opts;
 }
 
-const opts = parseArgs(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const isDoctor = argv[0] === "doctor";
+const opts = parseArgs(isDoctor ? argv.slice(1) : argv);
 const repo = path.resolve(opts.repo);
 if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
+if (isDoctor) {
+  if (opts.catalog.length) fail(`doctor doesn't take --catalog\n${USAGE}`, 2);
+  const { doctor, installed } = await import("./doctor.mjs");
+  let targets = [opts.target];
+  const results = [];
+  if (opts.target === "all") {
+    const found = Object.keys(TARGETS)
+      .sort()
+      .map((t) => ({ t, ...installed(repo, t, TARGETS[t]) }));
+    for (const f of found.filter((f) => f.error)) results.push({ name: `${f.t}: ${f.error}`, ok: false });
+    for (const f of found.filter((f) => !f.installed && !f.error)) {
+      results.push({ name: `${f.t}: not installed`, ok: true, skip: true });
+    }
+    targets = found.filter((f) => f.installed).map((f) => f.t);
+    if (!targets.length && !results.some((r) => !r.ok)) {
+      results.push({ name: `no target is installed in ${repo}`, ok: false });
+    }
+  }
+  results.push(...targets.flatMap((t) => doctor(repo, t, TARGETS[t])));
+  for (const r of results) {
+    const mark = r.skip ? "skip" : r.ok ? "ok  " : "FAIL";
+    console.log(`${mark} ${r.name}${r.ok || !r.detail ? "" : `: ${r.detail}`}`);
+  }
+  const failed = results.filter((r) => !r.ok).length;
+  const ran = results.filter((r) => !r.skip).length;
+  console.log(failed ? `${failed} check(s) failed.` : `All ${ran} checks passed.`);
+  process.exit(failed ? 1 : 0);
+}
 const py = spawnSync("python3", ["--version"], { stdio: "ignore" });
 if (py.error || py.status !== 0) {
   console.error("warning: python3 is not on PATH. The guard hooks run python3 and will not work until it is installed.");
