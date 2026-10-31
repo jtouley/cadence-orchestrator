@@ -141,22 +141,35 @@ function fail(message, code = 1) {
 
 const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
        cadence-orchestrator doctor --target <...|all> [--repo <path>]
+       cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
 
 Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
-\`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.`;
+\`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
+\`status\` reports what's installed and whether hooks have been seen firing in a live session (default: last 24 h).`;
 
-function parseArgs(argv) {
-  const opts = { repo: ".", catalog: [] };
+function parseArgs(argv, mode) {
+  const opts = { repo: ".", catalog: [], hours: 24, stateDir: "" };
   for (let i = 0; i < argv.length; i++) {
     const [flag, inline] = argv[i].split(/=(.*)/s, 2);
     const value = () => inline ?? argv[++i] ?? fail(`${flag} needs a value\n${USAGE}`, 2);
     if (flag === "--target") opts.target = value();
     else if (flag === "--repo") opts.repo = value();
-    else if (flag === "--catalog") opts.catalog.push(value());
+    else if (flag === "--catalog" && mode === "install") opts.catalog.push(value());
+    else if (flag === "--state-dir" && mode === "status") opts.stateDir = value();
+    else if (flag === "--hours" && mode === "status") {
+      opts.hours = Number(value());
+      if (!(opts.hours > 0)) fail(`--hours needs a positive number\n${USAGE}`, 2);
+    }
     else if (flag === "-h" || flag === "--help") {
       console.log(USAGE);
       process.exit(0);
+    } else if (["--catalog", "--hours", "--target", "--state-dir"].includes(flag)) {
+      fail(`${mode === "install" ? "install" : mode} doesn't take ${flag}\n${USAGE}`, 2);
     } else fail(`unknown argument ${argv[i]}\n${USAGE}`, 2);
+  }
+  if (mode === "status") {
+    if (opts.target) fail(`status doesn't take --target\n${USAGE}`, 2);
+    return opts;
   }
   if (!opts.target) fail(`--target is required\n${USAGE}`, 2);
   if (opts.target !== "all" && !(opts.target in TARGETS)) fail(`unknown target ${opts.target}\n${USAGE}`, 2);
@@ -164,12 +177,18 @@ function parseArgs(argv) {
 }
 
 const argv = process.argv.slice(2);
-const isDoctor = argv[0] === "doctor";
-const opts = parseArgs(isDoctor ? argv.slice(1) : argv);
+const mode = argv[0] === "doctor" || argv[0] === "status" ? argv[0] : "install";
+const isDoctor = mode === "doctor";
+const opts = parseArgs(mode === "install" ? argv : argv.slice(1), mode);
 const repo = path.resolve(opts.repo);
 if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
+if (mode === "status") {
+  const { status } = await import("./status.mjs");
+  const { lines, ok } = status(repo, TARGETS, opts.hours, opts.stateDir);
+  for (const l of lines) console.log(l);
+  process.exit(ok ? 0 : 1);
+}
 if (isDoctor) {
-  if (opts.catalog.length) fail(`doctor doesn't take --catalog\n${USAGE}`, 2);
   const { doctor, installed } = await import("./doctor.mjs");
   let targets = [opts.target];
   const results = [];
@@ -194,6 +213,12 @@ if (isDoctor) {
   const failed = results.filter((r) => !r.ok).length;
   const ran = results.filter((r) => !r.skip).length;
   console.log(failed ? `${failed} check(s) failed.` : `All ${ran} checks passed.`);
+  if (!failed) {
+    console.log(
+      "Simulation passed; this does not confirm the hooks fire in a live session. Run " +
+        "`npx cadence-orchestrator status` after starting a session here with $tpm (Codex) or /tpm.",
+    );
+  }
   process.exit(failed ? 1 : 0);
 }
 const py = spawnSync("python3", ["--version"], { stdio: "ignore" });

@@ -10,9 +10,22 @@ does it, and whether what came back is right. Every cycle you spend on core work
 context, crowds that out. So the work goes to agents; you keep the plan, the product model and the user's trust.
 The evidence behind these rules is in `references/sources.md`.
 
-A guard enforces this. Running this skill arms it for the rest of the session: before each tool call it
-blocks the main thread from editing files or running shell commands with side effects. Subagents keep all their
-tools. When a call is denied, delegate; don't look for a way around it.
+A guard enforces this when it's installed and running. Starting this skill arms it for the rest of the session:
+before each tool call it blocks the main thread from editing files or running shell commands with side effects.
+Subagents keep all their tools. When a call is denied, delegate; don't look for a way around it.
+
+**Check that the guard is actually running.** When it arms, it adds a line to your context:
+`TPM guard armed (session <id>, log <path>)`. If you don't see that line after the user starts TPM, tell the user
+plainly: "guard not running in this session — instructions only", and carry on following these instructions
+without it. Installed files and a passing `doctor` don't mean the guard is running; only that line does (or, where
+the platform can't show it, as on Copilot, a subagent running `npx cadence-orchestrator status`). Never tell the
+user the guard is active without that evidence.
+
+**Fit the setup you actually have.** If there's no remote, you can't push, or pre-commit isn't available, use local
+mode: workstream docs under `.cadence/workstreams/` in the repo, written by an agent but not pushed, and tell the
+user what that loses (no shared orchestration branch, no pre-commit checks on it). If the session has no
+subagent tool, or permissions stop you delegating, do the work as one agent, say so, and keep the rest: scope,
+evidence, independent checks with tests or CI. Don't claim parallel work or independent review you couldn't run.
 
 ## Don't investigate before you delegate
 

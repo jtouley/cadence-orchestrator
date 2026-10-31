@@ -65,8 +65,8 @@ class Platform:
     render_tool: Callable[[bool, str], Outcome]
     # warning text or "" -> Outcome, for an advisory tool check
     render_advisory: Callable[[str], Outcome]
-    # armed_now -> Outcome, for a prompt event
-    render_prompt: Callable[[bool], Outcome]
+    # armed message ("TPM guard armed (...)") or "" -> Outcome, for a prompt event
+    render_prompt: Callable[[str], Outcome]
     state_env: tuple[str, ...] = ()
     # block reason or "" -> Outcome, for a stop event (platforms with a Stop hook)
     render_stop: Callable[[str], Outcome] = lambda reason: Outcome()
@@ -144,27 +144,94 @@ def is_armed(state: str, session_id: str) -> bool:
     return bool(path) and os.path.exists(path)
 
 
+SESSIONS_DIR = "sessions"
+
+
+def armed_message(state: str, session_id: str) -> str:
+    """The line the model sees when arming works; the skill looks for it."""
+    return f"TPM guard armed (session {session_id}, log {os.path.join(state, 'advisory.log')})"
+
+
+def repo_root(start: str) -> str:
+    """The git top level containing `start` (a .git dir or file), or `start` itself."""
+    here = os.path.realpath(start)
+    probe = here
+    while True:
+        if os.path.exists(os.path.join(probe, ".git")):
+            return probe
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            return here
+        probe = parent
+
+
+def switched_off(project_dir: str) -> bool:
+    """The one test for the off switch: .cadence/tpm.off in the hook's cwd or its git top level."""
+    cwd = os.path.realpath(project_dir or os.getcwd())
+    return any(os.path.exists(os.path.join(d, OFF_FILE)) for d in {cwd, repo_root(cwd)})
+
+
+def heartbeat(platform: Platform, state: str, ev: Event, payload: dict) -> None:
+    """Record that a hook fired in this session: proof the guard runs live, for `status`."""
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", ev.session_id or "")
+    if not safe:
+        return
+    path = os.path.join(state, SESSIONS_DIR, safe)
+    cwd = os.path.realpath(ev.project_dir or os.getcwd())
+    root = repo_root(cwd)
+    off = switched_off(cwd)
+    record = {
+        "session": ev.session_id,
+        "platform": platform.name,
+        "last_event": str(payload.get("hook_event_name") or ev.kind),
+        "time": time.time(),
+        # Effective state: armed only if the marker exists and the off switch doesn't.
+        "armed": is_armed(state, ev.session_id) and not off,
+        "switched_off": off,
+        "project": root,
+        "cwd": cwd,
+    }
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.json.{os.getpid()}"
+    with open(tmp, "w") as f:
+        json.dump(record, f)
+    os.replace(tmp, path + ".json")
+
+
 def handle(platform: Platform, payload: dict) -> Outcome:
     ev = platform.parse(payload)
     state = state_dir(platform)
+    try:
+        return _handle(platform, payload, ev, state)
+    finally:
+        try:
+            heartbeat(platform, state, ev, payload)
+        except Exception:
+            pass  # a heartbeat must never affect the decision
+
+
+def _handle(platform: Platform, payload: dict, ev: Event, state: str) -> Outcome:
     if ev.kind == "prompt":
-        armed_now = False
         path = marker_path(state, ev.session_id) if ev.starts_tpm else None
-        if path:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            open(path, "w").close()
-            armed_now = True
-        return platform.render_prompt(armed_now)
+        if not path:
+            return platform.render_prompt("")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        open(path, "w").close()
+        if switched_off(ev.project_dir):
+            return platform.render_prompt(
+                f"TPM guard switched off by .cadence/tpm.off (session {ev.session_id}): instructions only"
+            )
+        return platform.render_prompt(armed_message(state, ev.session_id))
     if ev.kind == "stop":
         # The off switch wins. Block once per stop: stop_hook_active means we already did, so never loop.
-        off = os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE))
+        off = switched_off(ev.project_dir)
         if off or ev.stop_hook_active or not is_armed(state, ev.session_id):
             return platform.render_stop("")
         running = outstanding_agents(ev.background_tasks)
         return platform.render_stop(stop_reason(running) if running else "")
     if ev.kind != "tool" or not is_armed(state, ev.session_id):
         return _allow(platform)
-    if os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE)):
+    if switched_off(ev.project_dir):
         return _allow(platform)
     ok, why = guard.evaluate(ev.tool, ev.args, ev.is_subagent, ev.project_dir)
     reason = "" if ok else guard.deny_reason(why, ev.is_subagent)

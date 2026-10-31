@@ -69,9 +69,8 @@ PLATFORM = Platform(
     parse=parse,
     render_tool=lambda ok, reason: Outcome() if ok else Outcome(stderr=reason, code=2),
     render_advisory=lambda msg: Outcome(),
-    render_prompt=lambda armed: Outcome(
-        stdout="TPM guard armed for this session: the main thread delegates core work." if armed else ""
-    ),
+    # UserPromptExpansion: plain stdout is added as context Claude can see (hooks reference).
+    render_prompt=lambda message: Outcome(stdout=message),
     state_env=("CLAUDE_PLUGIN_DATA",),
     render_stop=lambda reason: Outcome(
         stdout=json.dumps({"decision": "block", "reason": reason}) if reason else ""

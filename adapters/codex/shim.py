@@ -57,7 +57,8 @@ PLATFORM = Platform(
     parse=parse,
     render_tool=lambda ok, reason: Outcome(),
     render_advisory=lambda msg: Outcome(stdout=json.dumps({"systemMessage": msg}) if msg else ""),
-    render_prompt=lambda armed: Outcome(),
+    # UserPromptSubmit: plain stdout is added as extra developer context (Codex hooks docs).
+    render_prompt=lambda message: Outcome(stdout=message),
 )
 
 if __name__ == "__main__":

@@ -51,6 +51,14 @@ it can't loop. The off switch (`.cadence/tpm.off`) disables it like the rest of 
 Cursor (`stop`) and Gemini (`AfterAgent`) have stop hooks that can force another turn, but their documented
 input has no list of running subagents, so there's no equivalent there yet.
 
+## Evidence that it runs
+
+Every hook event writes `<state>/sessions/<session>.json` (platform, last event, time, armed, project). Arming
+adds `TPM guard armed (session <id>, log <path>)` where the platform passes hook output to the model: plain stdout
+on Claude Code's `UserPromptExpansion` and Codex's `UserPromptSubmit`, `additionalContext` on Gemini's
+`BeforeAgent`. Copilot drops prompt-hook output and Cursor's `beforeSubmitPrompt` can't add context, so there the
+line only goes to stderr. `npx cadence-orchestrator status` reads the heartbeats.
+
 ## Failure modes
 
 Malformed hook input, or any crash in the guard, is allowed with a note on stderr, so a bug can't lock up

@@ -65,7 +65,8 @@ PLATFORM = Platform(
     parse=parse,
     render_tool=lambda ok, reason: Outcome(stdout=FALLBACK_STDOUT),
     render_advisory=lambda msg: Outcome(stdout=FALLBACK_STDOUT, stderr=msg),
-    render_prompt=lambda armed: Outcome(stdout='{"continue": true}'),
+    # beforeSubmitPrompt output can't add context; stderr goes to Cursor's hook log (unconfirmed).
+    render_prompt=lambda message: Outcome(stdout='{"continue": true}', stderr=message),
 )
 
 if __name__ == "__main__":

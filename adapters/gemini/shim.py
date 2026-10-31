@@ -72,7 +72,17 @@ PLATFORM = Platform(
     parse=parse,
     render_tool=lambda ok, reason: Outcome(stdout="{}"),
     render_advisory=lambda msg: Outcome(stdout=json.dumps({"systemMessage": msg}) if msg else "{}"),
-    render_prompt=lambda armed: Outcome(stdout="{}"),
+    # BeforeAgent: additionalContext is appended to the prompt; systemMessage is shown to the user.
+    render_prompt=lambda message: Outcome(
+        stdout=json.dumps(
+            {
+                "systemMessage": message,
+                "hookSpecificOutput": {"hookEventName": "BeforeAgent", "additionalContext": message},
+            }
+        )
+        if message
+        else "{}"
+    ),
 )
 
 if __name__ == "__main__":
