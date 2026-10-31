@@ -22,14 +22,23 @@ graded eval round.
 
 ## `status` output
 
-```console
-codex: hooks seen firing: none in the last 24 h
-```
+Verbatim from the task; exit code 1. A trailing npm upgrade notice is left out.
 
-Exit code 1.
+```console
+claude: not installed
+codex: skill files found (.agents/skills/tpm)
+codex: hook config installed in .codex/hooks.json (UserPromptSubmit, PreToolUse)
+codex: hooks seen firing: none in the last 24 h (not running in a live session here yet)
+copilot: not installed
+cursor: not installed
+gemini: not installed
+state dir: /tmp/cadence-orchestrator (from temp dir)
+advisory log: /tmp/cadence-orchestrator/advisory.log
+No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again from inside that session (so it sees the agent's environment), or pass --state-dir.
+```
 
 ## Conclusion
 
-In Codex cloud the project hooks didn't run, so the skill worked as instructions only: no guard, advisory or
-log. The likely cause, not confirmed, is that project hooks need a one-time approval (`/hooks`) that cloud tasks
-never prompt for. The local Codex CLI hasn't been tested live.
+In this one Codex cloud task on 2026-10-31, the project hooks didn't run, so the skill worked as instructions
+only: no guard, advisory or log. The likely cause, not confirmed, is that project hooks need a one-time approval
+(`/hooks`) that the cloud task never prompted for. The local Codex CLI hasn't been tested live.
