@@ -23,8 +23,8 @@ function sessions(stateDir, repo, hours) {
   for (const name of names) {
     try {
       const s = JSON.parse(fs.readFileSync(path.join(dir, name), "utf8"));
-      const inRepo = typeof s.project === "string" && (s.project === real || s.project.startsWith(real + path.sep));
-      if (inRepo && now - s.time <= hours * 3600) out.push({ ...s, age: now - s.time });
+      // Heartbeats record the git top level, so an exact match counts subdirectories but not nested repos.
+      if (s.project === real && now - s.time <= hours * 3600) out.push({ ...s, age: now - s.time });
     } catch {}
   }
   return out.sort((a, b) => a.age - b.age);

@@ -256,3 +256,80 @@ def test_status_state_dir_flag_and_source():
         text=True,
     )
     assert bad.returncode == 2 and "doesn't take --state-dir" in bad.stderr
+
+
+# ------------------------------------------------------------- PR #5 round 2
+
+
+def installed_shim(repo, platform, payload, state, cwd):
+    """Run a repo's installed shim directly from `cwd`, as its hook would (no project env var)."""
+    skill = {"claude": ".claude", "copilot": ".github", "codex": ".agents"}[platform] + "/skills/tpm"
+    path = os.path.join(repo, skill, "scripts", f"shim_{platform}.py")
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+    env["CADENCE_STATE_DIR"] = state
+    return subprocess.run(
+        [sys.executable, path],
+        input=json.dumps(dict(payload, cwd=cwd)),
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_off_switch_at_repo_root_applies_to_a_subdirectory_session_everywhere():
+    for off in (True, False):
+        repo, state = repo_with("claude", "copilot"), tempfile.mkdtemp()
+        sub = os.path.join(repo, "app")
+        os.makedirs(sub)
+        if off:
+            os.makedirs(os.path.join(repo, ".cadence"))
+            open(os.path.join(repo, ".cadence", "tpm.off"), "w").close()
+        # Copilot (enforcing): its project dir is the payload's cwd, here a subdirectory.
+        installed_shim(repo, "copilot", ARM["copilot"], state, sub)
+        write = installed_shim(
+            repo,
+            "copilot",
+            {"hook_event_name": "PreToolUse", "session_id": "s1", "tool_name": "Write", "tool_input": {}},
+            state,
+            sub,
+        )
+        # Claude's Stop hook, run from the subdirectory without CLAUDE_PROJECT_DIR.
+        installed_shim(repo, "claude", dict(ARM["claude"], session_id="s2"), state, sub)
+        stop = installed_shim(
+            repo,
+            "claude",
+            {
+                "hook_event_name": "Stop",
+                "session_id": "s2",
+                "stop_hook_active": False,
+                "background_tasks": [{"id": "t", "type": "subagent", "status": "running"}],
+            },
+            state,
+            sub,
+        )
+        out = status(repo, state)
+        if off:
+            assert write.stdout == "" and stop.stdout == ""  # the guard is off on both paths
+            assert beat(state, "s1")["switched_off"] is True and beat(state, "s2")["switched_off"] is True
+            assert "session s1: switched off" in out.stdout and "session s2: switched off" in out.stdout
+        else:
+            assert '"deny"' in write.stdout and '"block"' in stop.stdout  # the guard is on
+            assert beat(state, "s1")["armed"] is True and "session s1: armed" in out.stdout
+
+
+def test_nested_repo_sessions_are_not_counted_for_the_outer_repo():
+    outer, state = repo_with("codex"), tempfile.mkdtemp()
+    inner = os.path.join(outer, "vendor", "inner")
+    os.makedirs(inner)
+    subprocess.run(["git", "init", "-q", inner], check=True)
+    installed_shim(outer, "codex", ARM["codex"], state, inner)
+    assert beat(state, "s1")["project"] == os.path.realpath(inner)
+    out = status(outer, state)
+    assert out.returncode == 1 and "session s1" not in out.stdout
+    # A plain subdirectory of the outer repo still counts (it resolves to the top level).
+    sub = os.path.join(outer, "src")
+    os.makedirs(sub)
+    installed_shim(outer, "codex", dict(ARM["codex"], session_id="s3"), state, sub)
+    out = status(outer, state)
+    assert out.returncode == 0 and "session s3: armed" in out.stdout and "session s1" not in out.stdout
