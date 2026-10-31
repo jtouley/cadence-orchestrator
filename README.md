@@ -1,47 +1,45 @@
 # cadence-orchestrator
 
-A skill that turns a frontier-model coding session into a technical program manager for its own agents.
+cadence-orchestrator is a skill that makes your coding agent act as a technical program manager. You describe
+the work; the orchestrator plans it with you, hands every piece of it to subagents, has separate reviewers check
+what comes back, and reports with evidence. A guard stops the orchestrator from doing the work itself.
 
-You type `/tpm` and describe the work. The session scopes it with you, splits it into workstreams, hands every
-piece of investigation, coding, testing and review to subagents, checks what comes back with independent
-reviewers, and reports with evidence. A guard keeps the orchestrating thread from doing the work itself, so its
-context stays on the plan and on whether the results are right.
-
-It runs on Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is an offshoot of
+It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is an offshoot of
 [cadence-core](https://github.com/jtouley/cadence-core).
 
-## How it works
+> [!NOTE]
+> Version 0.1.0. The repository is private and the npm package is not published yet. macOS and Linux only.
 
-- **Scopes with you first.** It reads what's already decided (CLAUDE.md, ADRs, earlier workstream docs) and asks
-  only the real forks, one choice at a time.
-- **Shared state lives on an `orchestration` branch.** One doc per workstream (`workstreams/<slug>.md`) holds your
-  ask verbatim, the scope, your decisions and links to evidence. Task status sits beside it as JSON
-  (`workstreams/<slug>.tasks.json`): one owner per task, its state, its evidence and the tokens it cost. A task
-  can't be marked done without evidence. A scribe agent writes both files.
-- **Dispatch prompts are one line.** A verb or skill, a target, and where the result goes. The details are in the
-  doc, so agents investigate instead of confirming the orchestrator's guess.
-- **Verification is independent, in two passes.** A separate reviewer gets the artifact and the doc, never the
-  maker's conclusion, and checks spec compliance first, then quality. A claim without a command and its output, a commit or a PR link is reported as unproven.
-- **A guard keeps the orchestrator out of the work.** Once armed, it blocks the main thread from editing files or
+## How It Works
+
+- **It scopes with you first.** The orchestrator reads what's already decided (CLAUDE.md, ADRs, earlier
+  workstream docs) and asks only about decisions still open, one at a time.
+- **Shared state lives on an `orchestration` branch.** Each workstream gets a doc (`workstreams/<slug>.md`: your
+  ask verbatim, scope, your decisions, evidence) and a task file (`workstreams/<slug>.tasks.json`: one owner,
+  state, evidence and token count per task). A scribe subagent writes both. The skill tells the orchestrator
+  never to mark a task done without evidence; nothing checks this automatically yet.
+- **Subagents get one-line prompts, and reviewers stay independent.** The prompt names a skill or verb, a target
+  and where the result goes; the details are in the doc. A separate reviewer checks the result against the doc,
+  spec first, then quality. Any claim not backed by a command and its output, a commit or a PR link is reported
+  as unproven.
+- **A guard keeps the orchestrator out of the work.** Once armed, it blocks the orchestrator from editing files or
   running commands with side effects. Subagents keep all their tools.
 
-What the orchestrator sends its agents looks like this:
+Prompts the orchestrator sends its subagents look like this:
 
 ```text
 /code-review on PR #42 and push the full review to the PR as a comment.
 Implement workstreams/finish-bag.md (branch orchestration on origin). Open a PR, don't merge; link it in the doc.
 ```
 
-The full playbook is [`core/SKILL.md`](core/SKILL.md).
+## Use cadence-orchestrator
 
-## Install
+### Install in a Repo
 
-The installer needs Node 18 or later. The guard hooks it installs need `python3` (standard library only); the
-installer warns if it isn't on `PATH`. `--repo` must be the root of a git checkout. Commit the result so everyone
-working in that repo, including cloud sessions, gets it.
+From the root of the git repository you want to use it in:
 
 ```sh
-npx cadence-orchestrator --target claude --repo ~/code/my-app
+npx github:jtouley/cadence-orchestrator --target claude
 ```
 
 ```console
@@ -49,129 +47,129 @@ claude: .claude/skills/tpm/, .claude/settings.json
 Done. Review and commit the changes; see README for per-platform notes.
 ```
 
-The npm package isn't published yet. Until it is, run it from GitHub or from a clone. The repository is private,
-so `npx github:` needs GitHub access (an SSH key or a token git can use); the npm package, once published,
-won't.
+You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
+warns if `python3` is missing. Because the repository is private, `npx github:` needs GitHub access: an SSH key
+or a token that git can use. (The npm package won't need this.) Once it's published, the command will be
+`npx cadence-orchestrator --target claude`.
 
-```sh
-npx github:jtouley/cadence-orchestrator --target claude --repo ~/code/my-app
-# or, from a clone:
-git clone https://github.com/jtouley/cadence-orchestrator && cd cadence-orchestrator
-npx --yes ./ --target claude --repo ~/code/my-app    # ./install.sh does the same
-```
-
-Use `--target all` for every platform at once. Re-running is safe: it replaces only its own hook entries and
-keeps everything else in those files. It also adds `.cadence/tpm.off` to the repo's `.gitignore`.
+`--repo <path>` installs into another repository; it defaults to the current directory. `--target all` installs
+for every platform. Re-running is safe: the installer replaces only its own entries in the files it touches. It
+also adds `.cadence/tpm.off` to `.gitignore`. Commit the result so everyone working in the repo, including cloud
+sessions, gets it. From a clone of this repository, run `./install.sh --repo <path>` with the same options.
 
 | Platform | `--target` | What it adds | Guard |
 | --- | --- | --- | --- |
-| Claude Code | `claude` | `.claude/skills/tpm/`, hooks in `.claude/settings.json` | **Enforces** |
-| GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Enforces** |
-| Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | Warns only |
-| Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc` | Warns only |
-| Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns only |
+| Claude Code | `claude` | `.claude/skills/tpm/`, hooks in `.claude/settings.json` | **Blocks** |
+| GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Blocks** |
+| Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | Warns |
+| Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc` | Warns |
+| Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns |
 
-Claude Code and Copilot mark tool calls made inside a subagent, so the guard can block the orchestrator and let
-its workers through. Codex, Cursor and Gemini don't, so blocking there would stop the workers too. On those three
-the guard never blocks: it shows a "tpm advisory" warning, which the skill tells the model to treat as a denial,
-and logs it to `advisory.log` in the state directory (`$CADENCE_STATE_DIR`, or `cadence-orchestrator/` in the
-system temp directory).
+Claude Code and Copilot mark tool calls made by subagents, so the guard can block the orchestrator and let
+subagents through. Codex, Cursor and Gemini don't, and blocking there would stop the subagents too. On those
+three the guard only shows a "tpm advisory" warning, which the skill tells the orchestrator to treat as a denial,
+and logs it to `advisory.log` in `$CADENCE_STATE_DIR` (default: `cadence-orchestrator/` in the system temp
+directory).
 
-### Skill catalogs
+### Or as a Claude Code Plugin
 
-The orchestrator routes work to skill sets listed in your catalogs: markdown files in the repo's
-`.cadence/catalog/` (committed, so cloud sessions see them), then in `$CADENCE_CATALOG_PATH` or
-`~/.cadence/catalog/`. The shipped [`example-registry.md`](core/references/example-registry.md) is one user's
-catalog, used only as a format example unless you confirm it fits. To add yours while installing:
-
-```sh
-npx cadence-orchestrator --target claude --repo ~/code/my-app --catalog ~/my-skills.md
-```
-
-The format and lookup rules are in [`core/references/catalogs.md`](core/references/catalogs.md).
-
-### Claude Code plugin
-
-To use it in your own Claude Code without vendoring it into a repo, install the plugin from inside Claude Code:
+To use it in your own Claude Code without installing it into a repo, run these inside Claude Code. While the
+repository is private, this also needs GitHub access.
 
 ```text
 /plugin marketplace add jtouley/cadence-orchestrator
 /plugin install cadence-orchestrator@cadence-orchestrator
 ```
 
-Then start it with `/cadence-orchestrator:tpm`.
+The plugin's command is `/cadence-orchestrator:tpm`.
 
-## Usage
+### Skill Catalogs
 
-Open a session in the repo and begin your message with `/tpm`:
+The orchestrator chooses which skills to route work to from catalogs: markdown files in the repo's
+`.cadence/catalog/` (commit them, so cloud sessions see them), then `$CADENCE_CATALOG_PATH` or
+`~/.cadence/catalog/`. Add one while installing with `--catalog <file.md>`; repeat the flag for more than one.
+The shipped [`example-registry.md`](core/references/example-registry.md) is one user's catalog; the orchestrator
+treats it as a format example unless you confirm it fits.
+
+### Start and Stop
+
+Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Copilot,
+Codex, Cursor and Gemini the message must begin with `/tpm` or `$tpm`. That arms the guard for this session
+only; a model loading the skill by itself doesn't arm it. On Claude Code the hook reports it, and an edit by the
+orchestrator is then refused (exit code 2, message shortened here):
 
 ```text
-/tpm add a finish screen for the bag flow, then review it
+TPM guard armed for this session: the main thread delegates core work.
+TPM mode is on: the main thread doesn't do core work (Edit). Delegate it to a subagent: …
 ```
 
-That arms the guard for this session only. It arms when you type the command, not when a model loads the skill
-on its own. On Copilot, Codex, Cursor and Gemini the message has to start with `/tpm` (or `$tpm`).
-
-**To switch it off**, start a new session, or create the off switch in the repo root:
+To switch it off, start a new session, or create the off switch in the repo root (delete it to switch back on):
 
 ```sh
 mkdir -p .cadence && touch .cadence/tpm.off
 ```
 
-Delete the file to turn the guard back on in sessions that were armed. Turning it off is your call: the skill
-tells the model never to create the file, an enforced main thread can't write it, and the guard refuses subagent
-tool calls that mention it.
+Switching it off is your call. The skill tells the orchestrator never to create that file, and the guard refuses
+subagent tool calls that mention it.
 
-## What the guard allows
+## What the Guard Allows
 
-On an armed main thread the guard allows reading, searching, delegation (subagents, child sessions, skills), task
-tracking and conversation, plus MCP tools whose names say they only read (`get_*`, `list_*`, `search_*` and
-similar). A shell command passes only if every part of it is on a short read-only list (`ls`, `cat`, `grep`,
-`find`, `git status`, `git log`, `git diff`, ...) with allowlisted options. Edits, writes, other shell commands
-and any tool it doesn't recognise are denied, with a message telling the model to delegate.
+It allows reading, searching, delegating, task tracking and read-only shell commands, and denies edits, writes,
+other commands and any tool it doesn't recognise; the exact lists are in
+[`core/references/guard.md`](core/references/guard.md).
 
-The exact lists are in [`core/references/guard.md`](core/references/guard.md); the policy is
-[`core/scripts/guard.py`](core/scripts/guard.py).
+## Threat Model
 
-## Threat model
+The guard is not a sandbox. It keeps a cooperative orchestrator from drifting into doing the work, nothing more.
 
-The guard is **not a sandbox**. It stops a cooperative orchestrator from drifting into doing the work itself; it
-is not a security boundary.
+- Its shell check and its off-switch protection are text filters; a determined model can get around them.
+- It fails open: malformed hook input or a crash in the guard allows the call, so a bug can't lock up a session.
+- It only warns on Codex, Cursor and Gemini, and it doesn't restrict subagents beyond the off switch.
 
-- The shell check is a text filter. A determined model can get around it.
-- The off-switch protection is a text match on tool arguments: a backstop, not a lock.
-- It fails open. Malformed hook input or a crash in the guard allows the call, so a bug can't lock up a session.
-- On Codex, Cursor and Gemini it only warns.
-- Subagents are unrestricted apart from the off switch and the arming state.
+Use your platform's permissions or a real sandbox to contain an agent you don't trust.
 
-Don't rely on it to contain an agent you don't trust; use your platform's permissions or a real sandbox for that.
+## Further Reading
 
-## Repository layout
+- [`core/SKILL.md`](core/SKILL.md): the full playbook the orchestrator follows
+- [`core/references/guard.md`](core/references/guard.md): what the guard allows and denies
+- [`core/references/catalogs.md`](core/references/catalogs.md): catalog format and lookup order
+- [`core/references/workstream.md`](core/references/workstream.md): the workstream doc and `tasks.json` format
+- [`core/references/example-registry.md`](core/references/example-registry.md): an example catalog
 
-```text
-core/            the skill: SKILL.md, references/, scripts/ (guard.py policy, runtime.py), tests/
-adapters/        one folder per platform: a shim that maps its hook input onto the guard, plus hook templates
-bin/             the installer (cadence-orchestrator.mjs, no dependencies); package.json publishes it to npm
-install.sh       runs the same installer from a clone
-.claude-plugin/  Claude Code plugin and marketplace manifests
-evals/           behaviour cases: a prompt, the expected outcome and LLM graders
+## Troubleshooting
+
+### `npx github:` fails to fetch the package
+
+The repository is private. Give git access to GitHub (an SSH key, or a token through a credential helper), or
+clone it with credentials you already have and run `./install.sh --repo <path>` from the clone.
+
+### The installer stops with a `SyntaxError` from `JSON.parse`
+
+The hook file it merges into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
+
+```console
+SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)
+    at JSON.parse (<anonymous>)
+    at mergeHooks (…/bin/cadence-orchestrator.mjs:76:39)
 ```
 
-The cases in `evals/` use the layout `claude plugin eval` reads. They were written against one app repository
-(coffee-data-tracker), so they don't run on their own.
+The skill files were copied but no hooks were added, and the file is unchanged. Remove the comments and run the
+installer again.
+
+### `warning: python3 is not on PATH`
+
+The install finishes, but the guard hooks run `python3` and won't work until it's installed.
 
 ## Development
-
-The tests need only the Python standard library, plus Node for the installer tests:
 
 ```sh
 python3 core/tests/test_guard.py
 python3 core/tests/test_adapters.py
 ```
 
-If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
-list against `guard.py`. `npm pack --dry-run` shows what the npm package ships: the installer, the skill and the
-adapters, without tests or evals.
+The tests use only the Python standard library (test_adapters.py also needs Node). If you change what the guard
+allows, update `core/references/guard.md` in the same change; a test checks its tool list against `guard.py`. `evals/` holds
+behaviour cases written against one app repository (coffee-data-tracker), so they don't run on their own.
 
 ## License
 
