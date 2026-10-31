@@ -70,3 +70,16 @@ def test_review_fixes_keys_git_hosts_and_example_subdomains():
     assert not found(f"jane{AT}mail.example.com")
     assert not found(f"ops{AT}eu.example.org")
     assert found(f"jane{AT}notexample.com")
+
+
+def test_account_keys_are_whole_tokens_and_matching_is_linear():
+    import time
+
+    for key in ("user_account_uuid", "primaryOrgUuid", "organizationUuid"):
+        assert found(f'"{key}": "{UUID}"'), key
+    for key in ("forgid", "georgid", "accountidentifier"):
+        assert not found(f"{key} = {UUID}"), key
+    for line in ("a" * 20_000, "ab " * 7_000, ("k" * 60 + "= ") * 300):
+        start = time.perf_counter()
+        found(line)
+        assert time.perf_counter() - start < 0.1, len(line)

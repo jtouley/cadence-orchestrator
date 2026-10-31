@@ -38,7 +38,8 @@ Subagents keep every tool, with two exceptions:
 - A `Write` to a `*.tasks.json` file whose content, or an `Edit`/`MultiEdit` whose result (applied to the file
   on disk), fails `scripts/tasks_check.py` is denied: for example a `done` task without evidence. Writes made
   through the shell can't be seen; the `cadence-tasks-check` pre-commit hook on the orchestration branch covers
-  those. Validation errors deny too, rather than failing open. On advisory platforms, where every call looks
+  those. Validation errors deny too, rather than failing open, and so does a task-file change the guard can't model
+  (a patch, an insert, an edit to a file it can't read). On advisory platforms, where every call looks
   like the orchestrator's, the same check runs and its findings are part of the warning.
 
 ## Ending the turn (Claude Code)

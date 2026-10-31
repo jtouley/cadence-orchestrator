@@ -38,6 +38,16 @@ def _args(value):
     return value if isinstance(value, dict) else {}
 
 
+# str_replace_editor's effect depends on its `command` argument.
+EDITOR_COMMANDS = {"create": "Write", "str_replace": "Edit", "insert": "Edit", "view": "Read"}
+
+
+def tool_name(name: str, args: dict) -> str:
+    if name == "str_replace_editor":
+        return EDITOR_COMMANDS.get(str(args.get("command", "")), "Edit")
+    return TOOL_MAP.get(name, name)
+
+
 # camelCase payloads carry Copilot's runtime tool names; PascalCase ones already use Claude's.
 # From the hooks reference's "Tool names for hook matching" table.
 TOOL_MAP = {
@@ -46,7 +56,6 @@ TOOL_MAP = {
     "view": "Read",
     "create": "Write",
     "edit": "Edit",
-    "str_replace_editor": "Edit",
     "apply_patch": "Edit",
     "grep": "Grep",
     "rg": "Grep",
@@ -68,12 +77,13 @@ def parse(p: dict) -> Event:
         )
     if "tool_name" in p or "toolName" in p:
         name = str(p.get("tool_name") or p.get("toolName") or "")
+        args = runtime.canonical_args(_args(p.get("tool_input", p.get("toolArgs"))))
         return Event(
             "tool",
             session,
             project,
-            tool=TOOL_MAP.get(name, name),
-            args=runtime.canonical_args(_args(p.get("tool_input", p.get("toolArgs")))),
+            tool=tool_name(name, args),
+            args=args,
             is_subagent=bool(p.get("agent_id") or p.get("agentId")),
         )
     return Event("other", session, project)

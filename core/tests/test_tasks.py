@@ -312,3 +312,76 @@ def test_subagent_off_switch_denial_says_only_the_user_can_lift_it():
     out = hook("claude", tool("Bash", {"command": "touch .cadence/tpm.off"}), state, project)
     assert out.returncode == 2 and "Only the user can lift this guard" in out.stderr
     assert "retry" not in out.stderr.split("Only the user")[1].lower()
+
+
+def test_copilot_str_replace_editor_is_mapped_by_command():
+    state, project = tempfile.mkdtemp(), tempfile.mkdtemp()
+    hook(
+        "copilot",
+        {"hook_event_name": "UserPromptSubmit", "session_id": "c", "prompt": "/tpm"},
+        state,
+        project,
+    )
+    bad = json.dumps(doc(dict(DONE, evidence=[])))
+
+    def editor(**args):
+        out = copilot({"agentId": "sub", "toolName": "str_replace_editor", "toolArgs": args}, state, project)
+        return json.loads(out.stdout)["permissionDecision"] if out.stdout else "allow"
+
+    assert editor(command="create", path="w.tasks.json", file_text=bad) == "deny"
+    assert editor(command="create", path="w.tasks.json", file_text=json.dumps(doc(DONE))) == "allow"
+    open(os.path.join(project, "w.tasks.json"), "w").write(
+        json.dumps(doc(dict(CLAIMED, doc_sha="x")), indent=2)
+    )
+    assert (
+        editor(
+            command="str_replace",
+            path="w.tasks.json",
+            old_str='"state": "claimed"',
+            new_str='"state": "done"',
+        )
+        == "deny"
+    )
+    assert editor(command="insert", path="w.tasks.json", insert_line=1, new_str="x") == "deny"
+    assert editor(command="view", path="w.tasks.json") == "allow"
+    # Root agent: view is a read (allowed), create is core work (denied).
+    root = copilot(
+        {"toolName": "str_replace_editor", "toolArgs": {"command": "view", "path": "a.py"}}, state, project
+    )
+    assert root.stdout == ""
+    root = copilot(
+        {
+            "toolName": "str_replace_editor",
+            "toolArgs": {"command": "create", "path": "a.py", "file_text": "x"},
+        },
+        state,
+        project,
+    )
+    assert json.loads(root.stdout)["permissionDecision"] == "deny"
+
+
+def test_task_file_writes_the_guard_cant_model_are_denied():
+    state, project = tempfile.mkdtemp(), tempfile.mkdtemp()
+    hook(
+        "copilot",
+        {"hook_event_name": "UserPromptSubmit", "session_id": "c", "prompt": "/tpm"},
+        state,
+        project,
+    )
+    patch = "*** Begin Patch\n*** Update File: workstreams/w.tasks.json\n@@\n-x\n+y\n*** End Patch"
+    out = copilot({"agentId": "sub", "toolName": "apply_patch", "toolArgs": {"input": patch}}, state, project)
+    decision = json.loads(out.stdout)
+    assert decision["permissionDecision"] == "deny" and "can't check" in decision["permissionDecisionReason"]
+    other = "*** Begin Patch\n*** Update File: src/a.py\n@@\n-x\n+y\n*** End Patch"
+    out = copilot({"agentId": "sub", "toolName": "apply_patch", "toolArgs": {"input": other}}, state, project)
+    assert out.stdout == ""  # subagent patching ordinary code: allowed
+    out = copilot(
+        {
+            "agentId": "sub",
+            "toolName": "edit",
+            "toolArgs": {"path": "missing.tasks.json", "old_str": "a", "new_str": "b"},
+        },
+        state,
+        project,
+    )
+    assert json.loads(out.stdout)["permissionDecision"] == "deny"  # can't read the current file

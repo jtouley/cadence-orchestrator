@@ -829,35 +829,47 @@ def _apply_edit(text: str, old, new, replace_all=False) -> str | None:
     return text.replace(old, new) if replace_all else text.replace(old, new, 1)
 
 
+WRITE_TOOLS = {"Write", "Edit", "MultiEdit"}
+CANT_CHECK = "it changes a task file in a way the guard can't check ({}); use a plain Write of the whole file"
+
+
 def task_file_problem(tool: str, args: dict, cwd: str = "") -> str:
     """For a write to a *.tasks.json file, the validation errors of the result, or "".
 
     Arguments are canonical (file_path, content, old_string, new_string, replace_all, edits);
-    each platform shim maps its own names onto these.
+    each platform shim maps its own names onto these. A task-file write the guard can't model
+    (a patch, an insert, an unreadable file) is reported as a problem, so it's denied, not allowed.
     """
+    if tool not in WRITE_TOOLS:
+        return ""  # shell writes can't be seen; the pre-commit check covers those
     path = args.get("file_path") or ""
-    if not isinstance(path, str) or not path.endswith(tasks_check.SUFFIX):
+    if not isinstance(path, str) or not path:
+        # e.g. apply_patch: no single target file. Deny if it touches a task file at all.
+        if any(tasks_check.SUFFIX in s for s in strings_in(args)):
+            return CANT_CHECK.format("a patch or multi-file change")
+        return ""
+    if not path.endswith(tasks_check.SUFFIX):
         return ""
     try:
         if tool == "Write":
             content = args.get("content")
-        elif tool in ("Edit", "MultiEdit"):
+        else:
             try:
                 with open(os.path.join(cwd, path) if cwd else path, encoding="utf-8") as f:
                     content = f.read()
-            except OSError:
-                return ""  # can't see the current file; the platform will report its own error
+            except OSError as exc:
+                return CANT_CHECK.format(f"can't read the current file: {exc.strerror}")
             edits = args.get("edits") if tool == "MultiEdit" else [args]
-            for edit in edits if isinstance(edits, list) else []:
-                if not isinstance(edit, dict):
-                    return ""
-                content = _apply_edit(
-                    content, edit.get("old_string"), edit.get("new_string"), bool(edit.get("replace_all"))
-                )
-                if content is None:
-                    return ""
-        else:
-            return ""  # shell writes can't be seen; the pre-commit check covers those
+            if not isinstance(edits, list) or not edits:
+                return CANT_CHECK.format("no edits given")
+            for edit in edits:
+                old = edit.get("old_string") if isinstance(edit, dict) else None
+                new = edit.get("new_string") if isinstance(edit, dict) else None
+                if not isinstance(old, str) or not isinstance(new, str):
+                    return CANT_CHECK.format("an edit without old and new text, e.g. an insert")
+                if old not in content:
+                    return ""  # the edit itself will fail and change nothing
+                content = _apply_edit(content, old, new, bool(edit.get("replace_all")))
         if not isinstance(content, str):
             return "the new content isn't text"
         return "; ".join(tasks_check.validate_text(content))

@@ -23,9 +23,21 @@ ALLOWED_DOMAINS = {"example.com", "example.org", "example.net"}
 GIT_HOSTS = {"github.com", "gitlab.com", "bitbucket.org"}  # git@<host>:owner/repo SSH remotes
 CODE_DOMAINS = ("pytest.",)  # decorator-like code such as x@pytest.fixture
 UUID = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-# Any key containing account/org(anization) + uuid/id, e.g. user_account_uuid or orgUuid.
-ACCOUNT_KEY = r"[\w-]*(?:organi[sz]ation|org|account)[_-]?(?:uuid|id)[\w-]*"
-ACCOUNT_UUID = re.compile(rf"(?i){ACCOUNT_KEY}[\"']?\s*[:=]\s*[\"']?{UUID}")
+# A whole key token (bounded, so matching stays linear) followed by `:` or `=` and a UUID. The token
+# is then split into words (snake, kebab, camelCase) and flagged if it has account/org + uuid/id,
+# e.g. user_account_uuid, primaryOrgUuid, organizationUuid, org_id; not forgid or accountidentifier.
+KEY_UUID = re.compile(rf"(?<![A-Za-z0-9_-])([A-Za-z0-9_-]{{1,64}})[\"']?\s*[:=]\s*[\"']?{UUID}")
+ACCOUNT_WORDS = {"account", "org", "organization", "organisation"}
+ID_WORDS = {"uuid", "id"}
+JOINED = {a + i for a in ACCOUNT_WORDS for i in ID_WORDS}  # all-lowercase keys like accountuuid
+
+
+def is_account_key(token: str) -> bool:
+    words = [w for w in re.split(r"[_-]", re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", token).lower()) if w]
+    pairs = zip(words, words[1:], strict=False)
+    return any(w in JOINED for w in words) or any(a in ACCOUNT_WORDS and i in ID_WORDS for a, i in pairs)
+
+
 SESSION_LOG = re.compile(r"(?:^|[\\/\s\"'`(])session_log[\\/]")
 
 
@@ -47,7 +59,7 @@ def findings(path: str, text: str) -> list[str]:
         for m in EMAIL.finditer(line):
             if not email_ok(m.group(0)):
                 out.append(f"{path}:{n}: email address {m.group(0)}")
-        if ACCOUNT_UUID.search(line):
+        if any(is_account_key(m.group(1)) for m in KEY_UUID.finditer(line)):
             out.append(f"{path}:{n}: organization/account UUID")
         if SESSION_LOG.search(line):
             out.append(f"{path}:{n}: session_log path")
