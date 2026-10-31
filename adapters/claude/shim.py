@@ -4,9 +4,13 @@
 Claude Code sets agent_id on hook input only inside a subagent, so the guard can
 tell the orchestrator from its workers. Deny = exit 2 with the reason on stderr.
 Arms on UserPromptExpansion for the tpm skill (typed /tpm or /<plugin>:tpm).
+On Stop, blocks once (decision "block") while agent tasks the orchestrator
+started are still in Stop's background_tasks; stop_hook_active means it already
+did, so it lets the stop through.
 """
 
 FALLBACK_STDOUT = ""
+import json
 import os
 import sys
 
@@ -36,6 +40,14 @@ def parse(p: dict) -> Event:
         return Event(
             "prompt", session, project, starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", ""))))
         )
+    if event == "Stop":
+        return Event(
+            "stop",
+            session,
+            project,
+            stop_hook_active=bool(p.get("stop_hook_active")),
+            background_tasks=p.get("background_tasks") or [],
+        )
     if event == "PreToolUse" or "tool_name" in p:
         args = p.get("tool_input")
         return Event(
@@ -59,6 +71,9 @@ PLATFORM = Platform(
         stdout="TPM guard armed for this session: the main thread delegates core work." if armed else ""
     ),
     state_env=("CLAUDE_PLUGIN_DATA",),
+    render_stop=lambda reason: Outcome(
+        stdout=json.dumps({"decision": "block", "reason": reason}) if reason else ""
+    ),
 )
 
 if __name__ == "__main__":

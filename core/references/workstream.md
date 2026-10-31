@@ -49,11 +49,22 @@ Each workstream has two files on the `orchestration` branch, written by the scri
 The scribe rewrites the whole file on each update (no hand-merged fragments) and validates it as JSON before
 pushing.
 
-## Enforcing "no done without evidence" (not built)
+## Enforcing it
 
-On platforms where the guard enforces (Claude Code, Copilot), it could check this cheaply. A subagent's
-`Write` to a `*.tasks.json` path carries the new content in the tool input, so the guard can parse it and deny
-any task with `"state": "done"` and empty `evidence` or no `left_out_accepted_by`. An `Edit` would need the guard to apply the edit to the
-file on disk first, and a shell-built file can't be seen at all. So the robust place is a check on the
-`orchestration` branch itself: a pre-push hook or a CI job that validates every `*.tasks.json` against these
-rules. On advisory platforms only that branch check can enforce it.
+- **The guard** (Claude Code and Copilot): a subagent `Write`, `Edit` or `MultiEdit` that would leave an invalid
+  `*.tasks.json` is denied; see `guard.md`. Shell-built files aren't covered.
+- **pre-commit on the orchestration branch**: the scribe runs `pre-commit run --all-files` before every push,
+  with this `.pre-commit-config.yaml` committed on that branch:
+
+  ```yaml
+  repos:
+    - repo: https://github.com/gitleaks/gitleaks
+      rev: v8.30.1
+      hooks: [{id: gitleaks}]
+    - repo: https://github.com/jtouley/cadence-orchestrator
+      rev: <release tag or commit SHA>
+      hooks: [{id: cadence-leak-check}, {id: cadence-tasks-check}]
+  ```
+
+  `cadence-tasks-check` runs `scripts/tasks_check.py` on `workstreams/*.tasks.json`; `cadence-leak-check` blocks
+  email addresses, account UUIDs and session log paths. Both need pre-commit 4.4.0 or later.

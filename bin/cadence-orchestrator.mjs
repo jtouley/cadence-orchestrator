@@ -66,7 +66,7 @@ function copySkill(repo, target, skill) {
   write(path.join(dest, "SKILL.md"), text);
   copyDir(path.join(CORE, "references"), path.join(dest, "references"));
   fs.mkdirSync(path.join(dest, "scripts"), { recursive: true });
-  for (const name of ["guard.py", "runtime.py"]) {
+  for (const name of ["guard.py", "runtime.py", "tasks_check.py"]) {
     fs.copyFileSync(path.join(CORE, "scripts", name), path.join(dest, "scripts", name));
   }
   fs.copyFileSync(path.join(ADAPTERS, target, "shim.py"), path.join(dest, "scripts", `shim_${target}.py`));

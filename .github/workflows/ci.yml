@@ -20,7 +20,25 @@ jobs:
         with:
           node-version: "22"
       - run: pip install pre-commit==4.7.0
-      - run: pre-commit run --all-files --show-diff-on-failure
+      # no-commit-to-branch guards local commits to main; CI isn't committing, so it's skipped here.
+      - run: SKIP=no-commit-to-branch pre-commit run --all-files --show-diff-on-failure
+
+  leaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks scans the whole history, not just this commit
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: gitleaks over the full history (same version as the pre-commit hook)
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          "$(go env GOPATH)/bin/gitleaks" git --redact --verbose .
+      # The leak check on tracked files runs in the pre-commit job (local leak-check hook).
+      - name: Workstream task files, if any
+        run: git ls-files -z 'workstreams/*.tasks.json' '**/workstreams/*.tasks.json' | xargs -0 -r python3 core/scripts/tasks_check.py
 
   pytest:
     runs-on: ubuntu-latest

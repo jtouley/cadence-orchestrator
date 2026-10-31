@@ -1,0 +1,16 @@
+# Hooks other repos (and the orchestration branch) can use:
+#   - repo: https://github.com/jtouley/cadence-orchestrator
+#     rev: <tag or SHA>
+#     hooks: [{id: cadence-leak-check}, {id: cadence-tasks-check}]
+# unsupported_script needs pre-commit 4.4.0 or later (4.3.0 doesn't have it).
+- id: cadence-leak-check
+  name: no leaked emails, account UUIDs or session logs
+  entry: checks/leak_check.py
+  language: unsupported_script
+  minimum_pre_commit_version: "4.4.0"
+- id: cadence-tasks-check
+  name: workstream tasks.json (no done without evidence)
+  entry: core/scripts/tasks_check.py
+  language: unsupported_script
+  files: (^|/)workstreams/[^/]+\.tasks\.json$
+  minimum_pre_commit_version: "4.4.0"

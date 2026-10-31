@@ -20,8 +20,12 @@ Stdlib only.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tasks_check  # noqa: E402
 
 OFF_FILE_NAME = "tpm.off"
 ARM_DIR = "tpm-armed"
@@ -33,6 +37,21 @@ DENY_MESSAGE = (
     "are written by a scribe agent, not by you. "
     "Only the user can lift this guard; do not create .cadence/tpm.off or ask an agent to."
 )
+SUBAGENT_DENY_MESSAGE = "tpm guard (subagent): {what}. Fix it and retry, or report it as blocked."
+GUARD_STATE_WHY = "only the user may change .cadence/tpm.off or the arming state"
+SUBAGENT_STATE_MESSAGE = (
+    "tpm guard (subagent): {what}. Only the user can lift this guard; do not create .cadence/tpm.off, "
+    "touch the arming state or look for another route. Report it to the orchestrator instead."
+)
+
+
+def deny_reason(why: str, is_subagent: bool) -> str:
+    if is_subagent:
+        template = SUBAGENT_STATE_MESSAGE if why == GUARD_STATE_WHY else SUBAGENT_DENY_MESSAGE
+    else:
+        template = DENY_MESSAGE
+    return template.format(what=why)
+
 
 # Tools the main thread may use as-is: conversation, light reads, delegation, tracking.
 # Keep this list in step with core/references/guard.md (a test checks it).
@@ -804,16 +823,78 @@ def mentions_guard_state(args) -> bool:
     return OFF_FILE_NAME in text or ARM_DIR in text
 
 
-def evaluate(tool: str, args, is_subagent: bool) -> tuple[bool, str]:
+def _apply_edit(text: str, old, new, replace_all=False) -> str | None:
+    if not isinstance(old, str) or not isinstance(new, str) or old not in text:
+        return None  # the edit itself will fail; nothing to validate
+    return text.replace(old, new) if replace_all else text.replace(old, new, 1)
+
+
+WRITE_TOOLS = {"Write", "Edit", "MultiEdit"}
+CANT_CHECK = "it changes a task file in a way the guard can't check ({}); use a plain Write of the whole file"
+
+
+def task_file_problem(tool: str, args: dict, cwd: str = "") -> str:
+    """For a write to a *.tasks.json file, the validation errors of the result, or "".
+
+    Arguments are canonical (file_path, content, old_string, new_string, replace_all, edits);
+    each platform shim maps its own names onto these. A task-file write the guard can't model
+    (a patch, an insert, an unreadable file) is reported as a problem, so it's denied, not allowed.
+    """
+    if tool not in WRITE_TOOLS:
+        return ""  # shell writes can't be seen; the pre-commit check covers those
+    path = args.get("file_path") or ""
+    if not isinstance(path, str) or not path:
+        # e.g. apply_patch: no single target file. Deny if it touches a task file at all.
+        if any(tasks_check.SUFFIX in s for s in strings_in(args)):
+            return CANT_CHECK.format("a patch or multi-file change")
+        return ""
+    if not path.endswith(tasks_check.SUFFIX):
+        return ""
+    try:
+        if tool == "Write":
+            content = args.get("content")
+        else:
+            try:
+                with open(os.path.join(cwd, path) if cwd else path, encoding="utf-8") as f:
+                    content = f.read()
+            except OSError as exc:
+                return CANT_CHECK.format(f"can't read the current file: {exc.strerror}")
+            edits = args.get("edits") if tool == "MultiEdit" else [args]
+            if not isinstance(edits, list) or not edits:
+                return CANT_CHECK.format("no edits given")
+            for edit in edits:
+                old = edit.get("old_string") if isinstance(edit, dict) else None
+                new = edit.get("new_string") if isinstance(edit, dict) else None
+                if not isinstance(old, str) or not isinstance(new, str):
+                    return CANT_CHECK.format("an edit without old and new text, e.g. an insert")
+                if old not in content:
+                    return ""  # the edit itself will fail and change nothing
+                content = _apply_edit(content, old, new, bool(edit.get("replace_all")))
+        if not isinstance(content, str):
+            return "the new content isn't text"
+        return "; ".join(tasks_check.validate_text(content))
+    except Exception as exc:  # never let a validation bug allow a task-file write
+        return f"could not validate it ({type(exc).__name__}: {exc})"
+
+
+def evaluate(tool: str, args, is_subagent: bool, cwd: str = "") -> tuple[bool, str]:
     """The whole policy for an armed session. Returns (allowed, reason)."""
     args = args if isinstance(args, dict) else {}
     if is_subagent:
         # Subagents keep full tools, but none of them may flip the off switch or
         # touch the arming markers.
         if tool not in READ_TOOLS and mentions_guard_state(args):
-            return False, "only the user may change .cadence/tpm.off or the arming state"
+            return False, GUARD_STATE_WHY
+        problem = task_file_problem(tool, args, cwd)
+        if problem:
+            return False, f"this would leave an invalid task file ({problem}); see references/workstream.md"
         return True, ""
-    return main_thread_decision(tool, args)
+    ok, why = main_thread_decision(tool, args)
+    # Advisory platforms can't mark subagents, so their calls all arrive here; check task files anyway.
+    problem = task_file_problem(tool, args, cwd)
+    if problem:
+        return False, (f"{why}; " if why else "") + f"it would also leave an invalid task file ({problem})"
+    return ok, why
 
 
 def main() -> int:
@@ -827,7 +908,10 @@ def main() -> int:
     ok, why = evaluate(str(req.get("tool", "")), req.get("args"), bool(req.get("is_subagent")))
     print(
         json.dumps(
-            {"decision": "allow" if ok else "deny", "reason": "" if ok else DENY_MESSAGE.format(what=why)}
+            {
+                "decision": "allow" if ok else "deny",
+                "reason": "" if ok else deny_reason(why, bool(req.get("is_subagent"))),
+            }
         )
     )
     return 0
