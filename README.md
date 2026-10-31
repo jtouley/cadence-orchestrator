@@ -63,6 +63,12 @@ for every platform. Re-running is safe: the installer replaces only its own entr
 also adds `.cadence/tpm.off` to `.gitignore`. Commit the result so everyone working in the repo, including cloud
 sessions, gets it. From a clone of this repository, run `./install.sh --repo <path>` with the same options.
 
+To check an install, run `npx cadence-orchestrator doctor --target claude` (or `all`). It checks that the files
+and hook config are in place and point at existing scripts, that `python3` is on `PATH`, and runs the installed
+hooks on simulated events: arming, an orchestrator write (denied, or an advisory on Codex, Cursor and Gemini), a
+subagent write (allowed) and, on Claude Code, a stop. It prints one line per check, exits 1 if any fail, and
+changes nothing in the repo.
+
 | Platform | `--target` | What it adds | Guard |
 | --- | --- | --- | --- |
 | Claude Code | `claude` | `.claude/skills/tpm/`, hooks in `.claude/settings.json` | **Blocks** |
@@ -75,7 +81,7 @@ Claude Code and Copilot mark tool calls made by subagents, so the guard can bloc
 subagents through. Codex, Cursor and Gemini don't, and blocking there would stop the subagents too. On those
 three the guard only shows a "tpm advisory" warning, which the skill tells the orchestrator to treat as a denial,
 and logs it to `advisory.log` in `$CADENCE_STATE_DIR` (default: `cadence-orchestrator/` in the system temp
-directory).
+directory), not in the repo or `.cadence/`. `doctor` prints the exact path.
 
 ### Or as a Claude Code Plugin
 
@@ -98,8 +104,9 @@ treats it as a format example unless you confirm it fits.
 
 ### Start and Stop
 
-Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Copilot,
-Codex, Cursor and Gemini the message must begin with `/tpm` or `$tpm`. That arms the guard for this session
+Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Codex, begin
+the message with `$tpm`: Codex mentions skills with `$` (or the `/skills` picker), and `/tpm` isn't a Codex
+command. On Copilot, Cursor and Gemini, begin it with `/tpm` or `$tpm`. That arms the guard for this session
 only; a model loading the skill by itself doesn't arm it. On Claude Code the hook reports it, and an edit by the
 orchestrator is then refused (exit code 2, message shortened here):
 
@@ -146,6 +153,15 @@ Use your platform's permissions or a real sandbox to contain an agent you don't 
 - [`core/references/example-registry.md`](core/references/example-registry.md): an example catalog
 
 ## Troubleshooting
+
+### `npx` fails before the installer runs
+
+If `npx` or `npm view` fails with a cache or permission error (common in cloud sandboxes where the home directory
+isn't writable), point npm at a writable cache:
+
+```sh
+npm_config_cache=/tmp/npm-cache npx cadence-orchestrator --target codex
+```
 
 ### The installer stops with a `SyntaxError` from `JSON.parse`
 
