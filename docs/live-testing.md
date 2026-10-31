@@ -11,7 +11,8 @@ cloud agent works from the remote.
    Codex). `tpm` is there.
 2. **Hook trust and approval.** Note whether the platform asks you to review or trust the project hooks (Codex:
    `/hooks`; Claude Code: workspace trust) and approve them. Note if it never asks.
-3. **Hook execution.** Run any small task, then `npx cadence-orchestrator status` in the repo. The session is
+3. **Hook execution.** Run any small task, then `npx cadence-orchestrator status` from inside the session (ask the
+   agent to run it, so it sees the agent's environment), or from a terminal with `--state-dir <path>`. The session is
    listed under "hooks seen firing". If it isn't, the hooks didn't run; stop here and record that.
 4. **Arming marker.** Start a message with `$tpm` (Codex) or `/tpm` (elsewhere). Where the platform can show it
    (Claude Code, Codex, Gemini), the agent reports `TPM guard armed (session …, log …)`; `status` shows the session

@@ -141,20 +141,21 @@ function fail(message, code = 1) {
 
 const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
        cadence-orchestrator doctor --target <...|all> [--repo <path>]
-       cadence-orchestrator status [--repo <path>] [--hours <n>]
+       cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
 
 Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
 \`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
 \`status\` reports what's installed and whether hooks have been seen firing in a live session (default: last 24 h).`;
 
 function parseArgs(argv, mode) {
-  const opts = { repo: ".", catalog: [], hours: 24 };
+  const opts = { repo: ".", catalog: [], hours: 24, stateDir: "" };
   for (let i = 0; i < argv.length; i++) {
     const [flag, inline] = argv[i].split(/=(.*)/s, 2);
     const value = () => inline ?? argv[++i] ?? fail(`${flag} needs a value\n${USAGE}`, 2);
     if (flag === "--target") opts.target = value();
     else if (flag === "--repo") opts.repo = value();
     else if (flag === "--catalog" && mode === "install") opts.catalog.push(value());
+    else if (flag === "--state-dir" && mode === "status") opts.stateDir = value();
     else if (flag === "--hours" && mode === "status") {
       opts.hours = Number(value());
       if (!(opts.hours > 0)) fail(`--hours needs a positive number\n${USAGE}`, 2);
@@ -162,7 +163,7 @@ function parseArgs(argv, mode) {
     else if (flag === "-h" || flag === "--help") {
       console.log(USAGE);
       process.exit(0);
-    } else if (["--catalog", "--hours", "--target"].includes(flag)) {
+    } else if (["--catalog", "--hours", "--target", "--state-dir"].includes(flag)) {
       fail(`${mode === "install" ? "install" : mode} doesn't take ${flag}\n${USAGE}`, 2);
     } else fail(`unknown argument ${argv[i]}\n${USAGE}`, 2);
   }
@@ -183,7 +184,7 @@ const repo = path.resolve(opts.repo);
 if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
 if (mode === "status") {
   const { status } = await import("./status.mjs");
-  const { lines, ok } = status(repo, TARGETS, opts.hours);
+  const { lines, ok } = status(repo, TARGETS, opts.hours, opts.stateDir);
   for (const l of lines) console.log(l);
   process.exit(ok ? 0 : 1);
 }

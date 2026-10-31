@@ -23,13 +23,14 @@ function sessions(stateDir, repo, hours) {
   for (const name of names) {
     try {
       const s = JSON.parse(fs.readFileSync(path.join(dir, name), "utf8"));
-      if (s.project === real && now - s.time <= hours * 3600) out.push({ ...s, age: now - s.time });
+      const inRepo = typeof s.project === "string" && (s.project === real || s.project.startsWith(real + path.sep));
+      if (inRepo && now - s.time <= hours * 3600) out.push({ ...s, age: now - s.time });
     } catch {}
   }
   return out.sort((a, b) => a.age - b.age);
 }
 
-export function status(repo, TARGETS, hours) {
+export function status(repo, TARGETS, hours, stateDir = "") {
   const lines = [];
   let anyInstalled = false;
   let anyLive = false;
@@ -53,30 +54,42 @@ export function status(repo, TARGETS, hours) {
         (missing.length ? `; missing ${missing.join(", ")}` : "") +
         (hooks.error ? `; can't read it (${hooks.error})` : ""),
     );
-    const { dir, error } = resolveStateDir(repo, target, spec);
+    const resolved = stateDir
+      ? { dir: path.resolve(stateDir), error: "", source: "--state-dir" }
+      : resolveStateDir(repo, target, spec);
+    const { dir, error, source } = resolved;
     if (!dir) {
       lines.push(`${target}: hooks seen firing: unknown (${error})`);
       continue;
     }
-    states.set(dir, true);
+    if (!states.has(dir)) states.set(dir, source);
     const seen = sessions(dir, repo, hours).filter((s) => s.platform === target);
     if (seen.length) {
       anyLive = true;
-      const armed = seen.filter((s) => s.armed).length;
-      lines.push(`${target}: hooks seen firing: ${seen.length} session(s) in the last ${hours} h, ${armed} armed`);
+      const armed = seen.filter((s) => s.armed && !s.switched_off).length;
+      const off = seen.filter((s) => s.switched_off).length;
+      lines.push(
+        `${target}: hooks seen firing: ${seen.length} session(s) in the last ${hours} h, ${armed} armed` +
+          (off ? `, ${off} switched off` : ""),
+      );
       for (const s of seen.slice(0, 5)) {
-        lines.push(`  session ${s.session}: ${s.armed ? "armed" : "not armed"}, last ${s.last_event} ${ago(s.age)}`);
+        const state = s.switched_off ? "switched off (.cadence/tpm.off)" : s.armed ? "armed" : "not armed";
+        lines.push(`  session ${s.session}: ${state}, last ${s.last_event} ${ago(s.age)}`);
       }
     } else {
       lines.push(`${target}: hooks seen firing: none in the last ${hours} h (not running in a live session here yet)`);
     }
   }
-  for (const dir of states.keys()) lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
+  for (const [dir, source] of states) {
+    lines.push(`state dir: ${dir} (from ${source})`);
+    lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
+  }
   if (!anyInstalled) lines.push("No target is installed in this repo.");
   else if (!anyLive) {
     lines.push(
       "No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session " +
-        "in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again.",
+        "in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again from inside " +
+        "that session (so it sees the agent's environment), or pass --state-dir.",
     );
   }
   return { lines, ok: anyLive };

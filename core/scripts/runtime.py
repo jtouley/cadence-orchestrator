@@ -152,19 +152,38 @@ def armed_message(state: str, session_id: str) -> str:
     return f"TPM guard armed (session {session_id}, log {os.path.join(state, 'advisory.log')})"
 
 
+def repo_root(start: str) -> str:
+    """The git top level containing `start` (a .git dir or file), or `start` itself."""
+    here = os.path.realpath(start)
+    probe = here
+    while True:
+        if os.path.exists(os.path.join(probe, ".git")):
+            return probe
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            return here
+        probe = parent
+
+
 def heartbeat(platform: Platform, state: str, ev: Event, payload: dict) -> None:
     """Record that a hook fired in this session: proof the guard runs live, for `status`."""
     safe = re.sub(r"[^A-Za-z0-9_-]", "_", ev.session_id or "")
     if not safe:
         return
     path = os.path.join(state, SESSIONS_DIR, safe)
+    cwd = os.path.realpath(ev.project_dir or os.getcwd())
+    root = repo_root(cwd)
+    off = any(os.path.exists(os.path.join(d, OFF_FILE)) for d in {cwd, root})
     record = {
         "session": ev.session_id,
         "platform": platform.name,
         "last_event": str(payload.get("hook_event_name") or ev.kind),
         "time": time.time(),
-        "armed": is_armed(state, ev.session_id),
-        "project": os.path.realpath(ev.project_dir or os.getcwd()),
+        # Effective state: armed only if the marker exists and the off switch doesn't.
+        "armed": is_armed(state, ev.session_id) and not off,
+        "switched_off": off,
+        "project": root,
+        "cwd": cwd,
     }
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.json.{os.getpid()}"

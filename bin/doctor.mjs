@@ -39,6 +39,9 @@ export function resolveStateDir(repo, target, spec) {
     "sys.dont_write_bytecode = True\n" +
     "sys.path.insert(0, sys.argv[1])\n" +
     "import runtime\n" +
+    "import os\n" +
+    "names = ('CADENCE_STATE_DIR',) + tuple(sys.argv[2:])\n" +
+    "print('SOURCE=' + next((n for n in names if os.environ.get(n)), 'temp dir'))\n" +
     "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))";
   const scripts = path.join(repo, spec.skill, "scripts");
   if (!fs.existsSync(path.join(scripts, "runtime.py"))) {
@@ -49,13 +52,15 @@ export function resolveStateDir(repo, target, spec) {
     cwd: scripts,
   });
   if (where.error) return { dir: "", error: `python3 not found (${where.error.code})` };
-  const line = (where.stdout ?? "").split("\n").find((l) => l.startsWith("STATE=")) ?? "";
+  const out = (where.stdout ?? "").split("\n");
+  const line = out.find((l) => l.startsWith("STATE=")) ?? "";
+  const source = (out.find((l) => l.startsWith("SOURCE=")) ?? "SOURCE=?").slice("SOURCE=".length);
   const dir = where.status === 0 ? line.slice("STATE=".length).trim() : "";
   if (!dir) {
     const last = (where.stderr || "no output").trim().split("\n").at(-1);
     return { dir: "", error: `couldn't load ${spec.skill}/scripts/runtime.py: ${last}` };
   }
-  return { dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir), error: "" };
+  return { dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir), error: "", source };
 }
 
 // Per platform: how to find hook commands in its config, and the events to simulate.

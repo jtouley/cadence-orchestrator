@@ -8,9 +8,10 @@
     (plain stdout), and on Gemini (additionalContext, also shown to the user); Copilot and Cursor can't show it;
   - the skill tells the user "guard not running in this session — instructions only" when it doesn't see that
     line, and never claims the guard is active from installed files or `doctor` alone.
-- `cadence-orchestrator status [--repo] [--hours]` reports skill files, hook config, sessions seen firing (armed or
-  not) and the advisory log path; exit 1 when no live activity has been seen. `doctor` says its simulation isn't a
-  live check.
+- `cadence-orchestrator status [--repo] [--hours] [--state-dir]` reports skill files, hook config, sessions seen
+  firing (armed, not armed or switched off) and the advisory log path, and where the state dir came from; exit 1
+  when no live activity has been seen. Sessions started in a subdirectory count for the repo. `doctor` says its
+  simulation isn't a live check.
 - SKILL.md: a local mode when there's no remote, push or pre-commit (`.cadence/workstreams/`), and working as one
   agent when the session can't delegate.
 - README: "use the instructions" vs "install and activate the guard"; `docs/live-testing.md`.

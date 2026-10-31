@@ -194,3 +194,65 @@ def test_off_switch_changes_the_marker_line():
     out = hook("claude", ARM["claude"], state, project)
     assert "switched off by .cadence/tpm.off" in out.stdout and "instructions only" in out.stdout
     assert "TPM guard armed (" not in out.stdout
+
+
+# ------------------------------------------------------------- PR #5 review fixes
+
+
+def run_installed(repo, state, payloads, cwd=None, platform="codex"):
+    hooks = json.load(open(os.path.join(repo, ".codex/hooks.json")))["hooks"]
+    cmd = hooks["PreToolUse"][-1]["hooks"][0]["command"]
+    env = dict(os.environ, CADENCE_STATE_DIR=state)
+    for p in payloads:
+        subprocess.run(
+            ["bash", "-c", cmd], input=json.dumps(p), cwd=cwd or repo, env=env, capture_output=True, text=True
+        )
+
+
+def test_sessions_started_in_a_subdirectory_count_for_the_repo():
+    repo, state = repo_with("codex"), tempfile.mkdtemp()
+    sub = os.path.join(repo, "app", "src")
+    os.makedirs(sub)
+    run_installed(repo, state, [dict(ARM["codex"], cwd=sub)], cwd=sub)
+    b = beat(state, "s1")
+    assert b["project"] == os.path.realpath(repo) and b["cwd"] == os.path.realpath(sub)
+    out = status(repo, state)
+    assert out.returncode == 0 and "session s1: armed" in out.stdout
+
+
+def test_switched_off_sessions_are_not_reported_as_armed():
+    repo, state = repo_with("codex"), tempfile.mkdtemp()
+    os.makedirs(os.path.join(repo, ".cadence"))
+    open(os.path.join(repo, ".cadence", "tpm.off"), "w").close()
+    run_installed(repo, state, [dict(ARM["codex"], cwd=repo)])
+    b = beat(state, "s1")
+    assert b["armed"] is False and b["switched_off"] is True
+    out = status(repo, state)
+    assert "0 armed, 1 switched off" in out.stdout
+    assert (
+        "session s1: switched off (.cadence/tpm.off)" in out.stdout and "session s1: armed" not in out.stdout
+    )
+
+
+def test_status_state_dir_flag_and_source():
+    repo, state = repo_with("codex"), tempfile.mkdtemp()
+    run_installed(repo, state, [dict(ARM["codex"], cwd=repo)])
+    # The terminal doesn't have the agent's CADENCE_STATE_DIR: nothing found...
+    env = {k: v for k, v in os.environ.items() if k != "CADENCE_STATE_DIR"}
+    env["TMPDIR"] = tempfile.mkdtemp()
+    out = subprocess.run([CLI, "status", "--repo", repo], capture_output=True, text=True, env=env)
+    assert out.returncode == 1 and "(from temp dir)" in out.stdout
+    # ...until it's pointed at the agent's state dir.
+    out = subprocess.run(
+        [CLI, "status", "--repo", repo, "--state-dir", state], capture_output=True, text=True, env=env
+    )
+    assert out.returncode == 0 and f"state dir: {state} (from --state-dir)" in out.stdout
+    assert "session s1: armed" in out.stdout
+    out = status(repo, state)
+    assert f"state dir: {state} (from CADENCE_STATE_DIR)" in out.stdout
+    bad = subprocess.run(
+        [CLI, "doctor", "--target", "codex", "--repo", repo, "--state-dir", state],
+        capture_output=True,
+        text=True,
+    )
+    assert bad.returncode == 2 and "doesn't take --state-dir" in bad.stderr

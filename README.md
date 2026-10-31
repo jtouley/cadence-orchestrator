@@ -88,7 +88,9 @@ advisory on Codex, Cursor and Gemini), a subagent write (allowed) and, on Claude
 per check, exits 1 if any fail, and changes nothing in the repo. A passing `doctor` doesn't show that the hooks
 fire in a real session; `npx cadence-orchestrator status` does. It lists, separately, the skill files, the hook
 config, the sessions whose hooks have fired in the last 24 hours (`--hours <n>`) and whether each is armed, and the
-advisory log path. It exits 1 when no live hook activity has been seen. To test in a real session, follow
+advisory log path. It exits 1 when no live hook activity has been seen. Run it from inside the agent's session (ask the
+agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as the hooks, or pass `--state-dir <path>`;
+it prints where the state dir came from. To test in a real session, follow
 [`docs/live-testing.md`](docs/live-testing.md).
 
 | Platform | `--target` | What it adds | Guard |
