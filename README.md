@@ -56,8 +56,10 @@ There are two ways to use it, and only the second enforces anything.
 
 > [!IMPORTANT]
 > On Codex, Cursor and Gemini the guard is **advisory, not enforcement**: it warns and logs, and never blocks.
-> Hook support and approval may also differ between a platform's local CLI and its cloud agent (for Codex this is
-> unverified); check with `status` in each.
+> In a **Codex cloud** task the project hooks didn't run at all, so it's **instructions only** there (observed
+> 2026-10-31 with kit 0.1.2: no armed line, no advisory, no hook-approval prompt, `status` saw no hooks). Our guess,
+> not confirmed, is that project hooks need a one-time approval that cloud tasks never prompt for. In the local
+> Codex CLI the guard should be advisory; live hooks there are unverified. Check with `status` in each.
 
 ### Install in a Repo
 
@@ -97,7 +99,7 @@ it prints where the state dir came from. To test in a real session, follow
 | --- | --- | --- | --- |
 | Claude Code | `claude` | `.claude/skills/tpm/`, hooks in `.claude/settings.json` | **Blocks** |
 | GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Blocks** |
-| Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | Warns |
+| Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | CLI: warns (live hooks unverified). Cloud: **instructions only**, hooks don't run (observed 2026-10-31, kit 0.1.2) |
 | Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc` | Warns |
 | Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns |
 

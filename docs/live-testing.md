@@ -25,3 +25,29 @@ cloud agent works from the remote.
 7. **Instructions only.** In a repo without the hooks, start TPM: the agent says "guard not running in this
    session — instructions only". With `.cadence/tpm.off`, the marker reads "TPM guard switched off by
    .cadence/tpm.off …: instructions only" where the platform shows it.
+
+## Recorded results
+
+### Codex cloud, 2026-10-31, kit 0.1.2
+
+Repo `jtouley/sandbox`, branch `tpm-live-test`, installed with `--target codex` and pushed; one Codex cloud task.
+
+| Step | Outcome |
+| --- | --- |
+| 1. Skill discovery | Passed: the `tpm` skill loaded and `$tpm` instructions were followed. |
+| 2. Hook trust and approval | No hook-approval prompt appeared. |
+| 3. Hook execution | Failed: `status` saw no hooks (output below). |
+| 4. Arming marker | Failed: no `TPM guard armed` line. |
+| 5. Guard behaviour | Not observed: no advisory, nothing logged. |
+| 6. Delegation | Passed: a subagent was started and created `CONTRIBUTORS.md`. |
+| 7. Instructions only | Not run separately; in effect the whole task ran instructions only. |
+
+`status` in the task:
+
+```console
+codex: hooks seen firing: none in the last 24 h
+```
+
+It exited 1. Conclusion: in Codex cloud the project hooks don't run, so the skill works as instructions only. Our
+guess, not confirmed, is that project hooks need a one-time approval (`/hooks`) that cloud tasks never prompt for.
+The local Codex CLI hasn't been tested live yet.

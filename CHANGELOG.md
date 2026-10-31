@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Docs: Codex cloud runs the skill as instructions only (project hooks didn't run in a live test on
+  2026-10-31 with 0.1.2); recorded in `docs/live-testing.md`.
+
 ## 0.1.2
 
 - Using the instructions and running the guard are now separate, visible states:
