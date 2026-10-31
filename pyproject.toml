@@ -1,7 +1,7 @@
 # Dev tooling only. The runtime (core/scripts, adapters/*/shim.py) is stdlib-only Python and isn't packaged
 # here; the installer ships through npm (package.json).
 [tool.pytest.ini_options]
-testpaths = ["core/tests"]
+testpaths = ["core/tests", "evals/tests"]
 addopts = "-ra"
 
 [tool.ruff]
