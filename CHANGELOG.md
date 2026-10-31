@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Docs: Codex cloud runs the skill as instructions only (project hooks didn't run in a live test on
-  2026-10-31 with 0.1.2); recorded in `docs/live-testing.md`.
+- Docs: in one Codex cloud task on 2026-10-31 (kit 0.1.2), project hooks didn't run and the skill worked as
+  instructions only; recorded in `docs/live-testing.md`.
 
 ## 0.1.2
 

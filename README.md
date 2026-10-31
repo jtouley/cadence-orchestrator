@@ -49,7 +49,8 @@ There are two ways to use it, and only the second enforces anything.
 - **Install and activate the guard.**
   1. Install it into the repo (below) and commit the result.
   2. Start a **new** session in that repo; hooks load when a session starts.
-  3. Approve the hooks if the agent asks (Codex, for example, asks you to review and trust project hooks in `/hooks`).
+  3. Approve the hooks if the agent asks. On Codex the local CLI asks you to review and trust project hooks in
+     `/hooks` (unverified); the observed cloud task never asked.
   4. Begin your message with `$tpm` on Codex, `/tpm` everywhere else.
   5. Confirm it's armed: the agent sees `TPM guard armed (session <id>, log <path>)` on Claude Code, Codex and
      Gemini. Copilot and Cursor can't show that line, so run `npx cadence-orchestrator status` in the repo.
@@ -99,7 +100,7 @@ it prints where the state dir came from. To test in a real session, follow
 | --- | --- | --- | --- |
 | Claude Code | `claude` | `.claude/skills/tpm/`, hooks in `.claude/settings.json` | **Blocks** |
 | GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Blocks** |
-| Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | CLI: warns (live hooks unverified). Cloud: **instructions only**, hooks don't run (observed 2026-10-31, kit 0.1.2) |
+| Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | CLI: warns (live hooks unverified). Cloud: **instructions only**; hooks didn't run in the one observed task (2026-10-31, kit 0.1.2) |
 | Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc` | Warns |
 | Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns |
 

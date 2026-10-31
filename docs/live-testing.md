@@ -42,12 +42,21 @@ Repo `jtouley/sandbox`, branch `tpm-live-test`, installed with `--target codex` 
 | 6. Delegation | Passed: a subagent was started and created `CONTRIBUTORS.md`. |
 | 7. Instructions only | Not run separately; in effect the whole task ran instructions only. |
 
-`status` in the task:
+`status` in the task, verbatim (exit code 1; a trailing npm upgrade notice is left out):
 
 ```console
-codex: hooks seen firing: none in the last 24 h
+claude: not installed
+codex: skill files found (.agents/skills/tpm)
+codex: hook config installed in .codex/hooks.json (UserPromptSubmit, PreToolUse)
+codex: hooks seen firing: none in the last 24 h (not running in a live session here yet)
+copilot: not installed
+cursor: not installed
+gemini: not installed
+state dir: /tmp/cadence-orchestrator (from temp dir)
+advisory log: /tmp/cadence-orchestrator/advisory.log
+No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again from inside that session (so it sees the agent's environment), or pass --state-dir.
 ```
 
-It exited 1. Conclusion: in Codex cloud the project hooks don't run, so the skill works as instructions only. Our
-guess, not confirmed, is that project hooks need a one-time approval (`/hooks`) that cloud tasks never prompt for.
-The local Codex CLI hasn't been tested live yet.
+Conclusion: in this one Codex cloud task on 2026-10-31, the project hooks didn't run, so the skill worked as
+instructions only. Our guess, not confirmed, is that project hooks need a one-time approval (`/hooks`) that the
+cloud task never prompted for. The local Codex CLI hasn't been tested live yet.
