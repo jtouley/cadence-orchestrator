@@ -1,0 +1,126 @@
+# Evaluating the tpm skill
+
+This folder defines how the skill is measured: the cases, the labeling guide for judgment assertions, the
+deterministic scorer and the floors. Run results live on the `orchestration` branch (see Results). The procedure
+follows coffee-data-tracker's "Heuristics and models are measured, not argued" (its CLAUDE.md and
+`eval/sealed/`), adapted from labeling products to grading agent runs.
+
+**Where this stands (2026-10-31):** 3 cases, all against one repo, with authors who aren't recorded. That supports no
+split and no ship decision. Everything below is the procedure the next cases go into. Round 1 is an exploratory
+baseline only.
+
+## What is measured
+
+- **Item (key):** a case, `evals/<case>/` (`prompt.md`, `case.yaml`, `graders/NN-*.md`). The key is the directory
+  name.
+- **Run:** one execution of a case under one arm, graded on each of its assertions.
+- **Arms:** for a ship decision, `main` (core/SKILL.md as on main) and `change` (the candidate), on the same cases with
+  the same runner, model and limits. `without_skill` is an optional reference arm. It shows what the skill adds, but
+  a ship decision never rests on it.
+- **Runs per case:** agent runs vary from one run to the next, so each arm runs every case at least 3 times. Round 1
+  used n=1.
+
+## Cases and the taint rule
+
+`cases.csv` lists every case: `case, target_repo, author, author_read_skill, added`. The scorer refuses a case that
+isn't listed.
+
+**Taint rule:** a case has to be written by an agent or person who has not read `core/SKILL.md` or
+`core/references/`, so the cases test what a user needs rather than echo the skill's own wording. Give the author
+the target repo and a plain description of what a good TPM does. Record who wrote it (person, or Claude and the model
+id) and `author_read_skill: no`. A case with any other value (`yes`, `unknown`) is tainted and stays in train
+whatever its hash says. The 3 current cases are `unknown`, so they are train.
+
+## Split
+
+- **Group:** the target repo (`target_repo`, `owner/name`). All of one repo's cases land in the same set, so a set
+  never holds cases that share a codebase, its docs or its quirks with another set.
+- **Rule:** `bucket = int(sha256("cadence-tpm-evals-v1:" + target_repo).hexdigest(), 16) % 100`. Below 60 goes to
+  train, 60–79 to validation, 80 and up to test. Salt: `cadence-tpm-evals-v1`. Run `python3 evals/scripts/score.py
+  split` for the assignment. It prints the test set as counts only.
+- **Train:** the only cases whose runs you read and tune the skill against.
+- **Validation:** choose between candidate skills on totals only, never run by run.
+- **Test (sealed):** scored once, after the change is frozen, for `main` and `change` on the same frozen cases. Write
+  `SHA256SUMS` over the test cases' files as you add them, and don't read their prompts, graders or runs while
+  developing. After the final score the test cases join train, and new test cases (new repos) are written for the
+  next change.
+
+**How many cases are needed.** The hash splits repos, not cases, so the split needs many repos: at least 10, so
+that test expects two. Cases need at least 50 (about 30/10/10), and about 100 to be comfortable. For a sense of
+scale, at a 70% pass rate the Wilson 95% interval is ±37 points at 3 items, ±19 at 20 and ±12 at 50. Today the
+only target repo is coffee-data-tracker (bucket 68, which would be validation). Every new repo needs its own
+cases, written under the taint rule.
+
+## Assertions: deterministic vs judgment
+
+Each grader is one of two kinds.
+
+**Deterministic.** `scripts/score.py` decides it from the transcript and the git outputs, and no labeler is
+involved. Today there are 3 of the 18: each case's #01, "the main thread made no edits", which counts main-thread
+Edit/Write calls and main-thread Bash that writes to the repo, and for the grind case also requires no code changed.
+The script also extracts facts that aren't assertions themselves: Agent-call count and order, agents before the
+first question, the questions asked, regex hits in briefs and the final message.
+
+**Judgment.** Labelers decide it against the written definition in `GUIDE.md`.
+- Two independent labelers label each judgment assertion of each run, blind to the arm and to each other. A third
+  settles disagreements and any `unsure`. Record each labeler (person's name, or Claude and the exact model id) in the
+  results.
+- A Claude labeler may not be the model and prompt under test acting as its own judge without a person
+  spot-checking the labels. The result says whether one did.
+- The script settles some judgment assertions by itself, through `GATES` in `score.py`. A run that lacks a necessary
+  condition, such as "an independent reviewer" with fewer than 2 Agent calls, fails. An assertion that is vacuous by
+  `GUIDE.md`, such as "if code was changed ..." with no change, passes. Everything else goes to the labelers.
+
+Open choice to settle before the next round: graders #01 say "no Edit or Write call", but the prompt asks for
+messages to be written to `outputs/`. The scorer reads #01 literally by default, as round 1's grader did, and
+`--exclude-outputs` gives the other reading. Choose one and reword the graders before any validation or test
+scoring. A grader change is a change to the eval.
+
+## Scoring and reporting
+
+```sh
+python3 evals/scripts/score.py split                              # case -> set (test: counts only)
+python3 evals/scripts/score.py facts <iteration-dir> --out <dir>  # per-run facts; refuses test cases
+python3 evals/scripts/score.py score <iteration-dir> --set test   # sealed scoring: totals and Wilson 95% only
+python3 evals/scripts/score.py recorded <iteration-dir> --set S   # totals of recorded grading.json verdicts
+```
+
+`score` prints only totals per arm. It checks that each run's assertions match `evals/<case>/graders/`, and it
+reports agreement with any recorded `grading.json`. Its intervals treat each assertion-run as independent, but they
+cluster by case, so report case-level rates next to them for any decision.
+
+Report `main` against `change` on every set: deterministic and judgment pass rates, each with a Wilson 95% interval.
+Also report the hard-rule violations, the analogue of "confidently wrong": the orchestrator editing repo files
+itself, pushing, or opening a PR.
+
+**Ship rule:** a skill change ships only if its test score is at least `main`'s, with no meaningful rise in
+hard-rule violations. Where the skill can't tell what the user wants, asking the one real question beats guessing.
+
+## Floors
+
+`floors.json` holds `main`'s deterministic pass rate per set, from the last full evaluation. Floors are only ever
+raised, never lowered to pass. `score` flags an arm below the floor for the set it scores. All are `null` today,
+because round 1 is exploratory and sets no floor.
+
+## Scaling the effort
+
+The coffee model allows a light process when 50 or fewer items' outputs change. Any edit to text the agent reads
+(`core/SKILL.md`, `core/references/`, adapter prompts) can change every case, and you only find out by running them.
+So:
+- **Full process:** any change to what the agent reads, or to how a rule in it decides.
+- **Light process:** changes covered by unit tests (`core/scripts/guard.py`, adapters, installer: `core/tests/`), and
+  fixes to the scorer or graders. Re-score the recorded transcripts, list each verdict that changed (for test cases
+  give a count only), and keep the floors passing.
+
+Running total of runs whose verdicts changed since the last full evaluation: **0** (no full evaluation yet).
+
+## Results
+
+Results live on the `orchestration` branch under `results/<date>-round<N>/` and are not copied here. To read them:
+`git worktree add ../co-results orchestration`, or `git show orchestration:results/2026-10-31-round1/benchmark.md`.
+
+- **2026-10-31-round1 (exploratory, not a ship decision):** 3 cases, n=1 run per arm, `with_skill` vs
+  `without_skill`. Each run was graded once by one grader (Claude Opus 5.5), mixing script facts and judgment, with
+  no second labeler. Recorded pass rates: with_skill 10/18 = 56% (34–75%), without_skill 6/18 = 33% (16–56%). The
+  intervals overlap, and the 3 cases are tainted-unknown.
+- **round 2:** running into coffee-data-tracker's `tpm-workspace/iteration-2/`. A placeholder is on `orchestration`.

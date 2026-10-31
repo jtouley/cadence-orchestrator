@@ -1,0 +1,6 @@
+{
+  "_rule": "Deterministic-assertion pass rate of the skill on main, per set, measured on a full evaluation. Only ever raised; null = not measured yet. See README.md, Floors.",
+  "train": null,
+  "validation": null,
+  "test": null
+}
