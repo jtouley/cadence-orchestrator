@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_codex.py\"" } ] }
+    ],
+    "PreToolUse": [
+      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_codex.py\"" } ] }
+    ]
+  }
+}

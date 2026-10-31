@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "BeforeAgent": [
+      { "hooks": [ { "type": "command", "name": "tpm-arm", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_gemini.py\"" } ] }
+    ],
+    "BeforeTool": [
+      { "matcher": ".*", "hooks": [ { "type": "command", "name": "tpm-guard", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_gemini.py\"" } ] }
+    ]
+  }
+}

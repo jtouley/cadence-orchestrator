@@ -1,0 +1,5 @@
+---
+description: Technical program manager mode (the tpm skill). Use when the user types /tpm.
+alwaysApply: false
+---
+When the user types `/tpm`, read and follow `__SKILL__/SKILL.md` for the rest of the session.

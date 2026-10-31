@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "matcher": "(^|:)tpm$",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/__SKILL__/scripts/shim_claude.py\"" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/__SKILL__/scripts/shim_claude.py\"" }
+        ]
+      }
+    ]
+  }
+}

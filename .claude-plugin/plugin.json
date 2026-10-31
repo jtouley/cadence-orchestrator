@@ -1,0 +1,19 @@
+{
+  "name": "cadence-orchestrator",
+  "displayName": "Cadence Orchestrator",
+  "version": "0.1.0",
+  "description": "Frontier models orchestrating themselves: /cadence-orchestrator:tpm turns the session into a technical program manager that scopes with you, delegates all execution to subagents, and reports with evidence. A per-session guard keeps the main thread from doing the work itself.",
+  "author": {
+    "name": "jtouley"
+  },
+  "repository": "https://github.com/jtouley/cadence-orchestrator",
+  "keywords": [
+    "orchestration",
+    "subagents",
+    "delegation",
+    "tpm",
+    "cadence"
+  ],
+  "hooks": "./adapters/claude/plugin-hooks.json",
+  "skills": "./core"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "cadence-orchestrator",
+  "description": "Cadence orchestration plugins (an offshoot of cadence-core).",
+  "owner": { "name": "jtouley" },
+  "plugins": [
+    {
+      "name": "cadence-orchestrator",
+      "source": "./",
+      "description": "/tpm: the session plans, delegates to subagents, verifies and reports; a per-session guard keeps it from doing the work itself."
+    }
+  ]
+}

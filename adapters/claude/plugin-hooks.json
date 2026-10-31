@@ -1,0 +1,21 @@
+{
+  "description": "cadence-orchestrator tpm guard (Claude Code plugin): armed per session when the user types the tpm skill, then keeps the main thread from doing core work.",
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "matcher": "(^|:)tpm$",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/adapters/claude/shim.py"] }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/adapters/claude/shim.py"] }
+        ]
+      }
+    ]
+  }
+}
