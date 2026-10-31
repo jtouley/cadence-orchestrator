@@ -1,0 +1,8 @@
+ M README.md
+ M app/main.py
+ M app/static/app.js
+ M app/store.py
+ M app/templates/coffee.html
+ M docs/app/DESIGN.md
+?? outputs/messages.md
+?? tests/test_finish_bag.py

@@ -1,0 +1,3 @@
+Implement workstreams/finish-bag.md@071728f (read it with `git -C /tmp/co-r3/clones/build-finish-bag-screen-with_skill-2-orch show 071728f:workstreams/finish-bag.md`). Work in a new git worktree on local branch `finish-bag` from main@6bda240 (e.g. /tmp/co-r3/clones/build-finish-bag-screen-with_skill-2-finish), not the main checkout. Out: push, PRs, anything the doc lists as out; don't edit the orchestration branch. Don't spawn subagents. If it can't be done as specified, stop and report why; don't weaken or skip tests.
+
+Report: commit SHA(s); exact test commands and their raw pass/fail summary lines; which screen you treated as "the bag page" and why; and a list of everything you left out, skipped or didn't verify.

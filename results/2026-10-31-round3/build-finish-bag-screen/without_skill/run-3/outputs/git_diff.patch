@@ -1,0 +1,212 @@
+diff --git a/README.md b/README.md
+index 54d05fd..011a8f7 100644
+--- a/README.md
++++ b/README.md
+@@ -100,7 +100,9 @@ PORT=8080 make app
+   shots, and says how it compares with the last one. For 5 seconds it offers **Undo**, which writes a retraction
+   record; nothing is deleted.
+ - **Coffees and History:** every bag and every shot. A shot's page has **Correct** (the same form, saved under the
+-  shot's id) and **Retract**.
++  shot's id) and **Retract**. A bag's page has **Finish** (tap twice), which writes a new bag record with
++  `finished_on`. A finished bag leaves Today and Switch coffee but stays in Coffees. To undo it, choose "Still
++  using it" on Edit bag.
+ 
+ Each save waits in the phone's IndexedDB until the server acknowledges it, so a save made offline goes through
+ later, and a retry never creates a second shot. The app shows where each shot landed but gives no grind advice; that
+@@ -165,6 +167,7 @@ the MCP server use. An unknown name fails with the list of known grinders.
+ | Advice for the next shot | no | yes | yes | yes |
+ | Correct a shot | Correct, on the shot's page | log the full record again with its `shot_id` | no | no |
+ | Retract a shot | Undo, for 5 s after saving, or Retract on the shot's page | the full record plus `"deleted": true` | no | no |
++| Finish a bag | Finish on the bag's page, or Finished on Edit bag | no | no | no |
+ 
+ ### Query the data
+ 
+diff --git a/app/main.py b/app/main.py
+index 67205ed..58cee81 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -534,7 +534,7 @@ def create_app(
+         p = store.prefill(me.user_id, grinder, basket, machine, request.cookies.get("selected_bag"))
+         if not p["grinder"] or not p["basket"]:
+             return RedirectResponse("/setup", 303)
+-        if not p["bag"] and not p["last"]:
++        if not fixing and not p["bag"] and not p["last"]:  # a shot of a finished bag can still be corrected
+             return RedirectResponse("/bag/new", 303)
+         name, _ = coffee_name(p["bag"], p["coffee_id"], p["coffee_freetext"])
+         if fixing:
+@@ -865,6 +865,17 @@ def create_app(
+     def restore(shot_id: str, me: OutboxWriter) -> dict:
+         return {"shot_id": shot_id, "written": run(store.restore_shot, me.user_id, shot_id)}
+ 
++    @app.post("/api/bags/{bag_id}/finish")
++    def finish_bag(bag_id: str, request: Request, me: OutboxWriter, body: dict | None = None) -> dict:
++        """Finish a bag: a new record with finished_on (never a delete). The day is the phone's, sent with the
++        request, so one finished offline and synced later keeps the day it was finished."""
++        raw = (body or {}).get("finished_on")
++        try:
++            on = date.fromisoformat(raw) if raw else datetime.now(tz(request)).date()
++        except (TypeError, ValueError):
++            raise HTTPException(422, "finished_on is a date like 2026-10-31.") from None
++        return {"bag_id": bag_id, "written": run(store.finish_bag, me.user_id, bag_id, on)}
++
+     @app.post("/api/equipment")
+     def post_equipment(body: dict, me: OutboxWriter) -> dict:
+         return {"equipment_id": run(store.save_equipment, me.user_id, body).equipment_id}
+diff --git a/app/static/app.js b/app/static/app.js
+index 6996c5c..be5b307 100644
+--- a/app/static/app.js
++++ b/app/static/app.js
+@@ -96,9 +96,12 @@ async function deliverOnce(entry) {
+     body: entry.blob || JSON.stringify(entry.body),
+   });
+   if (r.ok) {
+-    if (entry.url === "/api/bags" && entry.body?.finished_on) {
++    // Finished (from Edit bag, or Finish on the bag's page): a phone that had it selected forgets it.
++    const finished = entry.url === "/api/bags" && entry.body?.finished_on ? entry.body.bag_id
++      : entry.url.match(/^\/api\/bags\/([^/]+)\/finish$/)?.[1];
++    if (finished) {
+       try {
+-        if (selectedBag()?.id === entry.body.bag_id) {
++        if (selectedBag()?.id === finished) {
+           localStorage.removeItem(`selected-bag:${ME}`);
+           await clearBagPages();
+         }
+@@ -183,7 +186,7 @@ async function showSync() {
+   showFailed(all.filter((e) => e.failed));
+ }
+ 
+-const KIND = { shot: "A shot", retract: "Undoing a shot", restore: "Bringing a shot back", bag: "A bag", photo: "A bag photo", equipment: "Equipment" };
++const KIND = { shot: "A shot", retract: "Undoing a shot", restore: "Bringing a shot back", bag: "A bag", finish: "Finishing a bag", photo: "A bag photo", equipment: "Equipment" };
+ 
+ function showFailed(failed) {
+   const box = document.querySelector("[data-failed]");
+@@ -1125,6 +1128,41 @@ function retractShot(b) {
+   });
+ }
+ 
++// A bag's Finish: a second tap, then a record with finished_on (never a delete), queued like any write. It's
++// taken back on Edit bag ("Still using it"). The day is the phone's, so one finished offline keeps its day.
++function finishBag(b) {
++  const id = b.dataset.finish;
++  const box = b.closest("[data-finish-box]");
++  const label = b.textContent;
++  b.addEventListener("blur", () => { b.textContent = label; });
++  b.addEventListener("click", async () => {
++    if (b.textContent === label) {
++      b.textContent = "Tap again to finish it";
++      tick();
++      return;
++    }
++    b.disabled = true;
++    const now = new Date();
++    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
++    try {
++      await send(`finish:${id}`, `/api/bags/${id}/finish`, { finished_on: today });
++      await clearBagPages().catch(() => {});
++      tick(8);
++      go(location.pathname, `Bag finished: ${b.dataset.name}`);
++    } catch (err) {
++      if (err instanceof Rejected) {
++        hint(box, err.message);
++        b.disabled = false;
++        b.textContent = label;
++        return;
++      }
++      // No connection: the record waits in the outbox and goes through later.
++      b.hidden = true;
++      hint(box, "Finished on this phone. It syncs when you’re back online.");
++    }
++  });
++}
++
+ // Theme and hand live in cookies so the server renders them; no flash of the other layout.
+ function preference(group, name, plain) {
+   group.addEventListener("click", (e) => {
+@@ -1255,6 +1293,7 @@ document.addEventListener("DOMContentLoaded", () => {
+   if (join) joinCode(join);
+   if (document.querySelector("[data-new-invite]")) invites();
+   for (const b of document.querySelectorAll("[data-retract]")) retractShot(b);
++  for (const b of document.querySelectorAll("[data-finish]")) finishBag(b);
+   for (const b of document.querySelectorAll("[data-show]")) showPassword(b);
+   for (const b of document.querySelectorAll("[data-reload]")) b.addEventListener("click", () => location.reload());
+   // A date input shows "mm/dd/yyyy" in full ink while empty; mark it so it reads as a placeholder.
+diff --git a/app/store.py b/app/store.py
+index e7c62ba..5a6e423 100644
+--- a/app/store.py
++++ b/app/store.py
+@@ -162,6 +162,10 @@ class Store:
+         r = self.bags.get(bag_id or "")
+         return r.item if r and r.item.user_id == user_id and not r.deleted else None
+ 
++    def _finished(self, user_id: str, bag_id: str | None) -> bool:
++        bag = self.bag(user_id, bag_id)
++        return bool(bag and bag.finished_on)
++
+     def coffee(self, coffee_id: str | None) -> dict | None:
+         """Catalog facts for a coffee from the weekly dim_coffee export, if there is one."""
+         if not coffee_id:
+@@ -241,7 +245,9 @@ class Store:
+                 s for s in mine if coffee_key(s) == coffee_key(bag)
+             ]
+             last = same[-1] if same else None
+-        elif mine:
++        elif mine and not self._finished(user_id, mine[-1].bag_id):
++            # No open bag: the last shot's coffee stands in, unless that shot's bag was finished. Then nothing is
++            # on the grinder (Today offers a new bag), rather than the finished bag coming back as "Last coffee".
+             last = mine[-1]
+         picked = self.gear(user_id, grinder_id)
+         grinder = (
+@@ -416,6 +422,19 @@ class Store:
+         self._commit(self.shots, shot_id, prev.item, "shots")
+         return True
+ 
++    def finish_bag(self, user_id: str, bag_id: str, on: date) -> bool:
++        """Finish: the stored bag again with finished_on set, as a new record (never a delete), like a retraction.
++        Finishing a finished bag writes nothing and keeps its date, so a resend from the outbox is harmless."""
++        prev = self._owned(self.bags, bag_id, user_id)
++        if prev is None or prev.deleted:
++            raise NotFound(bag_id)
++        if prev.item.finished_on:
++            return False
++        if on > datetime.now(UTC).date() + timedelta(days=1):  # the same day's grace as a roast date
++            raise Invalid("That date is in the future.")
++        self._commit(self.bags, bag_id, prev.item.model_copy(update={"finished_on": on}), "bags")
++        return True
++
+     def save_equipment(self, user_id: str, data: dict) -> Equipment:
+         """Add or change equipment. One default per kind: making this one the default clears the others.
+         A change keeps what the body leaves out (notes, a model the form doesn't show, retired), so editing a
+diff --git a/app/templates/coffee.html b/app/templates/coffee.html
+index 2610c8c..e9886ab 100644
+--- a/app/templates/coffee.html
++++ b/app/templates/coffee.html
+@@ -12,6 +12,10 @@
+     {%- if bag.roast_date and bag.finished_on %} · {% endif %}
+     {%- if bag.finished_on %}{{ "finished" if bag.roast_date else "Finished" }} {{ bag.finished_on.strftime("%b ") ~ bag.finished_on.day }}{% endif -%}
+   </span><a class="ext tap" href="/bag/{{ bag.bag_id }}/edit">Edit bag</a></div>
++  {% if not bag.finished_on %}
++  <div data-finish-box><button class="btn text start" type="button" data-finish="{{ bag.bag_id }}" data-name="{{ name }}">Finish bag</button>
++    <p class="meta" data-hint role="status"></p></div>
++  {% endif %}
+ 
+   {% if best %}
+   {% set gr = grinder_of(best) %}
+diff --git a/docs/app/DESIGN.md b/docs/app/DESIGN.md
+index 0f9b1d9..dd21b08 100644
+--- a/docs/app/DESIGN.md
++++ b/docs/app/DESIGN.md
+@@ -368,6 +368,14 @@ page. The form: roaster and coffee, roast date, weight, and "Still using it" / "
+ under the same id (the shots stay with it) and returns to the screen it was opened from, with a notice. A roast date
+ in the future isn't saved; one more than 90 days old asks "Save with day N?".
+ 
++#### Finish bag
++
++A "Finish bag" text button under the roast line on the coffee page, shown only while the bag is open. The first tap
++changes it to "Tap again to finish it", and the second tap saves. Finishing writes a new bag record with today's date
++in `finished_on`, through the outbox like any write; nothing is deleted. The page reloads with "Bag finished: Onyx
++Geometry". The bag leaves Today, Switch coffee and Log shot. Coffees keeps it, marked "finished". If no open bag is
++left, Today says nothing is on the grinder and offers a new bag. Edit bag's "Still using it" reopens it.
++
+ #### Notice
+ 
+ What the last save did, at the top of the screen it lands on: "Bag saved: Onyx Geometry", "DF64 V2 saved",

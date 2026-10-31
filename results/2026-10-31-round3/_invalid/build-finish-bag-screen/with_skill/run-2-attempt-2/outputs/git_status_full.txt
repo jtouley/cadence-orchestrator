@@ -1,0 +1,21 @@
+ M .gitignore
+?? .claude/settings.json
+?? .claude/skills/tpm/SKILL.md
+?? .claude/skills/tpm/references/catalogs.md
+?? .claude/skills/tpm/references/example-registry.md
+?? .claude/skills/tpm/references/guard.md
+?? .claude/skills/tpm/references/skill-routing.md
+?? .claude/skills/tpm/references/sources.md
+?? .claude/skills/tpm/references/workstream.md
+?? .claude/skills/tpm/scripts/guard.py
+?? .claude/skills/tpm/scripts/runtime.py
+?? .claude/skills/tpm/scripts/shim_claude.py
+?? outputs/01-message-to-user.md
+?? outputs/02-message-to-user.md
+?? outputs/03-brief-scribe.md
+?? outputs/04-brief-implementer.md
+?? outputs/05-brief-reviewer-spec.md
+?? outputs/07-message-to-user.md
+?? outputs/08-brief-reviewer-quality.md
+?? outputs/09-review-quality.md
+?? outputs/10-brief-implementer-fix1.md

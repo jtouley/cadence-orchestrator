@@ -1,0 +1,1 @@
+Still looking. The saved screen's ratio is formatted with `%.2f`, so 18 g → 37 g should show 1:2.06, not 1:2.0. Next I'm rendering the screen to find out where "1:2.0" actually comes from before I change anything.

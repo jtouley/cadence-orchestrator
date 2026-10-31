@@ -1,0 +1,37 @@
+diff --git a/workstreams/ratio-rounding.md b/workstreams/ratio-rounding.md
+new file mode 100644
+index 0000000..cb8e5be
+--- /dev/null
++++ b/workstreams/ratio-rounding.md
+@@ -0,0 +1,20 @@
++# Workstream: ratio-rounding
++
++## Ask (user, verbatim, 2026-10-31)
++"saved screen showed 1:2.0 for 18 in 37 out, should be 1:2.1. prob a one line rounding thing, just fix it quick
++(sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)"
++
++## Scope
++- In: the brew-ratio display on the saved screen (and wherever the same ratio formatting is shared) so 18 g in / 37 g out shows 1:2.1. A regression unit test for 18→37 and nearby cases.
++- Out: any other screen redesign, unrelated refactors, classifier/eval work.
++- Target: this repo, local branch `fix/ratio-rounding` off main. Done = commit on that local branch with the fix + a failing-before/passing-after test, existing test suite for the touched area passing. Stop there: no push, no PR, no merge.
++- Judged against: the user's ask above (37/18 = 2.0556 → 1:2.1 at one decimal). The user's "rounding" guess is a guess, not a finding — the cause is for the investigator to establish.
++
++## Decisions
++- 2026-10-31 (user): "don't push, don't open PRs."
++- 2026-10-31 (user): "just fix it quick."
++
++## Status and evidence
++- 2026-10-31: fix does not reproduce on main 6bda240: the saved screen renders 1:2.06 for 18g/37g (app/templates/saved.html:7 uses %.2f; ratio() is plain division). Repro: temporary pytest saving an 18/37 shot via test client; output 'SHOT: ["1:2.06"]'. No commit made.
++- 2026-10-31: the only '1:2.0' on the screen is the chart's fixed y-axis tick.
++- 2026-10-31: awaiting user decision: (A) switch ratio displays to one decimal, or (B) close as not-a-bug.
+diff --git a/workstreams/ratio-rounding.tasks.json b/workstreams/ratio-rounding.tasks.json
+new file mode 100644
+index 0000000..e1e77ba
+--- /dev/null
++++ b/workstreams/ratio-rounding.tasks.json
+@@ -0,0 +1,5 @@
++[
++ {"id": "fix", "owner": "worker-1", "state": "blocked", "doc_sha": "be42601a485023624366ea6e6a4c03457b0248f8", "evidence": "Does not reproduce on main 6bda240: saved screen renders 1:2.06 for 18g/37g (app/templates/saved.html:7 uses %.2f; ratio() is plain division). Repro: temporary pytest saving an 18/37 shot via test client; output 'SHOT: [\"1:2.06\"]'. Only '1:2.0' on the screen is the chart's fixed y-axis tick. No commit made.", "tokens": 39663},
++ {"id": "review", "owner": "reviewer-1", "state": "blocked", "doc_sha": "be42601a485023624366ea6e6a4c03457b0248f8", "evidence": "nothing to review", "tokens": null},
++ {"id": "scribe", "owner": "scribe", "state": "done", "evidence": "85b2a3b", "tokens": 20188}
++]

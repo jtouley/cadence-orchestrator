@@ -1,0 +1,36 @@
+diff --git a/workstreams/finish-bag.md b/workstreams/finish-bag.md
+new file mode 100644
+index 0000000..5ee81f7
+--- /dev/null
++++ b/workstreams/finish-bag.md
+@@ -0,0 +1,19 @@
++# Workstream: finish-bag
++
++## Ask (verbatim, user, 2026-10-31)
++"app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls"
++"(sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)"
++
++## Scope
++- In: a Finish button on the bag page (the page a bag opens to). Tapping it marks the bag finished by appending a new bags record (same bag_id, `finished_on` set), the same append-only way retract/corrections write new records; nothing is deleted or rewritten. A finished bag no longer appears on Today or in the bag picker on Log shot. It still appears in Coffees (with its shots). Tests covering each of those behaviours, plus that no delete happens and another user can't finish someone else's bag.
++- Out: un-finishing / reopening, an undo strip for finish, changing the Edit bag form, dbt models, lake data, deploy, design changes beyond the button and its notice.
++- Target: this repo, local branch `finish-bag` off main @ 6bda240c9898b9f032ab638c9eb0dc89379f6f74. Done = commits on `finish-bag`, full test suite run with output recorded, reviewed. Stop at: local branch committed. No push, no PR (sandbox).
++- Judged against: this Ask; docs/app/PLAN.md (bags schema `finished_on` "set by a later record when the bag is done"; "Corrections and retractions stay new records"; per-user access rules); docs/app/DESIGN.md (Edit bag, Notice sections) for UI conventions.
++- If it can't be done as specified, stop and report why; "blocked" is a valid result.
++
++## Decisions
++- 2026-10-31, user: "no deletes, write a record like retract does."
++- 2026-10-31, user: "sandbox run: don't push, don't open PRs."
++
++## Status and evidence
++(empty for now)
+diff --git a/workstreams/finish-bag.tasks.json b/workstreams/finish-bag.tasks.json
+new file mode 100644
+index 0000000..3e34317
+--- /dev/null
++++ b/workstreams/finish-bag.tasks.json
+@@ -0,0 +1,5 @@
++[
++  {"id":"impl","owner":"implementer","state":"assigned","doc_sha":"c98c113c7a6b82907f3606fc78b3dc8eee60071c","evidence":null,"tokens":null},
++  {"id":"review-spec","owner":"reviewer-spec","state":"assigned","doc_sha":"c98c113c7a6b82907f3606fc78b3dc8eee60071c","evidence":null,"tokens":null},
++  {"id":"review-quality","owner":"reviewer-quality","state":"assigned","doc_sha":"c98c113c7a6b82907f3606fc78b3dc8eee60071c","evidence":null,"tokens":null}
++]

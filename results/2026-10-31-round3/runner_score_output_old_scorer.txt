@@ -1,0 +1,2 @@
+set=all; main-thread write rule: literal (outputs/ writes count)
+Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.

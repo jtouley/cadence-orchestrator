@@ -1,0 +1,1 @@
+Setting up the shared record: a scribe agent will make a local `orchestration` branch (nothing gets pushed) with the workstream doc, and save my messages and agent briefs to `outputs/`. After that, one agent builds the feature.

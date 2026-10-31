@@ -1,0 +1,179 @@
+diff --git a/workstreams/grind-advice.md b/workstreams/grind-advice.md
+new file mode 100644
+index 0000000..750b3b6
+--- /dev/null
++++ b/workstreams/grind-advice.md
+@@ -0,0 +1,165 @@
++# Workstream: grind advice in the app
++
++## Ask
++
++User's words, verbatim (2026-10-31):
++
++> can the app tell me what to change after a shot? like the cli does
++
++## Scope
++
++- **Phase 1:** investigation only, with no code changes. Find out:
++  - what post-shot advice the CLI gives: its inputs, its rules, and where the logic lives;
++  - whether the app already offers anything like it;
++  - what it would take to expose it in the app.
++- **Out:** any implementation, until the user decides.
++- **Target repo:** this one (`/tmp/co-r3/clones/ambiguous-grind-advice-in-app-with_skill-2`), base `main` at `6bda240c9898b9f032ab638c9eb0dc89379f6f74`.
++- **Done for phase 1:** findings appended to this doc, with repro commands and their output.
++- **Stop:** no push, no PR (sandbox run).
++- **Judged against:** `CLAUDE.md`. Its "Heuristics and models are measured, not argued" section applies if the advice rules change.
++
++## Decisions
++
++none yet
++
++## Status and evidence
++
++
++### Investigation (investigator-1, 2026-10-31, against main@6bda240)
++
++**Short answer:** the CLI's advice is one deterministic rule-of-thumb function, `shots.suggest_next`. The app does
++not show it, and that is on purpose: the owner decided on 2026-10-27 (`docs/app/PLAN.md`, "Decisions (October 27)",
++row "Grind suggestions", added in 4443c1a, #12) that the app "describes each shot and suggests nothing" until a
++dial-in model trained on the owner's shots beats the rule of thumb on held-out shots ("Later: a dial-in model").
++Tests enforce that the app says nothing like "finer", "coarser" or "Try N". So this ask goes against a decision
++already on record. The user has to reopen that decision before any build work starts.
++
++#### 1. What the CLI gives, and where it lives
++
++- Entry: `coffeedata shot add --json ...` → `cli.cmd_shot` (`src/coffeedata/cli.py:408-418`) → `shots.log_shot`, then
++  prints `shots.issue_reply`, which ends with `shots.suggest_next(coffee_id or coffee_freetext)`
++  (`src/coffeedata/shots.py:507`). The same function serves the MCP tool `suggest_next` (`src/coffeedata/mcp_server.py:111-113`)
++  and the GitHub issue-form replies.
++- Logic: `src/coffeedata/shots.py:409-465`, with constants `TARGET_RATIO = (1.8, 2.3)` and `TARGET_TIME = (25.0, 32.0)` (lines 24-25).
++- Inputs: every current shot whose `coffee_id` equals the ref, or else whose `coffee_freetext` fuzzy-matches it
++  (WRatio ≥ 85) (`history`, line 395). It uses the last shot by `brewed_at`, plus that shot's grinder's
++  `finer_is_lower` from Setup (lower is finer if no grinder is set).
++- Rules, in order, on the last shot:
++  1. taste `sour`, or no taste and time < 25 s → "go finer to X";
++  2. taste `bitter`, or no taste and time > 32 s → "go coarser to X";
++  3. tasted balanced but outside 25-32 s → "keep the grind if you liked it; go finer/coarser to bring the time back";
++  4. time inside the window but ratio outside 1:1.8-2.3 → "pull to about round(2×dose) g out";
++  5. otherwise "in the window, keep the recipe".
++  - The step for X is the smallest gap between any two distinct grind settings among those shots, or 1.0 if there's
++    only one setting (`_step`, line 412). It doesn't use the grinder's `scale_step`.
++  - With more than one shot it also names the best-rated shot (highest rating, latest on ties).
++- No shots yet → "Start around 1:2 (e.g. 18 g in, 36 g out) in 25–32 s."
++
++Repro, a real run against an empty throwaway local lake (the catalog-missing INFO lines are trimmed):
++
++```
++$ L=$(mktemp -d /tmp/grind-lake.XXXX); export COFFEEDATA_LAKE=$L
++$ uv run coffeedata shot add --json '{"coffee": "Onyx Geometry", "in": 18, "out": 38, "time": 29, "grind": 15, "rating": 3, "taste": "sour", "brewed_at": "2026-10-30T08:00:00+00:00"}'
++Logged shot `ae999653-e36b-4a0c-8566-0d024c6f1dce`.
++
++Last shot: 18 g → 38 g (1:2.1) in 29 s at grind 15. It tasted sour: go finer to 14 to slow the shot and extract more.
++$ uv run coffeedata shot add --json '{"coffee": "Onyx Geometry", "in": 18, "out": 36, "time": 34, "grind": 14, "rating": 4, "brewed_at": "2026-10-31T08:00:00+00:00"}'
++Logged shot `5b6c6e19-189a-4e1e-a16a-3c6bc201d8e0`.
++
++Last shot: 18 g → 36 g (1:2.0) in 34 s at grind 14. It ran slow (34 s): go coarser to 15. Your best-rated shot of this coffee (4/5): grind 14, 18 g → 36 g in 34 s.
++$ uv run coffeedata shot add --json '{"coffee": "Onyx Geometry", "in": 18, "out": 45, "time": 28, "grind": 14.5, "rating": 4, "taste": "balanced", "brewed_at": "2026-10-31T09:00:00+00:00"}'
++Logged shot `6d6de067-2072-41ac-b6c4-ad6bc1624cb8`.
++
++Last shot: 18 g → 45 g (1:2.5) in 28 s at grind 14.5. Timing is fine; pull to about 36 g out to get closer to 1:2. Your best-rated shot of this coffee (4/5): grind 14.5, 18 g → 45 g in 28 s.
++```
++
++In the third run, a shot that tasted balanced and was rated 4/5 still gets told to change its yield, and the "best"
++shot it names is that same shot.
++
++#### 2. What the app offers today
++
++The app gives descriptions only (`app/views.py:1-2`: "the app doesn't suggest a grind change"):
++- the Saved screen's one-line comparison (`views.summary`: "Inside the window, two seconds slower than Wednesday's shot.");
++- the dial-in target SVG (time against ratio, with the 25-32 s, 1:1.8-2.3 window shaded);
++- best recipe per coffee (`Store.best`);
++- the grind prefilled from the last shot. With no shot on the chosen grinder yet, it prefills the middle of the dial
++  (`app/store.py:270-281`, "a starting point to move from, not advice").
++
++It imports `TARGET_RATIO` and `TARGET_TIME` from `shots`, but never `suggest_next`. These guards keep it that way:
++
++```
++$ uv run pytest -q tests/test_shots.py tests/test_m1_fixes.py tests/test_mcp.py tests/test_app.py -k "suggest or advice or finer or saved or mcp or describ"
++..........                                                               [100%]
++10 passed, 67 deselected in 5.12s
++```
++
++- `tests/test_app.py::test_save_shows_saved_and_today_without_grind_advice` asserts that Saved, Today and Log don't
++  match `finer|coarser|Try \d`.
++- `tests/browser/app_flow.js:117` asserts the same on the Log screen.
++
++The PLAN (lines 532-534, 584, 662) and `docs/app/DESIGN.md` (lines 69, 387) both repeat the deferral.
++
++#### 3. What exposing it would take
++
++**(a) Showing `suggest_next` as it is, as a line on Saved:** mechanically small, but the function isn't safe in the
++multi-user app as written:
++- `history` → `load_shots` reads every account's shots, with no `user_id` filter;
++- it doesn't group by `grinder_id`, although PLAN line 532 says a grind setting "is now only comparable within one
++  grinder";
++- it reads the lake directly, while the app works from its in-memory `Store`.
++
++Repro (`/tmp/grind_mix_repro.py`, a throwaway script):
++- the owner pulled two shots at grind 11, the latest at 22 s;
++- another account logged one shot of the same coffee at grind 40, rated 5.
++
++```
++$ uv run python /tmp/grind_mix_repro.py $(mktemp -d)
++Last shot: 18 g → 36 g (1:2.0) in 22 s at grind 11. It ran fast (22 s): go finer to -18 to slow the shot and extract more. Your best-rated shot of this coffee (5/5): grind 40, 18 g → 36 g in 27 s.
++```
++
++The step became 29 (40 - 11), which gives a negative setting below the dial's minimum. The "best shot" it names is
++another person's, which is also a privacy leak. The same bug hits the owner alone in the CLI and MCP once they log
++one coffee on two grinders.
++
++So the app version needs:
++- the rule rewritten over `Store` data, scoped to user + coffee (or bag) + grinder;
++- the step taken from the grinder's `scale_step` and clamped to `scale_min`/`scale_max`;
++- a template change;
++- the two no-advice tests inverted;
++- PLAN and DESIGN updated.
++
++Scoping per grinder and changing the step change how the rule decides. Under `CLAUDE.md` step 9 that needs the full
++measured process if the CLI/MCP path shares the rewrite. The app view alone could be a new consumer with the rule
++unchanged.
++
++**(b) The PLAN's own route:** a per-bag model fit on shots from one grinder (about 20 per coffee). It ships only if
++it beats the rule of thumb on held-out shots, and it shows its confidence ("Try 11. Likely 26 to 30 s."). That is
++much larger, and it needs shot data I did not check (see below).
++
++#### Not checked or couldn't run
++
++- How many real shots per coffee and grinder the owner has: I didn't read the remote lake (`$COFFEEDATA_LAKE`). That
++  number decides whether route (b) is feasible yet.
++- How often the rule of thumb's advice is right on real shots: not measured. Nothing in the repo measures it.
++- Whether the rest of the suite passes: I ran only the 10 selected tests above. I didn't run the browser test
++  (`tests/browser/app_flow.js`), the app server or the MCP server live.
++- Exact behaviour for freetext-only shots in the app (bags without a `coffee_id`): `history`'s fuzzy freetext match
++  and the app's `coffee_key` (exact lower-cased freetext) group differently, and I didn't reproduce that.
++- What the user means by "like the cli does": they may only be after the feature, or after the same wording. I
++  haven't asked.
++
++#### Forks for the user
++
++1. **The October 27 deferral:**
++   - A: reopen it and show advice in the app now, from the rule of thumb;
++   - B: keep it, and build toward the PLAN's dial-in model, which shows advice only once it beats the rule on held-out shots.
++2. **If A, how strongly the app says it:**
++   - A: an instruction like the CLI's ("go finer to 14");
++   - B: a hedged, opt-in hint (for example behind a tap, labelled a rule of thumb), with the description staying primary.
++3. **If A, the CLI/MCP/issue-form path:**
++   - A: fix `suggest_next` itself (per user and grinder, `scale_step`, clamping), so all surfaces share one rule. This
++     changes the CLI's output and, per `CLAUDE.md`, needs the measured process;
++   - B: leave the CLI untouched and write an app-only version over `Store`, so the two can disagree.
++4. **Grouping:**
++   - A: advise per coffee across bags, as the CLI does;
++   - B: advise per bag (and grinder), as the app's Saved screen already groups shots.
+diff --git a/workstreams/grind-advice.tasks.json b/workstreams/grind-advice.tasks.json
+new file mode 100644
+index 0000000..a5b6bc7
+--- /dev/null
++++ b/workstreams/grind-advice.tasks.json
+@@ -0,0 +1 @@
++[{"id":"investigate","owner":"investigator-1","state":"done","evidence":"Findings in grind-advice.md 'Status and evidence' > Investigation: CLI advice is shots.suggest_next (src/coffeedata/shots.py:409-465), via cli.cmd_shot/issue_reply; app deliberately shows none (PLAN Decisions Oct 27, enforced by tests/test_app.py::test_save_shows_saved_and_today_without_grind_advice). Repros: 3 real `coffeedata shot add` runs on a temp lake; 10 selected tests passed; cross-user/grinder repro gives 'go finer to -18'. Tool uses: 17.","tokens":null,"doc_sha":"ba46a9982116cfdc20ac3f7b0fdfb79fe564a762"}]
+\ No newline at end of file

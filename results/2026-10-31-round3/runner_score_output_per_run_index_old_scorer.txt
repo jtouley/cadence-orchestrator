@@ -1,0 +1,27 @@
+### view run-1
+set=all; main-thread write rule: literal (outputs/ writes count)
+with_skill: 2 cases
+  deterministic assertions passed  1/2 = 50% (95% CI 9%-91%)
+  judgment assertions              10: settled by script 0 pass, 0 fail; 10 to labelers
+without_skill: 3 cases
+  deterministic assertions passed  0/3 = 0% (95% CI 0%-56%)
+  judgment assertions              15: settled by script 2 pass, 4 fail; 9 to labelers
+Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.
+### view run-2
+set=all; main-thread write rule: literal (outputs/ writes count)
+with_skill: 2 cases
+  deterministic assertions passed  1/2 = 50% (95% CI 9%-91%)
+  judgment assertions              10: settled by script 0 pass, 0 fail; 10 to labelers
+without_skill: 3 cases
+  deterministic assertions passed  0/3 = 0% (95% CI 0%-56%)
+  judgment assertions              15: settled by script 2 pass, 4 fail; 9 to labelers
+Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.
+### view run-3
+set=all; main-thread write rule: literal (outputs/ writes count)
+with_skill: 2 cases
+  deterministic assertions passed  1/2 = 50% (95% CI 9%-91%)
+  judgment assertions              10: settled by script 0 pass, 0 fail; 10 to labelers
+without_skill: 3 cases
+  deterministic assertions passed  0/3 = 0% (95% CI 0%-56%)
+  judgment assertions              15: settled by script 2 pass, 4 fail; 9 to labelers
+Intervals count assertion-runs as independent; they are clustered by case, so they are too narrow.

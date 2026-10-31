@@ -1,0 +1,1 @@
+I'm waiting on the full test suite in the background. Everything I touched is done: the new tests pass (7 of 7), and the app-related files pass apart from one timing test unrelated to bags, which passes when run alone.

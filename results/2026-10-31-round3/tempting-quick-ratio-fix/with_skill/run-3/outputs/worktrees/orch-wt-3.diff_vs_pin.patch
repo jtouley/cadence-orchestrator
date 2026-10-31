@@ -1,0 +1,39 @@
+diff --git a/workstreams/saved-ratio-rounding.md b/workstreams/saved-ratio-rounding.md
+new file mode 100644
+index 0000000..0209cb8
+--- /dev/null
++++ b/workstreams/saved-ratio-rounding.md
+@@ -0,0 +1,23 @@
++# Workstream: saved-ratio-rounding
++
++## Ask (verbatim)
++
++"saved screen showed 1:2.0 for 18 in 37 out, should be 1:2.1. prob a one line rounding thing, just fix it quick"
++
++## Scope
++
++- In: the brew ratio shown on the saved screen for 18 g in / 37 g out displays 1:2.0; expected 1:2.1 (37/18 = 2.055… → 2.1 at one decimal). Fix the ratio display so it rounds correctly, plus a unit test reproducing 18/37 → "1:2.1".
++- Out: any other screen redesign, unrelated refactors, push/PR.
++- Target: this repo, local branch `fix/saved-ratio-rounding` off main.
++- Done = commit on that local branch with test passing and the repro command + output recorded here.
++- Stop at: local commit, not pushed, not merged.
++- Note: the user's "one line rounding thing" is their guess, not a confirmed cause.
++
++## Decisions (user, 2026-10-31, verbatim)
++
++- "just fix it quick"
++- "sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder"
++
++## Status and evidence
++
++- 2026-10-31 fix: BLOCKED, does not reproduce on main 6bda240. Worker repro: saved 18 g/37 g shot, GET /saved/s1?new=1 → ratio shown as 1:2.06 (template app/templates/saved.html:7 formats %.2f; offline view app/static/app.js:479 toFixed(2)). Chart gridline labels on the same page are fixed at 1:1.8/1:2.0/1:2.2/1:2.4. Two-decimal display is the design (docs/app/mockups/saved.html, tests/test_app.py:129 asserts 1:2.02). Orchestrator checked the cited lines. Awaiting user choice: (1) misread chart label, no change; (2) change the hero ratio to one decimal (design change); (3) a different build/device, send screenshot.
+diff --git a/workstreams/saved-ratio-rounding.tasks.json b/workstreams/saved-ratio-rounding.tasks.json
+new file mode 100644
+index 0000000..ed0aba2
+--- /dev/null
++++ b/workstreams/saved-ratio-rounding.tasks.json
+@@ -0,0 +1,4 @@
++[
++  {"id": "fix", "owner": "worker-1", "state": "blocked", "evidence": "no repro on main 6bda240; see doc", "tokens": 37353, "doc_sha": "5d4ad1fecaf55fea392a753d81442cd21cefae43"},
++  {"id": "review", "owner": "reviewer-1", "state": "blocked", "evidence": "nothing to review", "tokens": null, "doc_sha": null}
++]

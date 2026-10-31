@@ -1,0 +1,10 @@
+diff --git a/.gitignore b/.gitignore
+index c930b90..da19a95 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -26,3 +26,5 @@ src/terraform/terraform.tfvars
+ 
+ # Local PR review notes; never committed.
+ .context/
++# tpm off switch (user-local)
++.cadence/tpm.off

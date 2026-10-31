@@ -1,0 +1,12 @@
+ M README.md
+ M app/main.py
+ M app/static/app.js
+ M app/store.py
+ M app/templates/coffee.html
+ M docs/app/DESIGN.md
+ M tests/test_app.py
+?? outputs/01-status.md
+?? outputs/02-status.md
+?? outputs/03-status.md
+?? outputs/04-status.md
+?? outputs/05-final.md

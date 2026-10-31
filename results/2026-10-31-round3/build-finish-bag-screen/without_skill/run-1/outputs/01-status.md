@@ -1,0 +1,1 @@
+I'm still reading the code. One finding so far: the bag edit screen already has a "Still using it / Finished" toggle, and Today and Log shot already leave out finished bags. I'm checking how those work before I add anything.

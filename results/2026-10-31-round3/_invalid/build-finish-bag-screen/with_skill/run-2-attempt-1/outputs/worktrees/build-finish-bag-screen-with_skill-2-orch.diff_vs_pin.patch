@@ -1,0 +1,45 @@
+diff --git a/workstreams/finish-bag.md b/workstreams/finish-bag.md
+new file mode 100644
+index 0000000..51f11c9
+--- /dev/null
++++ b/workstreams/finish-bag.md
+@@ -0,0 +1,27 @@
++# Workstream: finish-bag
++
++## Ask (user, verbatim, 2026-10-31)
++> app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls
++>
++> (sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)
++
++## Scope
++- Repo: this repo, base `main` @ 6bda240. Work branch: local `finish-bag` (in its own git worktree). Not pushed, no PR.
++- In:
++  - A "Finish" button on the bag page that marks the bag finished.
++  - A finished bag no longer appears on Today, and isn't offered in the bag picker on Log shot.
++  - A finished bag still appears in Coffees.
++  - Finishing writes a new append-only record, the way retract does. Nothing is deleted or rewritten.
++  - Tests for all of the above, in the repo's existing test style and suites.
++- Out: deletes or edits of existing records; push; PR; unrelated refactors; features the ask doesn't name (e.g. un-finish) unless one is needed to keep existing behaviour working, and if so it is reported.
++- Written definition: docs/app/PLAN.md (append-only records; `bags` schema incl. `finished_on`, "set by a later record when the bag is done"; the current bag holds "until another one is started or it's marked finished"), docs/app/DESIGN.md (Edit bag, Notice, Undo strip), CLAUDE.md.
++- Done = commits on local `finish-bag`, the repo's full relevant test suites passing (command + raw output recorded here), plus a list of anything left out or not done. Stop there.
++- If it can't be done as specified, stop and report why. "Blocked" is a valid result.
++
++## Decisions
++- 2026-10-31 (user, verbatim): "sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder"
++- 2026-10-31 (TPM assumption, NOT a user decision): if "the bag page" maps to more than one screen, or none, the implementer picks the closest match to the docs and records which one it picked and why. Coordination stays on a local branch, not the remote, because of the sandbox rule.
++
++## Status and evidence
++(none yet)
++- 2026-10-31 T2 implementer: local branch `finish-bag` @ 319658b. Worker reports the app already let you finish a bag through Edit bag ("Still using it"/"Finished"), and Today, Switch coffee and the Log shot picker already left finished bags out. The new part is a one-tap "Finish bag" button on the coffee page (`/coffee/<bag_id>`), which the worker treated as the bag page, plus `POST /api/bags/<id>/finish`, which writes a new record with `finished_on`. Left out, as reported by the worker: full suite not rerun after 319658b; one unexplained third record for a bag in a failing browser run; finish/finish races and an old queued Edit bag undoing a finish (same existing pattern as retract, no `rev`); no un-finish or Undo strip (Edit bag covers it); button text is "Finish bag"; screenshots not looked at by eye. All of these are claims until review.
+diff --git a/workstreams/finish-bag.tasks.json b/workstreams/finish-bag.tasks.json
+new file mode 100644
+index 0000000..bd23f44
+--- /dev/null
++++ b/workstreams/finish-bag.tasks.json
+@@ -0,0 +1,6 @@
++{"workstream":"finish-bag","doc":"workstreams/finish-bag.md","tasks":[
++ {"id":"T1-setup","owner":"scribe","state":"done","doc_sha":null,"evidence":"orchestration branch created locally","tokens":23350},
++ {"id":"T2-implement","owner":"implementer","state":"claimed","doc_sha":"071728fea5c21fba5b0723621b911dc3b6a239ae","evidence":"local branch finish-bag @ 319658b (commits e010f37, 319658b); worker-reported: tests/test_app.py -k finish 4 passed; tests/test_app_browser.py 1 passed x3; full suite after e010f37: 1 failed, 642 passed, 2 skipped (own browser assertion, fixed in 319658b); full suite NOT rerun after 319658b","tokens":153814},
++ {"id":"T3-spec-review","owner":"spec-reviewer","state":"claimed","doc_sha":"071728f","evidence":null,"tokens":null},
++ {"id":"T4-quality-review","owner":"quality-reviewer","state":"assigned","doc_sha":null,"evidence":null,"tokens":null}
++]}

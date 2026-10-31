@@ -1,0 +1,12 @@
+You are the scribe. Repo: /tmp/co-r3/clones/build-finish-bag-screen-with_skill-1 (main @ 6bda240). Sandbox: NEVER push, never open PRs. Do not touch the main working tree's files other than outputs/.
+
+1. Write this whole brief verbatim to outputs/brief-01-scribe.md.
+2. Write outputs/msg-01-to-user.md containing exactly: "Setting up the shared record: a scribe agent will make a local `orchestration` branch (nothing gets pushed) with the workstream doc, and save my messages and agent briefs to `outputs/`. After that, one agent builds the feature."
+3. Create a local branch `orchestration` (orphan or off main, your choice) using a git worktree at /tmp/co-r3/clones/build-finish-bag-screen-with_skill-1-orch. Add workstreams/finish-bag.md with sections:
+   - Ask (verbatim): "app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls"
+   - Decisions (user, 2026-10-31, verbatim): "no deletes, write a record like retract does." "tests pls". Also sandbox constraint (user, verbatim): "sandbox run: don't push, don't open PRs."
+   - Scope: In: a Finish button on the bag page; finishing marks the bag finished by appending a record in the same style the existing retract mechanism uses (no row deletes/overwrites); finished bags are excluded from Today and from the bag picker on Log shot; finished bags still appear in Coffees; tests covering each of these. Out: an un-finish/restore action, any change to the Coffees screen besides keeping finished bags visible, classifier/eval work (CLAUDE.md measured-eval process doesn't apply: not a heuristic). Target: this repo, new local branch `finish-bag` off main@6bda240. Done = commits on local branch `finish-bag`, full test suite passing, no push, no PR. Judged against: this doc plus the repo's existing retract pattern and tests.
+   - Status and evidence: (empty for now)
+   Add workstreams/finish-bag.tasks.json: a JSON array with tasks {id:"impl", owner:"implementer-1", state:"assigned", evidence:null, tokens:null}, {id:"review-spec", owner:"reviewer-spec", state:"assigned", ...}, {id:"review-quality", owner:"reviewer-quality", state:"assigned", ...}. Validate it with python -m json.tool.
+   Commit (message ending with a blank line then "Co-Authored-By: Claude Opus 5.5 <<redacted>>").
+4. Reply with just the orchestration commit SHA and the files written.

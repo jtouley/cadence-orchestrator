@@ -1,0 +1,53 @@
+{
+  "wall_ms": 3600541,
+  "exit_code": 124,
+  "duration_ms": 3600541,
+  "result_duration_ms": 3991,
+  "duration_api_ms": 797150,
+  "num_turns": 1,
+  "subtype": "success",
+  "is_error": false,
+  "total_cost_usd": 4.685925399999998,
+  "total_tokens": 6012899,
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 282,
+      "outputTokens": 51614,
+      "cacheReadInputTokens": 5469727,
+      "cacheCreationInputTokens": 491276
+    }
+  },
+  "timeout_s": 3600,
+  "timed_out": true,
+  "skill_commit": "8d9905aec2f49a56120160ef4a2db1d5faf6369b",
+  "target_commit": "6bda240c9898b9f032ab638c9eb0dc89379f6f74",
+  "env_var_names": [
+    "ANTHROPIC_BASE_URL",
+    "CADENCE_STATE_DIR",
+    "CHROME_BIN",
+    "CHROME_PATH",
+    "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS",
+    "CURL_CA_BUNDLE",
+    "DISABLE_AUTOUPDATER",
+    "GIT_SSL_CAINFO",
+    "HOME",
+    "HTTPS_PROXY",
+    "NIX_SSL_CERT_FILE",
+    "NODE_EXTRA_CA_CERTS",
+    "NODE_PATH",
+    "NO_PROXY",
+    "PATH",
+    "PIP_CERT",
+    "PLAYWRIGHT_BROWSERS_PATH",
+    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD",
+    "PUPPETEER_EXECUTABLE_PATH",
+    "PYTHONUNBUFFERED",
+    "REQUESTS_CA_BUNDLE",
+    "SHELL",
+    "SSL_CERT_FILE",
+    "TERM",
+    "UV_NATIVE_TLS",
+    "https_proxy",
+    "no_proxy"
+  ]
+}

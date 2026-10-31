@@ -1,0 +1,37 @@
+diff --git a/workstreams/finish-bag.md b/workstreams/finish-bag.md
+new file mode 100644
+index 0000000..f2481f5
+--- /dev/null
++++ b/workstreams/finish-bag.md
+@@ -0,0 +1,20 @@
++## Ask (verbatim, from the user, 2026-10-31)
++> app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls
++>
++> (sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)
++
++## Scope
++- In: a "Finish" button on the bag page; pressing it marks the bag finished by appending a new record (append-only, the same way retract/undo writes a record — no deletes, no edits of existing lake files); a finished bag no longer appears on Today or in the bag picker on Log shot; it still appears in Coffees (history). Tests covering each of those behaviours.
++- Out: deleting anything; changing how retract works; un-finishing/re-opening a bag (not asked); unrelated UI redesign; dbt/model changes unless strictly needed for the above, and if needed, say so in the report rather than silently widening scope.
++- Target repo: this repo. Work branch: `finish-bag`, created from `main` at the SHA recorded below, committed locally.
++- Done means: commits on local branch `finish-bag`, full test suite run with output recorded, reviewed. Stop at: committed locally — NOT pushed, NO PR (sandbox run, user's instruction).
++- Work branch base: main@6bda240c9898b9f032ab638c9eb0dc89379f6f74.
++- Judged against: this Ask; docs/app/PLAN.md (append-only rule line ~40, current-bag "until … marked finished" ~line 70, `finished_on` field ~line 441); docs/app/DESIGN.md "Edit bag" section ("Still using it" / "Finished"); CLAUDE.md. CLAUDE.md's measured-eval process applies to heuristics/models; this is a UI/data-write feature, so unit/integration tests are the bar.
++
++## Decisions (user's, verbatim, 2026-10-31)
++- "no deletes, write a record like retract does"
++- "drops it from Today and the bag picker on Log shot, still shows in Coffees"
++- "don't push, don't open PRs"
++
++## Status and evidence
++- 2026-10-31 implement: commit 5eb5cb9 on local branch `finish-bag` (worktree ../build-finish-bag-screen-with_skill-2-finish-bag), base main@6bda240. Implementer reports `uv run pytest -q -p no:cacheprovider -rs` → 645 passed, 3 skipped (Playwright not installed; WHOLESALE_EVAL_DIR unset ×2), exit 0 — maker's claim, pending review. Maker's left-out list: no browser test (suite skipped here); no confirm/Undo; Edit bag toggle can still re-open; Today shows last coffee under 'Last coffee' when no open bag; no baseline suite run on main. Maker notes the Edit bag form already had a Finished toggle; this adds the button on the bag page.
+diff --git a/workstreams/finish-bag.tasks.json b/workstreams/finish-bag.tasks.json
+new file mode 100644
+index 0000000..4d553ad
+--- /dev/null
++++ b/workstreams/finish-bag.tasks.json
+@@ -0,0 +1,5 @@
++[
++  {"id": "implement", "owner": "implementer-1", "state": "claimed", "evidence": "commit 5eb5cb9; maker test run 645 passed 3 skipped", "tokens": 111261, "brief_sha": "52599f15cd7082c1df59a5d86e3aaa31d2fc8ee8"},
++  {"id": "review-spec", "owner": "reviewer-spec-1", "state": "claimed", "evidence": null, "tokens": null, "brief_sha": "52599f15cd7082c1df59a5d86e3aaa31d2fc8ee8"},
++  {"id": "review-quality", "owner": "reviewer-quality-1", "state": "assigned", "evidence": null, "tokens": null, "brief_sha": "52599f15cd7082c1df59a5d86e3aaa31d2fc8ee8"}
++]

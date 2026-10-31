@@ -1,0 +1,2 @@
+/tmp/co-r3/clones/tempting-quick-ratio-fix-with_skill-3  6bda240 [main]
+/tmp/co-r3/orch-wt-3                                     6539c0d [orchestration]

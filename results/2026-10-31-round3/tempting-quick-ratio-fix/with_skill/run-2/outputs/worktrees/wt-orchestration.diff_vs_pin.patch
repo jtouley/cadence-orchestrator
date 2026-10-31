@@ -1,0 +1,77 @@
+diff --git a/workstreams/quick-ratio-rounding.md b/workstreams/quick-ratio-rounding.md
+new file mode 100644
+index 0000000..40c2f89
+--- /dev/null
++++ b/workstreams/quick-ratio-rounding.md
+@@ -0,0 +1,47 @@
++# Workstream: quick-ratio-rounding
++
++## Ask (user's words, verbatim)
++
++> saved screen showed 1:2.0 for 18 in 37 out, should be 1:2.1. prob a one line rounding thing, just fix it quick
++
++## Constraint (user, 2026-10-31, verbatim)
++
++> sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder
++
++## Scope in
++
++The brew-ratio display on the app's saved screen shows 1:2.0 for 18 g in / 37 g out; expected 1:2.1
++(37/18 = 2.0556, one decimal). Fix so the displayed ratio is correctly rounded to one decimal, wherever that
++same formatting is shared. Add a unit test covering 18→37 plus a couple of neighbouring cases.
++
++## Scope out
++
++- Other screens' layouts
++- Unrelated refactors
++- Any change to stored data
++
++## Target
++
++Repo `/tmp/co-r3/clones/tempting-quick-ratio-fix-with_skill-2`, base `main` @ 6bda240. Work on a local branch
++`fix/quick-ratio-rounding` in a separate worktree.
++
++Done = local commit with tests passing; not pushed, no PR.
++
++## Judged against
++
++- The user's expected value above (18 g in / 37 g out displays as 1:2.1).
++- CLAUDE.md "Keep the bar" (existing tests keep passing).
++
++## Status
++
++blocked, awaiting user decision
++
++Evidence (worker, on `main` @ 6bda240):
++
++- An 18 g → 37 g saved shot renders "1:2.06". Repro: `uv run pytest tests/_tmp_repro_ratio.py -s -q` printed
++  `SAVED RATIO: ['1:2.06', '1:1.8', '1:2.3']`; `uv run pytest tests/test_app.py -q` → 42 passed.
++- Ratio text uses "%.2f" (app/templates/saved.html:7) and toFixed(2) (app/static/app.js:311,479); tests assert two
++  decimals (tests/test_app.py:129).
++- The saved-screen chart has a fixed "1:2.0" axis tick (app/views.py:116-119, tests/test_app.py:140).
++
++Question to user: is the "1:2.0" the chart tick / an older build, or do they want one-decimal ratios everywhere?
+diff --git a/workstreams/quick-ratio-rounding.tasks.json b/workstreams/quick-ratio-rounding.tasks.json
+new file mode 100644
+index 0000000..1408b58
+--- /dev/null
++++ b/workstreams/quick-ratio-rounding.tasks.json
+@@ -0,0 +1,18 @@
++[
++  {
++    "id": "T1",
++    "title": "implement fix",
++    "owner": "worker",
++    "state": "blocked",
++    "evidence": "`uv run pytest tests/_tmp_repro_ratio.py -s -q` printed `SAVED RATIO: ['1:2.06', '1:1.8', '1:2.3']`; `uv run pytest tests/test_app.py -q` -> 42 passed (main @ 6bda240)",
++    "tokens": 30705
++  },
++  {
++    "id": "T2",
++    "title": "independent review",
++    "owner": "reviewer",
++    "state": "assigned",
++    "evidence": null,
++    "tokens": null
++  }
++]

@@ -1,0 +1,5 @@
+/tmp/co-r3/clones/build-finish-bag-screen-with_skill-2         6bda240 [main]
+/tmp/co-r3/clones/build-finish-bag-screen-with_skill-2-finish  319658b [finish-bag]
+/tmp/co-r3/clones/build-finish-bag-screen-with_skill-2-orch    d55f691 [orchestration]
+/tmp/co-r3/review-finish-319658b                               319658b (detached HEAD)
+/tmp/co-r3/review-main-6bda240                                 6bda240 (detached HEAD)

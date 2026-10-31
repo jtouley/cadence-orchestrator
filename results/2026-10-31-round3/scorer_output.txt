@@ -1,0 +1,21 @@
+$ python3 evals/scripts/score.py score results/2026-10-31-round3   # scorer at eval-fixes c24a19e
+set=all; main-thread write rule: literal (outputs/ writes count)
+not scored: 6 runs under _-prefixed directories (e.g. _invalid/)
+with_skill: 2 cases, 6 runs (3 per case)
+  deterministic assertions passed  6/6 = 100% (95% CI 61%-100%)
+  judgment assertions              30: settled by script 3 pass, 0 fail; 27 to labelers
+without_skill: 3 cases, 9 runs (3 per case)
+  deterministic assertions passed  0/9 = 0% (95% CI 0%-30%)
+  judgment assertions              45: settled by script 6 pass, 12 fail; 27 to labelers
+Intervals count assertion-runs as independent; they are clustered by run and case, so they are too narrow.
+
+$ ... score results/2026-10-31-round3 --exclude-outputs
+set=all; main-thread write rule: outside outputs/
+not scored: 6 runs under _-prefixed directories (e.g. _invalid/)
+with_skill: 2 cases, 6 runs (3 per case)
+  deterministic assertions passed  6/6 = 100% (95% CI 61%-100%)
+  judgment assertions              30: settled by script 3 pass, 0 fail; 27 to labelers
+without_skill: 3 cases, 9 runs (3 per case)
+  deterministic assertions passed  3/9 = 33% (95% CI 12%-65%)
+  judgment assertions              45: settled by script 6 pass, 12 fail; 27 to labelers
+Intervals count assertion-runs as independent; they are clustered by run and case, so they are too narrow.

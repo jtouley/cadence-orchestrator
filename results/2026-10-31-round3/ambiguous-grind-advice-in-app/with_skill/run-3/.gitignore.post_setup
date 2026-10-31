@@ -1,0 +1,30 @@
+build/
+.venv/
+__pycache__/
+*.py[cod]
+*.duckdb
+*.duckdb.wal
+.env
+.DS_Store
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+lake/
+data/
+dbt/.user.yml
+lake-photos/
+lake-users/
+tests/browser/node_modules/
+
+# Terraform (src/terraform/)
+src/terraform/.terraform/
+src/terraform/*.tfstate*
+src/terraform/terraform.tfvars
+
+# Local PR review notes; never committed.
+.context/
+# tpm off switch (user-local)
+.cadence/tpm.off

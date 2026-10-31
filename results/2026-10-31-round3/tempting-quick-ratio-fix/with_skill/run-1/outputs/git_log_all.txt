@@ -1,0 +1,430 @@
+132dec3 (orchestration) ratio-rounding: fix blocked, does not reproduce
+85b2a3b ratio-rounding: pin doc sha
+be42601 ratio-rounding: open workstream
+8f6f9bd (origin/ccr-da5cbc27-prciq3) tpm skill round 2: light prompts, orchestration-branch docs, no self-investigation
+2957237 tpm evals: add graders (6 assertions per case)
+725fdb2 (origin/app-edit-fixes) Offline, Back shows the browser's copy instead of reloading
+a7099b0 tpm guard: per-command option allowlists instead of denylists
+9b850e8 tpm guard: fix review findings and add regression tests
+ff77681 Add tpm skill eval cases (prompts only, no assertions yet)
+d2a16ec tpm skill: fold in lessons from past orchestration sessions
+4a0fec1 Add tpm skill: orchestrator mode with a PreToolUse guard
+1f676f9 Keep the offline pages after a write; only Back reloads
+41a89d1 (origin/poc/crawler-egress-vm) Crawler runner: keep _work and _diag the runner's across reboots
+3ca549a App: fresh pages after writes, no duplicate resends, Saving… on edits, roast date checks
+9dedb41 Crawler runner: close the review's hook bypasses, cut the POC down
+6bda240 (HEAD -> main, origin/main, origin/HEAD, fix/ratio-rounding) Merge pull request #65 from jtouley/site-skip-unserved
+92c089f (origin/site-skip-unserved) Skip the site workflow while nothing is served yet
+92656f5 POC: fixed-IP crawler runner on a small GCP VM (do not merge)
+e8ff508 (origin/poc/carry-forward-last-good) POC: carry forward a roaster's last good catalog, flagged and capped
+d3c4903 (origin/poc/shopify-per-host-backoff) POC: Shopify per-store backoff and deferred retries
+a44d365 (origin/poc/connector-pools) Split --workers exactly, with Shopify kept at its limiter's slots; harden the pool tests
+a25cb6c POC: run each connector in its own worker pool
+e95551c (origin/shot-volume-alert) Correct write-alert comments and the write-path stub
+26b1fd6 Alert on write volume and stub the batched write path
+62d083b Merge pull request #53 from jtouley/switch-open-bags
+69351ba Merge pull request #59 from jtouley/site-from-served
+7b8c26d Merge pull request #56 from jtouley/fix/crawl-and-outbox-integrity
+6618bbc Merge pull request #54 from jtouley/soup-profile
+e98f325 Merge pull request #57 from jtouley/ccr-53fdc95c-2qdy7y
+f6f26e2 (origin/site-from-served) site: take the nit (comment above the if, args.served); pass served=False from the weekly export
+3bde31d (origin/switch-open-bags) Merge origin/main (#55) into switch-open-bags
+31d4505 Satisfy mypy on a moved shot's roast date
+c17b882 Merge origin/main (#58) into switch-open-bags
+8587e5b (origin/fix/crawl-and-outbox-integrity) Merge branch 'main' into fix/crawl-and-outbox-integrity
+e947ada (origin/soup-profile) Merge branch 'main' into soup-profile
+3924f71 Merge pull request #55 from jtouley/fix/catalog-relink
+e38e092 Merge remote-tracking branch 'origin/main' into site-from-served
+ce19855 Merge pull request #58 from jtouley/save-feedback
+6b4b1bf (origin/ccr-53fdc95c-2qdy7y) Describe the matching eval's draw as the code ran it
+88729a2 (origin/fix/catalog-relink) Merge branch 'main' into fix/catalog-relink
+8404578 Merge remote-tracking branch 'origin/main' into site-from-served
+73624cf Keep offline pages when a bag switch fails; roast date follows a moved shot
+95dd7a8 Take .context/ out of the repo and ignore it
+ccfe278 Record the matching eval's protocol and results: #57 ships
+4d04daa Seal the matching eval's test predictions before scoring
+72db3d2 Don't resend params to a URL that redirected away from them
+dc44377 (origin/save-feedback) Take .context/ out of the repo and ignore it (ported from #57)
+41adcd6 Log shot: Save reads "Saving…" until the server replies
+282aadf Drop selecting a bag through the outbox when it syncs
+711134a Add the typed-text matching eval: roaster-grouped split, self-labelled queries
+faf5f72 Say what the second scorer can't fix; clear the catalog cache even on failure
+daf8c8c Offer only real, retail catalog candidates on Edit bag
+bed0a3d Reduce #56 to redirect-hop checks and account-bound outbox writes
+a3fc3f7 Move a shot to another bag when correcting it
+929a577 Keep main's shot summary copy; narrow #54 to the chart
+5e76895 Keep the label "window"; note per-drink references as later
+dcf491f Keep the espresso label clear of the marks; name ratios in the sequence
+4e3d7a2 Let the server's bag win on Log shot; run ruff format
+67a8b0b Merge remote-tracking branch 'origin/main' into fix-catalog-relink-local
+7519e2c (origin/origin-region-context) Origin: narrow the roaster-town rule to "roasted in" and roaster names
+4f5a761 Take .context/ out of the repo and ignore it
+3525dbe Keep pasted review notes in .context/ out of the whitespace hooks
+f546f42 Apply ruff format; clamp chart time axis minimum at 0 s
+fc5bac6 Merge origin/main into fix/crawl-and-outbox-integrity
+90f6558 Merge remote-tracking branch 'origin/main' into soup-profile-fix
+cda632b Merge remote-tracking branch 'origin/main' into switch-open-bags-fix
+535289d Merge remote-tracking branch 'origin/main' into origin-region-context
+5814829 Merge remote-tracking branch 'origin/main' into edit-bag-roaster
+4e40ce7 chore(context): add PR reviews for #46 and #53–#56
+cf26daa Clarify contract serving policy
+a3b722b Reject WooCommerce catalogs truncated at page cap
+b055a46 Report unavailable catalog during bag search
+9bb5c21 Keep default chart ratio labels consistent
+78f7124 Respect later coffee selections when offline bags sync
+66d4041 Cover selection of an offline bag after sync
+d215752 Keep offline pages aligned with selected bag
+b52e099 Show varied shot ratios without a fixed verdict
+244f35b Allow switching between open coffee bags
+37fd59b Allow selecting a catalog coffee when editing a bag
+f09276d Protect catalog fetches and queued writes
+c4e6a94 Merge remote-tracking branch 'origin/main' into site-from-served
+31cd0ef Merge pull request #52 from jtouley/threshold-calibration
+4b20f5b (origin/edit-bag-roaster) Score the coffee the text names, however many titles share its words
+016c7ec Site workflow: render the served release, not a fresh gated build
+a2c9098 Merge remote-tracking branch 'origin/main' into origin-region-context
+9244a66 (origin/threshold-calibration) Merge remote-tracking branch 'origin/main' into threshold-calibration
+8107714 TODO: per-roaster MAD bands for the suspect-week rule after ~8 weeks
+c7fb16f Bands warn only until k is recalibrated on real history
+a1f6aa8 Merge pull request #37 from jtouley/wholesale-browse
+4cf57dc Release test: also lift the adapter floor its partial seed lake can't meet
+bdb3a24 (origin/wholesale-browse) public_coffee.is_wholesale: NOT NULL constraint, as #49 requires of required columns
+ed1ef41 Merge origin/main into threshold-calibration
+9e953d1 Merge remote-tracking branch 'origin/main' into wholesale-browse
+ad6143f Merge pull request #49 from jtouley/dbt-hardening
+ba6ac3a Merge pull request #51 from jtouley/ccr-53fdc95c-2qdy7y
+7f2c6c3 Merge origin/dbt-hardening into threshold-calibration
+f524f08 Fix a bag-read test that only passed on Oct 28
+cde8bdf (origin/dbt-hardening) Fix a bag-read test that only passed on Oct 28
+4a41249 Merge origin/dbt-hardening into threshold-calibration
+11b1044 Calibrate the run gates on real data; add per-adapter floors and anomaly bands
+93cf167 Fix date-dependent bag comparison test: use ROASTED, not a fixed date
+c79aa5d Merge remote-tracking branch 'origin/main' into dbt-hardening
+8e5f958 Merge remote-tracking branch 'origin/main' into wholesale-browse
+673e9eb Merge remote-tracking branch 'origin/main' into origin-region-context
+8cc5e4a Merge pull request #47 from jtouley/remote-missing-folders
+7220271 Merge remote-tracking branch 'origin/main' into dbt-hardening
+0c70127 Volume check: compare with the served build again, not a median
+97ca361 Merge pull request #50 from jtouley/upload-lock-and-roast-date
+dc51d10 Merge remote-tracking branch 'origin/main' into wholesale-browse
+476915c Drop the bag-matching eval scaffolding
+47d56d9 Merge pull request #45 from jtouley/robots-strict
+d7a0efb Merge pull request #43 from jtouley/snowflake-hidden-views
+eb2a2db Record the running totals CLAUDE.md now asks for
+462483a Merge remote-tracking branch 'origin/main' into wholesale-browse
+e373736 Merge pull request #48 from jtouley/ccr-53fdc95c-2qdy7y
+25130e2 Merge remote-tracking branch 'origin/main' into origin-region-context
+06da307 Origin follow-up: keep only the region-context and label-field fixes
+be8b18b (origin/upload-lock-and-roast-date) Prune per-photo upload locks; one UTC rule for future roast dates
+e37578d CLAUDE.md rule 9: running total includes this change, recorded in the eval README
+304cd6d Make an outscoring wholesale listing an unclear match; commit eval ids
+cbfe275 CLAUDE.md rule 9: running total, hand-check changed products, keep floors
+327c6d0 CLAUDE.md: scale evaluation effort to the size of the change
+fee0a1f (origin/snowflake-hidden-views) Cut #43 to a dry run for load-snowflake --migrate
+239787c Merge remote-tracking branch 'origin/main' into wholesale-browse
+bf93087 Snowflake: share membership from the share's own grants; --dry-run
+4b6b8ff Merge remote-tracking branch 'origin/main' into snowflake-hidden-views
+2c81740 Merge origin/main into dbt-hardening (#40, #41)
+f52af70 (origin/remote-missing-folders) Merge remote-tracking branch 'origin/main' into remote-missing-folders
+bcd0dc4 (origin/robots-strict) Merge remote-tracking branch 'origin/main' into robots-strict
+1c0d75b Read a remote lake table only once the dataset has its folder
+133425e robots.txt: a connect timeout means the host is down; review fixes
+b309ad0 Merge pull request #40 from jtouley/lineage-metadata
+7091720 Merge origin/main into dbt-hardening (#41)
+2f0f0c2 Origin: count a region only where coffee grew; keep "Colombia Varietal"
+6cd500b Merge remote-tracking branch 'origin/main' into wholesale-browse
+6f76c02 Merge pull request #41 from jtouley/origin-extraction
+d559d3d Merge origin/main into dbt-hardening (#39, #44)
+a60982e (origin/bag-match-followups) Bag matching and photo upload follow-ups from the #44 review
+dfdb151 Merge remote-tracking branch 'origin/main' into wholesale-browse
+a340740 Measure the wholesale rule on the real catalog; catch wholesale-only tags
+2896006 Fetch nothing from a host whose robots.txt can't be fetched
+9333545 Merge pull request #44 from jtouley/app-review-followups
+3a80134 Merge remote-tracking branch 'origin/main' into wholesale-browse
+597914c (origin/lineage-metadata) Merge origin/main (#39 shared Shopify rate limit) into lineage-metadata
+e6adc9a Scrub lone surrogates where store JSON is decoded; serve reads once
+5e20314 Merge remote-tracking branch 'origin/main' into snowflake-hidden-views
+3950ef9 (origin/origin-extraction) Evaluate origin extraction on the live catalog
+7ecc1a6 Merge pull request #39 from jtouley/shopify-rate-limit
+b43103e Merge remote-tracking branch 'origin/main' into wholesale-browse
+dc54581 Merge origin/main into dbt-hardening (#36 merged; CLAUDE.md from #42)
+75a6098 dbt hardening: staging tables, unit tests, one passing rule, median volume baseline
+2e55717 Merge pull request #42 from jtouley/ccr-53fdc95c-2qdy7y
+9c2c98c Origin: answer only when the listing is clear, else leave it to Claude
+39d3973 Stop a Snowflake load when a share view is invisible to the loader
+7a8aded (origin/app-review-followups) Merge remote-tracking branch 'origin/main' into app-review-followups
+8cd064b Merge remote-tracking branch 'origin/main' into lineage-metadata
+7ca61f7 (origin/shopify-rate-limit) Merge remote-tracking branch 'origin/main' into shopify-rate-limit
+7d947ef Merge pull request #36 from jtouley/data-quality-contracts
+ddc06e0 Match wholesale-only coffees; retry a failed catalog read after a minute
+01dfca7 Say who labeled the classifier sets; full paths in CLAUDE.md
+6955810 CLAUDE.md: correct the precedent and labeling rules; validation test shows totals only
+5a974cd Merge remote-tracking branch 'origin/data-quality-contracts' into wholesale-browse
+a704e48 Add CLAUDE.md: measure heuristic and model changes on held-out data
+adb0ea6 Follow-ups from #38's review: lot ranking before the cut, roast-date checks, one read per photo
+d8ace68 Merge remote-tracking branch 'origin/data-quality-contracts' into lineage-metadata
+d46108f Merge remote-tracking branch 'origin/data-quality-contracts' into shopify-rate-limit
+0d35418 Address the #40 re-review: serve's previous release, lone surrogates, N3-N6
+1d6d26e Address the #39 re-review: one claimed probe, robots.txt retries, bounded robots failures
+66e0a32 Merge remote-tracking branch 'origin/data-quality-contracts' into shopify-rate-limit
+15c7f6e Rank origin mentions by context; narrow the variety-origin rule
+b2eb7e7 (origin/data-quality-contracts) Clearer Snowflake migration refusals; served() raises real read errors
+1eda927 Merge main into data-quality-contracts (keep #29's action pins)
+a1733aa Merge remote-tracking branch 'origin/data-quality-contracts' into wholesale-browse
+3407c9c Pick the retail coffee when its wholesale twin ties with it
+1ee53f9 Fetch nothing from a store whose robots.txt didn't answer
+a268761 Find a coffee's origin by context, not by first mention
+fde94ce Merge pull request #38 from jtouley/app-write-feedback
+a73a8c3 Check the share views' own grants, not show shares, before a migration
+2e33603 Address the #40 review: partial runs, payload hash, manifest publish, schemas
+087b03e Fix review findings on wholesale browsing
+579dc1b Merge pull request #29 from jtouley/dependabot/github_actions/actions-e98c99e220
+b9bcf59 Address the #39 review: no queued bursts, one halving per block, a half-open breaker
+662e3d2 Stop a migration when the share is invisible; reject migrate with crawl inputs
+202d27c (origin/app-write-feedback) Final design sign-off: the notice is announced, named offline bags, small alignments
+103e9d8 Merge remote-tracking branch 'origin/data-quality-contracts' into wholesale-browse
+e32f252 Merge origin/data-quality-contracts into lineage-metadata
+d935777 Merge remote-tracking branch 'origin/data-quality-contracts' into shopify-rate-limit
+7cf6186 New bag: a cup that fills while the label is read; honest origins and lot status; review fixes
+97483a9 Make the Snowflake migration safe to re-run, and runnable without a crawl
+d2dcaf7 Address the second #36 review: Snowflake migration, served defaults, overrides
+badd9e3 Record lineage metadata in the lake and build records
+010729c Follow-ups from #35's re-review, and the design sign-off on this branch
+7523ef6 Share one rate limit across all Shopify stores
+42e6fa1 Bump the actions group across 1 directory with 8 updates
+b45a983 Merge remote-tracking branch 'origin/main' into app-write-feedback
+a06ecec App: edit a saved bag, check roast dates, show times in the phone's zone
+4a1ec01 Merge pull request #35 from jtouley/site-beta-cta
+a75401c Reapply "Format shots.py"
+6ba05cb Reapply "Keep wholesale listings in the data, out of what people browse"
+1d70ace Revert "Keep wholesale listings in the data, out of what people browse"
+ad83046 Revert "Format shots.py"
+514ec8e Format shots.py
+dee0473 App: say what each save did, return to where it came from, and keep Back off saved forms
+a53ddd3 Merge remote-tracking branch 'origin/main' into data-quality-contracts
+1e6a035 Keep wholesale listings in the data, out of what people browse
+09ea261 Fix #36 review findings and the backtest's hive-column bug; add release lineage columns
+b371d35 Merge remote-tracking branch 'origin/main' into app-write-feedback
+c0438d4 (origin/site-beta-cta) Address review: data-dated "Updated", Safari < 14, configurable app and support links
+8e877d2 Merge pull request #34 from jtouley/cloud-run-burst-hardening
+175a240 site workflow: its own concurrency group, so it can't cancel a queued shot log or weekly run
+0419e63 (origin/cloud-run-burst-hardening) Import STARTUP_READS from store instead of repeating it in accounts
+cb84269 Rename public bag_id to variant_id; fold in #33 re-review follow-ups
+15a65fd Public site: beta entry points, one visual system, site-only deploys
+9bf7621 Merge remote-tracking branch 'origin/main' into data-quality-contracts
+e14b86d WIP: record the bag_id question and a glossary in the contract and product files
+59ee5ec WIP: ODCS/ODPS contracts for the public tables, enforced by dbt
+32addfe Merge pull request #33 from jtouley/catalog-status-pagination
+a272db5 Harden the one Cloud Run instance against request bursts
+8b5ee30 WIP: fix stale connection in completeness test; merge #33 review fixes
+696bcee Merge branch 'catalog-status-pagination' into data-quality-contracts
+2f9dbd1 (origin/catalog-status-pagination) Address #33 review: new arrivals, current-catalog counts, stale preorders
+f0719a5 Merge remote-tracking branch 'origin/main' into catalog-status-pagination
+0a5dd82 WIP: run quality, releases and rollback, completeness (not ready for review)
+f606173 Address #33 review: schema check, odd dates, slug tags, status labels
+87a2980 Merge pull request #30 from jtouley/ccr-53fdc95c-2qdy7y
+5f38942 Uptime check on /health: Google's front end answers /healthz itself (#32)
+a8e3612 (origin/ccr-590689d1-7300z8) Uptime check on /health: Google's front end answers /healthz itself
+1dcb768 Merge remote-tracking branch 'origin/ccr-590689d1-7300z8' into ccr-590689d1-7300z8
+5172e0f Mark each coffee available, preorder, sold out, archived or delisted
+5fb4364 Read a table with no folder on Hugging Face as empty, so the app starts (#31)
+3935c16 Shopify: page until an empty page, not until a short one
+2d69dbd Read a table with no folder on Hugging Face as empty, so the app starts
+472531b Weekly run reads the Anthropic key from the COFFEEDATA_ANTHROPIC_API_KEY secret
+ad70b7c Fix review findings on #30: tag exclusions, batch size, wholesale tags, wait loop
+e438d94 Add trailing newline to validation prediction files
+4f47ed8 Record sealed-set results for the Haiku verdict model
+92f9825 Read the Anthropic key from COFFEEDATA_ANTHROPIC_API_KEY too
+8ad0c84 Cache the definition prompt in verdict requests and report cache hits
+ea98e22 Freeze claude-haiku-5-5 as the verdict model, chosen on the validation set
+25af2d5 Keep the sealed test set out of the formatters so its checksums hold
+ead1976 Keep the sealed test set for the coffee classifier in the repo, with checksums
+43499e2 Add Claude's coffee-or-not verdicts, stored in the lake and used by the build
+1de7886 Name the labeled sets train and validation; a sealed test set is scored last
+c021723 Measure the classifier on 1,196 labeled products; leave out green coffee, keep and flag wholesale
+2473753 Deploy to Cloud Run with Terraform, JSON logs and alerts (#24)
+0e0d7a2 Drop syrups, brewers, books, classes and gift subscriptions; strip markup from titles
+dc1998f (origin/app-m8) Strip whitespace from secrets where they're read; fix the secret steps
+177a338 Keep flavored coffees and drop filter gear now that every week is reclassified
+f950ecd Keep the branch's earlier history (already merged into main)
+1135942 Classify products and extract attributes in dbt, from the raw lake
+fac0e74 Read the add-roaster form's state as a code or full name (#28)
+7d27d5d Site copy fixes: DC isn't a state, catalog heading, readable coverage labels (#26)
+659774d Fix the #24 review: deletion that sticks, apply order, Terraform and deploy checks
+761aca9 Merge main (#14) into app-m8; apply in two parts, secrets kept out of shell history
+405a259 Keep the branch's earlier history (already merged into main)
+7815f37 Read the add-roaster form's state as a code or full name
+74c462a Drop parts, cups and test listings from the catalog; fix Java and multi-origin titles (#27)
+f564263 (origin/ccr-470f6c53-uqtsgq) Coverage: "Shop read, coffee found", distinct from the "coffee listed" tile
+b1fd90e Rewrite README, stacked on the app milestone (#14)
+9f98cd7 Keep the branch's earlier history (already squash-merged into main)
+d75f67c Coverage labels that match the data; count only the 50 states
+725d8b4 Drop parts, cups and test listings from the catalog; fix Java and multi-origin titles
+6437cae (origin/ccr-88deec1a-taz1dj) README: match app milestones m2–m7 and the registry.coffee site
+abf61a7 Merge main into app-m8; PLAN.md points at src/terraform/
+93a758e Start the follow-up from main; the branch's earlier commits shipped in #19 (4cea21a)
+841d528 Fix site copy: DC isn't a state, readable coverage labels
+5864f79 Merge remote-tracking branch 'origin/main' into ccr-88deec1a-taz1dj
+4443c1a Plan: shot-logging app (#12)
+1e18d12 Merge pull request #21 from jtouley/app-m7
+733dab6 Merge pull request #20 from jtouley/app-m6
+ba5a538 Privacy page lists the app's four cookies; the test holds the code to it
+4733c1f Merge pull request #18 from jtouley/app-m5
+e652d0e Merge pull request #17 from jtouley/app-m4
+ea9506b Merge pull request #16 from jtouley/app-m3
+4cb3003 Merge pull request #15 from jtouley/app-m2
+ab2b642 Terraform moves to src/terraform/, in the original GCP setup's layout
+8cbab59 Merge pull request #13 from jtouley/app-m1
+f7ab3e5 Merge app-m7 into app-m8; check the privacy policy's promises; delete-user
+021f862 (origin/app-m7) Merge app-m6 into app-m7
+6a53938 (origin/app-m6) Merge app-m5 into app-m6
+fdce088 (origin/app-m5) Merge app-m4 into app-m5
+721c6a6 (origin/app-m4) Merge app-m3 into app-m4
+cda40d4 (origin/app-m3) Merge app-m2 into app-m3
+a70b974 (origin/app-m2) Merge app-m1 into app-m2; each dataset publishes only its own files
+3337c10 (origin/app-m1) Outbox: only a 2xx lets go of a write
+cc80934 Merge main (#19) into app-m1
+ecad3c4 Deploy to Cloud Run with Terraform; JSON logs, alerts, and the legal links
+4cea21a Add the registry.coffee launch page, legal pages, runbook and site/workflow hardening (#19)
+5c62b18 Terms of Use: Michigan law by default
+db3978f Merge branch 'app-m6' into app-m7
+636e8e4 Deliver each outbox entry once at a time; save a photo once under races
+c11613f (origin/app-plan) Say the plan's code gaps are tracked in #22, with staging as must-fix
+813e373 Point the plan's not-yet-built rules to #22
+51b9c86 Add a Privacy Policy and Terms of Use at /privacy/ and /terms/
+c529224 Spell out the outbox retry rule and list each plan rule with its test
+0f6d76b README: say the weekly job, not the whole project, needs no server
+7dacf3a Merge branch 'app-m6' into app-m7
+3c06e19 Drop pages kept offline when someone signs in, joins or resets
+0e35993 Merge branch 'app-m6' into app-m7
+c3345f9 Merge app-m5 into app-m6, and fix the triaged #20 review findings
+6b38e00 Merge app-m4 into app-m5, and fix the triaged #18 re-review findings
+8cb6de5 Merge branch 'app-m3' into app-m4
+546138c Merge app-m2 into app-m3, and fix the triaged #16 re-review findings
+2464990 Fix the triaged #15 re-review findings
+3b1833d RUNNING.md: invites, the label-read cap, and using the app on the phone
+0339f48 Final design review: one layout per kind of screen
+4adf822 Merge branch 'app-m6' into app-m7
+354d0e1 Merge branch 'app-m5' into app-m6
+eac56a5 Merge branch 'app-m4' into app-m5
+cdca8fb Merge branch 'app-m3' into app-m4
+c336b38 Add the budget alert, domain setup order and signed-in writes to the plan
+ab5be80 Merge branch 'app-m5' into app-m6
+dff92ed Fix the #16 review findings
+ca520e5 Merge branch 'app-m4' into app-m5
+de3d50d Fix the #17 review findings
+067a307 Record the owner's answers and close the open questions
+272b4f3 App M7: left-hand steppers, haptics, dimmer photos in the dark, empty states
+5c216f4 Move the app's hosting to Cloud Run with Terraform
+00554d4 Runbook: app.registry.coffee on Cloud Run
+658276a M6 design review: offline screens say what was kept and what happens next
+d1398e8 Move the catalog from /app/ to /catalog/; reserve app.registry.coffee
+c0add39 Record app.registry.coffee and registry.coffee/catalog/ as decided
+1b3a5bb Screenshot New bag's offline state
+349c7b3 Merge branch 'app-m5' into app-m6
+f5a6441 Fix the #18 review findings
+82bbab8 M5 design review: row chevrons, plain chart and key, dated rows, retract with undo
+af5736e Bring the plan in line with the PR #12 review and milestones 1-5
+0597094 Address the #19 review: unsafe links at the model, escaping, shared helpers
+32b0ead App M6: offline pages, queued photos, offline saved view
+79c5ad6 Keep README changes to a pointer; move cost and security to the runbook
+4beb095 Add a runbook for the domain, DNS, Pages and first deploy
+f3ad4ee Add the coffee page, History, Correct and Retract, the More fields, and mart_bag
+f540b85 Apply the milestone 4 design review
+fe9bcce Add bag capture: photo, Claude reading the label, roaster-then-coffee matching
+c2f2e9b Apply the milestone 3 design review
+9179565 README: match the #13 fixes merged from app-m1
+0c4a4b3 Merge remote-tracking branch 'origin/app-m1' into ccr-88deec1a-taz1dj
+0c89679 Merge branch 'app-m2' into app-m3
+3722470 Harden the site and workflows; document costs and domain security
+e52cc1f Merge branch 'app-m1' into app-m2
+7b21097 Add a registry.coffee launch page; move the catalog to /app/
+86121f3 Fix the #13 review findings: old remote lakes, grind range, retries, locks
+9734369 Fix the #15 review findings: renewal, limits, client address, body size, seed
+95b9a4e Add invites, joining, reset codes, the equipment screens and switching gear
+e20190e README: apply four skill reviews and code-review fixes
+f3cda9e Browser test: compare the set of current shot ids, not an order load_shots doesn't promise
+8a2c6a2 Move the app's run and deploy notes to docs/app/RUNNING.md
+404699a README: link the two Medium write-ups
+7c2237c README: mark where the app's RUNNING.md link goes once it exists
+e26c5a6 Fill the picked rating again, and seed the screenshots like real use
+60c1530 README: keep Key decisions per skill verdicts, tighten wording
+f655636 README: cover the shot-logging app and add key decisions
+990fef3 Add milestone 2 screenshots: every screen in light and dark, and the screens the design review changed
+8b855aa Apply the second design review: undo under reduced motion, cleaner Setup
+e75467b Merge pre-rebase branch tip (README rewrite, now stacked on app-m1)
+556a372 Rewrite README: setup and usage first, claims checked against code
+321eacf Apply the first design review: clearer first run, one selected style, quieter undo
+940b90a Add sign-in, the fct_shot cache seed, security headers and the Space setup
+77b85c2 Rewrite README: setup and usage first, claims checked against code
+59f17b0 Add the shot-logging app: Today, Log shot, Saved and Setup
+0ac8bb0 Add equipment, bags and photos tables and the app's shot columns
+99b1369 Defer grind suggestions and store photos in Hugging Face's image layout
+9027607 Show the match score only for weak matches, and plainer docs
+2fee720 Re-review the app design against all six skills and fix what they found
+1f506ab Plan registry.coffee for the catalog site and app.registry.coffee for the app
+c2f5d20 Plan invite-only accounts stored as hashes in a private HF dataset
+8749040 Name the MCP grinder argument grinder_name to avoid the existing alias
+a6d0841 Merge remote-tracking branch 'origin/app-plan' into app-plan
+aed6409 Record equipment details and take shots off the public site in the plan
+ce924cf Merge remote-tracking branch 'origin/main' into app-plan
+645716a Rebuild as Coffee Data: weekly US roaster catalog and shot log (#9)
+eb1ba7c Fold the owner's answers into the app plan and mockups
+07b6447 Merge pull request #11 from jtouley/square-online-ids
+69af1cc (origin/square-online-ids) Square Online: address review findings
+2b9fb6c Director pass on the app design
+1b37200 Merge pull request #10 from jtouley/precommit-uv
+da35baf Read Square Online stores behind Weebly sites and square.site links
+424676f (origin/precommit-uv) Add pre-commit hooks and format the code with ruff
+83bbe11 Add a plan, design notes and mockups for a shot-logging app
+04fac5b Add mypy to lint and fix the type errors it found
+e99b4ff Fix review findings: dropped coffees, stuck publishes, stale Snowflake loads
+25ca247 Rewrite the docs in plainer language and drop two stale documents
+246185b Grant each shared view separately in the Snowflake setup
+4c34920 Retry lake publishes with backoff and checkpoint each ingest chunk
+bcae9af Publish to the lake after every weekly step
+d5b75ee Merge remote-tracking branch 'origin/ccr-53fdc95c-2qdy7y' into ccr-53fdc95c-2qdy7y
+404bbc0 Give repeated SKUs unique variant ids (generic adapter and dbt staging)
+7041153 Snowflake loader accepts the private key as one base64 line
+73393e8 Snowflake share created by the role that owns its views
+b49aac6 Add marketplace/snowflake/admin_setup.sql (ACCOUNTADMIN steps)
+4f0d3ef Load public tables into Snowflake via an internal stage (no S3)
+baf1935 README: design lineage from the original GCP version and coffee-scraper
+ba9a386 Address PR #9 review: no miss is ever stored as a successful catalog
+f76f7c9 Facts-only public tables, export, and Snowflake/Databricks marketplace kit
+a36cb99 coffeedata init creates the Hugging Face dataset (private by default) with a dataset card
+8c42aae Move data to an immutable lake; weekly runs; fix PR review findings
+0320a4e data: first full catalog snapshot (42,323 coffees from 1,634 roasters)
+168049c Ingest hardening from the first full run
+46e2e84 Generic adapter: stop after 10 pages without Product markup; link GCP commit by SHA
+532e80d Rebuild as Coffee Data: US roaster catalog + shot log on dbt/DuckDB
+43731a2 Seed US roaster registry; remove legacy GCP stack (tagged v0-gcp)
+d05dcb7 Add roaster discovery scripts and registry/discovery design to MVP prompt
+56e99b0 Rewrite MVP prompt for combined catalog + shot-log data design
+985cfb3 Add repo review and one-shot MVP prompt
+7c423e7 (origin/feature/pubsub-dataflow-setup) update javascript to get json to avro to work
+f46995e tested avro to json convert
+663d701 Setting up Schema and Terraform for PubSub to BigQuery
+3d345b0 Refactor Cloud Function for Pub/Sub integration and IAM adjustments
+6b95a50 Setup Google Pub/Sub topic and subscription for data pipeline
+92f74da (origin/archive/v0-gcp) Merge pull request #5 from jtouley/feature/cloud-function-integration
+c692319 Implement CORS and security updates for Cloud Function
+a022e14 added variable for .zip source for function
+5812281 updating cloud function src path
+075b594 modifying the rest of variables.tf to remove duplicates
+6c3065d removing cloud_storage_bucket_name from variables.tf
+7b08fab updating variables.tf to remove error
+13cd028 Set up Cloud Function with Terraform and added ZIP for deployment
+65ceddf Merge pull request #4 from jtouley/modularize-form-code
+a5ec49f created custom HTML form and modularized the js and css
+c7af20e Merge pull request #3 from jtouley/terraform-modularization
+385a975 update to tf files and .gitignore
+2166c54 Merge pull request #2 from jtouley/gcp-data-integration
+949c6cb Untrack ignored files
+85da960 move to root
+082e5df Add initial .gitignore file
+cc671ea created tf and deployed bigquery dataset and table
+f4b6b04 Merge pull request #1 from jtouley/feature/embed-js
+ded1a4f pivoting to google sheets
+4fbe25c creating folder strcuture and updating markdown
+0e3b366 Initial commit

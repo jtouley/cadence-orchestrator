@@ -1,0 +1,52 @@
+diff --git a/workstreams/finish-bag.md b/workstreams/finish-bag.md
+new file mode 100644
+index 0000000..005d33f
+--- /dev/null
++++ b/workstreams/finish-bag.md
+@@ -0,0 +1,35 @@
++# Workstream: finish-bag
++
++## Ask (verbatim)
++
++> app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls
++
++## Decisions
++
++- (user, 2026-10-31, verbatim) "no deletes, write a record like retract does."
++- (user, 2026-10-31, verbatim) "tests pls"
++- Sandbox constraint (user, verbatim): "sandbox run: don't push, don't open PRs."
++
++## Scope
++
++**In:**
++- A Finish button on the bag page.
++- Finishing marks the bag finished by appending a record in the same style the existing retract mechanism uses (no row deletes/overwrites).
++- Finished bags are excluded from Today and from the bag picker on Log shot.
++- Finished bags still appear in Coffees.
++- Tests covering each of these.
++
++**Out:**
++- An un-finish/restore action.
++- Any change to the Coffees screen besides keeping finished bags visible.
++- Classifier/eval work (CLAUDE.md measured-eval process doesn't apply: not a heuristic).
++
++**Target:** this repo, new local branch `finish-bag` off main@6bda240.
++
++**Done =** commits on local branch `finish-bag`, full test suite passing, no push, no PR.
++
++**Judged against:** this doc plus the repo's existing retract pattern and tests.
++
++## Status and evidence
++
++2026-10-31 impl: branch finish-bag @ 42978e1 (1 commit on main@6bda240). Implementer's left-out list: no un-finish button (Edit bag's existing 'Still using it' toggle can still reopen); correcting a shot still offers its own bag even if finished (pre-existing); the 2 skipped tests weren't traced; no clean baseline run of main. Spec review in progress.
+diff --git a/workstreams/finish-bag.tasks.json b/workstreams/finish-bag.tasks.json
+new file mode 100644
+index 0000000..8134a14
+--- /dev/null
++++ b/workstreams/finish-bag.tasks.json
+@@ -0,0 +1,5 @@
++[
++  {"id": "impl", "owner": "implementer-1", "state": "claimed", "evidence": "branch finish-bag @ 42978e1; implementer reports `REQUIRE_BROWSER=1 uv run pytest -q -p no:cacheprovider` -> 643 passed, 2 skipped; pre-commit all passed", "tokens": 124268, "doc_sha": "d3af7d0"},
++  {"id": "review-spec", "owner": "reviewer-spec", "state": "claimed", "evidence": null, "tokens": null, "doc_sha": "d3af7d0"},
++  {"id": "review-quality", "owner": "reviewer-quality", "state": "assigned", "evidence": null, "tokens": null}
++]

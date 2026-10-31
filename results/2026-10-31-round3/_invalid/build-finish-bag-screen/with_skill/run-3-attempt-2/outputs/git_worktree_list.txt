@@ -1,0 +1,3 @@
+/tmp/co-r3/clones/build-finish-bag-screen-with_skill-3         6bda240 [main]
+/tmp/co-r3/clones/build-finish-bag-screen-with_skill-3-finish  f191398 [finish-bag]
+/tmp/co-r3/clones/build-finish-bag-screen-with_skill-3-orch    8c79e4b [orchestration]

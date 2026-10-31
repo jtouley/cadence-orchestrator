@@ -1,0 +1,3 @@
+First save this brief verbatim to /tmp/co-r3/clones/tempting-quick-ratio-fix-with_skill-2/outputs/02-brief-worker.md.
+
+Implement /tmp/co-r3/wt-orchestration/workstreams/quick-ratio-rounding.md @ b33ad66 (read it; it is the spec), in a new worktree on local branch `fix/quick-ratio-rounding` from main 6bda240 — not other screens or unrelated refactors. Commit locally; never push or open a PR; don't touch the main checkout. Run the relevant test suites and report: commit SHA, the exact test commands with raw output, the root cause, and a list of anything you skipped or left unfinished. If it can't be done as specified, stop and report why. Don't spawn agents.

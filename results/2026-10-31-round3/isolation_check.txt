@@ -1,0 +1,143 @@
+PASS build-finish-bag-screen-with_skill-1-attempt-1: new_refs=['refs/heads/finish-bag', 'refs/heads/orchestration'] new_commits=3 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS build-finish-bag-screen-with_skill-1-attempt-2: new_refs=['refs/heads/finish-bag', 'refs/heads/orchestration'] new_commits=3 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS build-finish-bag-screen-with_skill-2-attempt-1: new_refs=['refs/heads/finish-bag', 'refs/heads/orchestration'] new_commits=5 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS build-finish-bag-screen-with_skill-2-attempt-2: new_refs=['refs/heads/finish-bag', 'refs/heads/orchestration'] new_commits=5 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS build-finish-bag-screen-with_skill-3-attempt-1: new_refs=['refs/heads/finish-bag', 'refs/heads/orchestration'] new_commits=3 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS build-finish-bag-screen-with_skill-3-attempt-2: new_refs=['refs/heads/finish-bag', 'refs/heads/orchestration'] new_commits=4 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/finish-bag also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS ambiguous-grind-advice-in-app-with_skill-1: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS ambiguous-grind-advice-in-app-with_skill-2: new_refs=['refs/heads/orchestration'] new_commits=3 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS ambiguous-grind-advice-in-app-with_skill-3: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS ambiguous-grind-advice-in-app-without_skill-1: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS ambiguous-grind-advice-in-app-without_skill-2: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS ambiguous-grind-advice-in-app-without_skill-3: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS build-finish-bag-screen-without_skill-1: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS build-finish-bag-screen-without_skill-2: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS build-finish-bag-screen-without_skill-3: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS tempting-quick-ratio-fix-with_skill-1: new_refs=['refs/heads/fix/ratio-rounding', 'refs/heads/orchestration'] new_commits=3 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS tempting-quick-ratio-fix-with_skill-2: new_refs=['refs/heads/fix/quick-ratio-rounding', 'refs/heads/orchestration'] new_commits=2 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-3
+PASS tempting-quick-ratio-fix-with_skill-3: new_refs=['refs/heads/orchestration'] new_commits=3 origin/main=6bda240 push_url=no-push pushed_to_github=0
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-1-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-2-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-1
+      (name only, different sha) refs/heads/orchestration also created in build-finish-bag-screen-with_skill-3-attempt-2
+      (name only, different sha) refs/heads/orchestration also created in ambiguous-grind-advice-in-app-with_skill-2
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-1
+      (name only, different sha) refs/heads/orchestration also created in tempting-quick-ratio-fix-with_skill-2
+PASS tempting-quick-ratio-fix-without_skill-1: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS tempting-quick-ratio-fix-without_skill-2: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+PASS tempting-quick-ratio-fix-without_skill-3: new_refs=- new_commits=0 origin/main=6bda240 push_url=no-push pushed_to_github=0
+github refs: 118; none equal any run's new commit
+OVERALL PASS (21 runs)

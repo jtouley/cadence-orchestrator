@@ -1,0 +1,93 @@
+diff --git a/workstreams/finish-bag.md b/workstreams/finish-bag.md
+new file mode 100644
+index 0000000..045f44f
+--- /dev/null
++++ b/workstreams/finish-bag.md
+@@ -0,0 +1,22 @@
++# Workstream: finish-bag
++
++## Ask (user, verbatim, 2026-10-31)
++> app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls
++>
++> (sandbox run: don't push, don't open PRs. write every message you send me, and every brief you send a subagent, to the outputs folder)
++
++## Scope
++- Target: repo above, branch `finish-bag` cut from main@6bda240, local only.
++- In: a Finish button on the bag page; finishing marks the bag finished; a finished bag no longer appears on Today or in the bag picker on Log shot; it still appears in Coffees; finishing writes a new append-only record (no delete, no edit of existing records), the same way retract writes a record; tests covering all of the above.
++- Out: un-finishing / reopening a bag, changes to the Edit bag form, dbt/mart changes, styling beyond what the button needs, any other screen.
++- Written definitions the work is judged against: docs/app/PLAN.md (bags table schema incl. `finished_on` "set by a later record when the bag is done"; "Corrections and retractions stay new records"; current bag "until another one is started or it's marked finished") and docs/app/DESIGN.md (Edit bag, Notice sections). CLAUDE.md's measured-eval process does not apply: this is a UI/data-write feature, not a heuristic whose quality is a hit rate.
++- Done = commits on local branch `finish-bag`, full test suite passing (command + output recorded), spec review and quality review passed. Stop there: no push, no PR, no merge.
++- If it can't be done as specified, stop and report why; "blocked" is a valid result.
++
++## Decisions
++- 2026-10-31 (user): "no deletes, write a record like retract does."
++- 2026-10-31 (user): "don't push, don't open PRs."
++
++## Status and evidence
++- (none yet)
++- 2026-10-31 build: f191398 on finish-bag; make test 643 passed/2 skipped (builder-reported). Awaiting spec review.
+diff --git a/workstreams/finish-bag.tasks.json b/workstreams/finish-bag.tasks.json
+new file mode 100644
+index 0000000..1e60540
+--- /dev/null
++++ b/workstreams/finish-bag.tasks.json
+@@ -0,0 +1,59 @@
++{
++  "tasks": [
++    {
++      "id": "build",
++      "owner": "builder-1",
++      "state": "claimed",
++      "doc_sha": "4ff43c086b08bb4ed60017d88906a0c79e721b53",
++      "evidence": [
++        "f191398 on local branch finish-bag (worktree /tmp/co-r3/clones/build-finish-bag-screen-with_skill-3-finish)",
++        "make test → 643 passed, 2 skipped, 1 warning; EXIT=0 (builder-reported, log /tmp/finish-make-test.log)"
++      ],
++      "left_out": [
++        "No un-finishing/reopening, no Edit bag form change, no dbt/mart change, no other screens, no new styling. Edit bag's existing 'Still using it' can still bring a finished bag back.",
++        "One tap finishes; no confirmation, no Undo.",
++        "On Today, a finished bag that was the only open one is no longer 'On the grinder', but its name still shows under 'Last coffee' (from its last shot); unchanged.",
++        "Correcting a shot that belongs to a finished bag still lists that bag in the Log shot bag picker; existing rule kept.",
++        "Interpreted 'the bag page' as /coffee/{bag_id} (coffee.html), since bag.html is the New bag screen.",
++        "Didn't identify which 2 tests were skipped."
++      ],
++      "left_out_accepted_by": null,
++      "tokens": 113741
++    },
++    {
++      "id": "spec-review",
++      "owner": "reviewer-spec-1",
++      "state": "assigned",
++      "doc_sha": "4ff43c086b08bb4ed60017d88906a0c79e721b53",
++      "evidence": [],
++      "left_out": [],
++      "left_out_accepted_by": null,
++      "tokens": null
++    },
++    {
++      "id": "quality-review",
++      "owner": "reviewer-quality-1",
++      "state": "assigned",
++      "doc_sha": "4ff43c086b08bb4ed60017d88906a0c79e721b53",
++      "evidence": [],
++      "left_out": [],
++      "left_out_accepted_by": null,
++      "tokens": null
++    },
++    {
++      "id": "scribe",
++      "owner": "scribe",
++      "state": "done",
++      "doc_sha": "4ff43c086b08bb4ed60017d88906a0c79e721b53",
++      "evidence": [
++        "4ff43c0 Add finish-bag workstream doc and task list",
++        "e1ffc78 Pin finish-bag tasks to workstream doc",
++        "Record build claim and evidence (this commit, scribe run 2)",
++        "tokens: run 1 = 22838; run 2 = null (not known at commit time)"
++      ],
++      "left_out": [],
++      "left_out_accepted_by": null,
++      "tokens": 22838
++    }
++  ]
++}

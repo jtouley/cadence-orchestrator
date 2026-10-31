@@ -1,0 +1,36 @@
+diff --git a/workstreams/finish-bag.md b/workstreams/finish-bag.md
+new file mode 100644
+index 0000000..3f8fee9
+--- /dev/null
++++ b/workstreams/finish-bag.md
+@@ -0,0 +1,18 @@
++# Workstream: finish-bag
++
++## Ask (user, verbatim, 2026-10-31)
++> app has no way to finish a bag. add a Finish button on the bag page: marks it finished, drops it from Today and the bag picker on Log shot, still shows in Coffees. no deletes, write a record like retract does. tests pls
++
++## Scope
++- Target repo: this repo (`app/`). Base: `main` @ 6bda240. Work branch: `finish-bag` (local; sandbox run, no push, no PR).
++- In: a Finish button on the bag page; tapping it writes a new append-only `bags` record for that bag with `finished_on` set (same pattern as retract writes a new record — no deletes, no edits to existing records); a finished bag no longer appears on Today or in the Log shot bag picker; it still appears in Coffees; automated tests covering each of those behaviours.
++- Out: deleting or editing existing records; un-finishing a bag; changes to dbt, the lake schema, or other screens beyond what the ask requires.
++- Definition the work is judged against: the Ask above; `docs/app/PLAN.md` (the `bags` table: "`finished_on` | date | set by a later record when the bag is done"; Non-goals: "Editing or deleting lake files. Corrections and retractions stay new records."; "The bag becomes the 'current bag' until another one is started or it's marked finished."); `CLAUDE.md`.
++- Done = commits on `finish-bag`, the full test suite run with output recorded, independent spec + quality review passed. Stop there: not merged, not pushed.
++
++## Decisions
++- 2026-10-31 (user): "no deletes, write a record like retract does."
++- 2026-10-31 (user): "sandbox run: don't push, don't open PRs."
++
++## Status and evidence
++(none yet)
+diff --git a/workstreams/finish-bag.tasks.json b/workstreams/finish-bag.tasks.json
+new file mode 100644
+index 0000000..3e60fa8
+--- /dev/null
++++ b/workstreams/finish-bag.tasks.json
+@@ -0,0 +1,6 @@
++[
++  {"id": "implement", "owner": "implementer-1", "state": "assigned", "evidence": null, "tokens": null, "doc_sha": "7bad08a"},
++  {"id": "verify-tests", "owner": "verifier-1", "state": "assigned", "evidence": null, "tokens": null, "doc_sha": "7bad08a"},
++  {"id": "review-spec", "owner": "reviewer-spec-1", "state": "assigned", "evidence": null, "tokens": null, "doc_sha": "7bad08a"},
++  {"id": "review-quality", "owner": "reviewer-quality-1", "state": "assigned", "evidence": null, "tokens": null, "doc_sha": "7bad08a"}
++]

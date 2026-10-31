@@ -1,0 +1,1 @@
+Reading the bag code first. The `Bag` model already has `finished_on`, and Today, Log shot and Coffees already treat a bag with it set as finished. There may also be a "Finished" toggle on the bag's edit page. I'm checking what's actually there before I add the button.
