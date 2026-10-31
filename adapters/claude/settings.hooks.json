@@ -4,7 +4,10 @@
       {
         "matcher": "(^|:)tpm$",
         "hooks": [
-          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/__SKILL__/scripts/shim_claude.py\"" }
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/__SKILL__/scripts/shim_claude.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+          }
         ]
       }
     ],
@@ -12,7 +15,10 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/__SKILL__/scripts/shim_claude.py\"" }
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/__SKILL__/scripts/shim_claude.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+          }
         ]
       }
     ]

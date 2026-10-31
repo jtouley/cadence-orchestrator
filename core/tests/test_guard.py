@@ -284,8 +284,15 @@ def test_claude_plugin_hooks_point_at_bundled_shim():
     assert not re.search(arm_h["matcher"], "cadence-orchestrator:other")
     for group in (pre, arm_h):
         h = group["hooks"][0]
-        assert h["command"] == "python3"
-        assert h["args"] == ["${CLAUDE_PLUGIN_ROOT}/adapters/claude/shim.py"]
+        assert '"${CLAUDE_PLUGIN_ROOT}/adapters/claude/shim.py"' in h["command"]
+        assert h["command"].endswith("exit 0")  # fail open if python3 or the shim is missing
+    # The plugin command, with the plugin root exported, still enforces.
+    env = dict(os.environ, CLAUDE_PLUGIN_ROOT=ROOT, CADENCE_STATE_DIR=STATE)
+    cmd = pre["hooks"][0]["command"]
+    out = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True, env=env,
+                         input=json.dumps({"hook_event_name": "PreToolUse", "session_id": ARMED_SESSION,
+                                           "tool_name": "Write", "tool_input": {}}))
+    assert out.returncode == 2 and "TPM mode" in out.stderr
     manifest = json.load(open(os.path.join(ROOT, ".claude-plugin", "plugin.json")))
     assert os.path.normpath(os.path.join(ROOT, manifest["hooks"])) == HOOKS_JSON
     assert os.path.exists(os.path.join(ROOT, manifest["skills"], "SKILL.md"))

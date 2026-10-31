@@ -318,25 +318,55 @@ def test_workstream_reference_example_is_valid_and_complete():
     assert os.path.exists(os.path.join(refs, "sources.md"))
 
 
-def test_copilot_hook_fails_open_without_python3_or_shim():
-    # Copilot denies the tool call when a command preToolUse hook exits non-zero, so a
-    # missing python3 (exit 127) or a missing shim must still exit 0 with no deny.
-    repo = scratch_repo()
-    install(repo, "copilot")
-    cmd = json.load(open(os.path.join(repo, ".github/hooks/tpm.json")))["hooks"]["PreToolUse"][0]["bash"]
-    nopy = tempfile.mkdtemp()
+def _path_without_python3():
+    d = tempfile.mkdtemp()
     for tool in ("git", "dirname"):
         found = subprocess.run(["bash", "-c", f"command -v {tool}"], capture_output=True, text=True)
         if found.stdout.strip():
-            os.symlink(found.stdout.strip(), os.path.join(nopy, tool))
-    payload = json.dumps({"session_id": "s", "tool_name": "Write", "tool_input": {}})
-    out = subprocess.run(["/bin/bash", "-c", cmd], input=payload, cwd=repo, capture_output=True,
-                         text=True, env={"PATH": nopy})
-    assert out.returncode == 0 and out.stdout == "" and "allowing" in out.stderr
-    os.remove(os.path.join(repo, ".github/skills/tpm/scripts/shim_copilot.py"))
-    out = subprocess.run(["/bin/bash", "-c", cmd], input=payload, cwd=repo, capture_output=True,
-                         text=True)
-    assert out.returncode == 0 and out.stdout == "" and "allowing" in out.stderr
+            os.symlink(found.stdout.strip(), os.path.join(d, tool))
+    return d
+
+
+# target: (hook file, (event, index) of the tool hook, how to get the command, shim, expected stdout)
+FAIL_OPEN = {
+    "copilot": (".github/hooks/tpm.json", lambda h: h["PreToolUse"][0]["bash"],
+                ".github/skills/tpm/scripts/shim_copilot.py", ""),
+    "claude": (".claude/settings.json", lambda h: h["PreToolUse"][-1]["hooks"][0]["command"],
+               ".claude/skills/tpm/scripts/shim_claude.py", ""),
+    "gemini": (".gemini/settings.json", lambda h: h["BeforeTool"][-1]["hooks"][0]["command"],
+               ".agents/skills/tpm/scripts/shim_gemini.py", "{}"),
+}
+
+
+def test_hooks_fail_open_without_python3_or_shim():
+    # Copilot denies on any non-zero exit, and Claude Code and Gemini block on exit 2,
+    # which is what `python3 <missing file>` returns. So a missing python3 or a
+    # missing shim must exit 0 without a deny.
+    payload = {"hook_event_name": "PreToolUse", "session_id": "s", "tool_name": "Write",
+               "tool_input": {}}
+    for target, (hook_file, get_cmd, shim_file, expected) in FAIL_OPEN.items():
+        repo = scratch_repo()
+        install(repo, target)
+        cmd = get_cmd(json.load(open(os.path.join(repo, hook_file)))["hooks"])
+        env = {"PATH": _path_without_python3(), "CLAUDE_PROJECT_DIR": repo}
+        out = subprocess.run(["/bin/bash", "-c", cmd], input=json.dumps(payload), cwd=repo,
+                             capture_output=True, text=True, env=env)
+        assert out.returncode == 0 and out.stdout.strip() == expected, (target, out)
+        assert "allowing" in out.stderr, target
+        os.remove(os.path.join(repo, shim_file))
+        env["PATH"] = os.environ["PATH"]
+        out = subprocess.run(["/bin/bash", "-c", cmd], input=json.dumps(payload), cwd=repo,
+                             capture_output=True, text=True, env=env)
+        assert out.returncode == 0 and out.stdout.strip() == expected, (target, out)
+
+
+def test_claude_plugin_hook_fails_open_without_python3():
+    hooks = json.load(open(os.path.join(ROOT, "adapters/claude/plugin-hooks.json")))["hooks"]
+    cmd = hooks["PreToolUse"][0]["hooks"][0]["command"]
+    for env in ({"PATH": _path_without_python3(), "CLAUDE_PLUGIN_ROOT": ROOT},
+                {"PATH": os.environ["PATH"], "CLAUDE_PLUGIN_ROOT": tempfile.mkdtemp()}):
+        out = subprocess.run(["/bin/bash", "-c", cmd], input="{}", capture_output=True, text=True, env=env)
+        assert out.returncode == 0 and "allowing" in out.stderr
 
 
 def test_install_rejects_non_repo():

@@ -1,10 +1,27 @@
 {
   "hooks": {
     "BeforeAgent": [
-      { "hooks": [ { "type": "command", "name": "tpm-arm", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_gemini.py\"" } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "name": "tpm-arm",
+            "command": "f=\"$(git rev-parse --show-toplevel 2>/dev/null)/__SKILL__/scripts/shim_gemini.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo '{}'; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+          }
+        ]
+      }
     ],
     "BeforeTool": [
-      { "matcher": ".*", "hooks": [ { "type": "command", "name": "tpm-guard", "command": "python3 \"$(git rev-parse --show-toplevel)/__SKILL__/scripts/shim_gemini.py\"" } ] }
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "name": "tpm-guard",
+            "command": "f=\"$(git rev-parse --show-toplevel 2>/dev/null)/__SKILL__/scripts/shim_gemini.py\"; if command -v python3 >/dev/null 2>&1 && [ -f \"$f\" ]; then exec python3 \"$f\"; fi; echo '{}'; echo 'tpm guard: python3 or the shim is missing; allowing' >&2; exit 0"
+          }
+        ]
+      }
     ]
   }
 }
