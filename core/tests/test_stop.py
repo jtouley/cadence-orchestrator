@@ -105,3 +105,36 @@ def test_installed_stop_hook_blocks_from_the_vendored_location():
         ["bash", "-c", cmd], input=json.dumps(stop([RUNNING_AGENT])), capture_output=True, text=True, env=env
     )
     assert out.returncode == 0 and json.loads(out.stdout)["decision"] == "block"
+
+
+def test_off_switch_lets_the_stop_through():
+    state = armed()
+    project = tempfile.mkdtemp()
+    os.makedirs(os.path.join(project, ".cadence"))
+    env = dict(os.environ, CADENCE_STATE_DIR=state, CLAUDE_PROJECT_DIR=project)
+    payload = json.dumps(stop([RUNNING_AGENT]))
+    blocked = subprocess.run([sys.executable, SHIM], input=payload, capture_output=True, text=True, env=env)
+    assert json.loads(blocked.stdout)["decision"] == "block"
+    open(os.path.join(project, ".cadence", "tpm.off"), "w").close()
+    out = subprocess.run([sys.executable, SHIM], input=payload, capture_output=True, text=True, env=env)
+    assert out.returncode == 0 and out.stdout == ""
+
+
+def test_unknown_or_unexpected_agent_types_block_but_shell_does_not():
+    state = armed()
+    for task_type in (
+        "agent",
+        "local_agent",
+        "Task",
+        "Subagent",
+        "teammate",
+        "workflow",
+        "cloud session",
+        None,
+    ):
+        task = {"id": "t", "type": task_type, "status": "running"}
+        out = run(stop([task]), state)
+        assert json.loads(out.stdout)["decision"] == "block", task_type
+    for task_type in ("shell", "Shell", "bash", "monitor", "MCP task"):
+        out = run(stop([{"id": "t", "type": task_type, "status": "running"}]), state)
+        assert out.stdout == "", task_type

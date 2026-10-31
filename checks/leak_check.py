@@ -2,8 +2,8 @@
 """Block commits that would leak personal or account data.
 
 Checks each file given (path and content) for:
-- email addresses, except an allowlist (noreply@anthropic.com, example domains,
-  git@ SSH remotes);
+- email addresses, except an allowlist (noreply@anthropic.com, example domains
+  and their subdomains, git@ SSH remotes on GitHub, GitLab and Bitbucket);
 - Anthropic organization/account UUIDs: a UUID next to a key such as
   organizationUuid or account_uuid;
 - session log directories (a path component named session_log).
@@ -20,11 +20,12 @@ import sys
 EMAIL = re.compile(r"(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
 ALLOWED_EMAILS = {"noreply@anthropic.com"}
 ALLOWED_DOMAINS = {"example.com", "example.org", "example.net"}
-ALLOWED_LOCAL = {"git"}  # git@github.com:owner/repo SSH remotes
+GIT_HOSTS = {"github.com", "gitlab.com", "bitbucket.org"}  # git@<host>:owner/repo SSH remotes
 CODE_DOMAINS = ("pytest.",)  # decorator-like code such as x@pytest.fixture
 UUID = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-ACCOUNT_KEY = r"(?:organi[sz]ation|org|account)[_-]?(?:uuid|id)"
-ACCOUNT_UUID = re.compile(rf"(?i)\b{ACCOUNT_KEY}\b[\"']?\s*[:=]\s*[\"']?{UUID}")
+# Any key containing account/org(anization) + uuid/id, e.g. user_account_uuid or orgUuid.
+ACCOUNT_KEY = r"[\w-]*(?:organi[sz]ation|org|account)[_-]?(?:uuid|id)[\w-]*"
+ACCOUNT_UUID = re.compile(rf"(?i){ACCOUNT_KEY}[\"']?\s*[:=]\s*[\"']?{UUID}")
 SESSION_LOG = re.compile(r"(?:^|[\\/\s\"'`(])session_log[\\/]")
 
 
@@ -32,8 +33,8 @@ def email_ok(address: str) -> bool:
     local, _, domain = address.lower().partition("@")
     return (
         address.lower() in ALLOWED_EMAILS
-        or domain in ALLOWED_DOMAINS
-        or local in ALLOWED_LOCAL
+        or any(domain == d or domain.endswith("." + d) for d in ALLOWED_DOMAINS)
+        or (local == "git" and domain in GIT_HOSTS)
         or domain.startswith(CODE_DOMAINS)
     )
 

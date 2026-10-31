@@ -38,10 +38,19 @@ DENY_MESSAGE = (
     "Only the user can lift this guard; do not create .cadence/tpm.off or ask an agent to."
 )
 SUBAGENT_DENY_MESSAGE = "tpm guard (subagent): {what}. Fix it and retry, or report it as blocked."
+GUARD_STATE_WHY = "only the user may change .cadence/tpm.off or the arming state"
+SUBAGENT_STATE_MESSAGE = (
+    "tpm guard (subagent): {what}. Only the user can lift this guard; do not create .cadence/tpm.off, "
+    "touch the arming state or look for another route. Report it to the orchestrator instead."
+)
 
 
 def deny_reason(why: str, is_subagent: bool) -> str:
-    return (SUBAGENT_DENY_MESSAGE if is_subagent else DENY_MESSAGE).format(what=why)
+    if is_subagent:
+        template = SUBAGENT_STATE_MESSAGE if why == GUARD_STATE_WHY else SUBAGENT_DENY_MESSAGE
+    else:
+        template = DENY_MESSAGE
+    return template.format(what=why)
 
 
 # Tools the main thread may use as-is: conversation, light reads, delegation, tracking.
@@ -821,36 +830,39 @@ def _apply_edit(text: str, old, new, replace_all=False) -> str | None:
 
 
 def task_file_problem(tool: str, args: dict, cwd: str = "") -> str:
-    """For a write to a *.tasks.json file, the validation errors of the result, or ""."""
-    path = args.get("file_path") or args.get("path") or ""
+    """For a write to a *.tasks.json file, the validation errors of the result, or "".
+
+    Arguments are canonical (file_path, content, old_string, new_string, replace_all, edits);
+    each platform shim maps its own names onto these.
+    """
+    path = args.get("file_path") or ""
     if not isinstance(path, str) or not path.endswith(tasks_check.SUFFIX):
         return ""
-    if tool == "Write":
-        content = args.get("content", args.get("file_text"))
-    elif tool in ("Edit", "MultiEdit"):
-        try:
-            with open(os.path.join(cwd, path) if cwd else path, encoding="utf-8") as f:
-                content = f.read()
-        except OSError:
-            return ""  # can't see the current file; the platform will report its own error
-        edits = args.get("edits") if tool == "MultiEdit" else [args]
-        for e in edits if isinstance(edits, list) else []:
-            if not isinstance(e, dict):
-                return ""
-            content = _apply_edit(
-                content,
-                e.get("old_string", e.get("old_str")),
-                e.get("new_string", e.get("new_str")),
-                bool(e.get("replace_all")),
-            )
-            if content is None:
-                return ""
-    else:
-        return ""  # shell writes can't be seen; the pre-commit check covers those
-    if not isinstance(content, str):
-        return ""
-    errors = tasks_check.validate_text(content)
-    return "; ".join(errors)
+    try:
+        if tool == "Write":
+            content = args.get("content")
+        elif tool in ("Edit", "MultiEdit"):
+            try:
+                with open(os.path.join(cwd, path) if cwd else path, encoding="utf-8") as f:
+                    content = f.read()
+            except OSError:
+                return ""  # can't see the current file; the platform will report its own error
+            edits = args.get("edits") if tool == "MultiEdit" else [args]
+            for edit in edits if isinstance(edits, list) else []:
+                if not isinstance(edit, dict):
+                    return ""
+                content = _apply_edit(
+                    content, edit.get("old_string"), edit.get("new_string"), bool(edit.get("replace_all"))
+                )
+                if content is None:
+                    return ""
+        else:
+            return ""  # shell writes can't be seen; the pre-commit check covers those
+        if not isinstance(content, str):
+            return "the new content isn't text"
+        return "; ".join(tasks_check.validate_text(content))
+    except Exception as exc:  # never let a validation bug allow a task-file write
+        return f"could not validate it ({type(exc).__name__}: {exc})"
 
 
 def evaluate(tool: str, args, is_subagent: bool, cwd: str = "") -> tuple[bool, str]:
@@ -860,12 +872,17 @@ def evaluate(tool: str, args, is_subagent: bool, cwd: str = "") -> tuple[bool, s
         # Subagents keep full tools, but none of them may flip the off switch or
         # touch the arming markers.
         if tool not in READ_TOOLS and mentions_guard_state(args):
-            return False, "only the user may change .cadence/tpm.off or the arming state"
+            return False, GUARD_STATE_WHY
         problem = task_file_problem(tool, args, cwd)
         if problem:
             return False, f"this would leave an invalid task file ({problem}); see references/workstream.md"
         return True, ""
-    return main_thread_decision(tool, args)
+    ok, why = main_thread_decision(tool, args)
+    # Advisory platforms can't mark subagents, so their calls all arrive here; check task files anyway.
+    problem = task_file_problem(tool, args, cwd)
+    if problem:
+        return False, (f"{why}; " if why else "") + f"it would also leave an invalid task file ({problem})"
+    return ok, why
 
 
 def main() -> int:

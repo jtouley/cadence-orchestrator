@@ -38,13 +38,15 @@ Subagents keep every tool, with two exceptions:
 - A `Write` to a `*.tasks.json` file whose content, or an `Edit`/`MultiEdit` whose result (applied to the file
   on disk), fails `scripts/tasks_check.py` is denied: for example a `done` task without evidence. Writes made
   through the shell can't be seen; the `cadence-tasks-check` pre-commit hook on the orchestration branch covers
-  those. On advisory platforms this is a warning, like everything else.
+  those. Validation errors deny too, rather than failing open. On advisory platforms, where every call looks
+  like the orchestrator's, the same check runs and its findings are part of the warning.
 
 ## Ending the turn (Claude Code)
 
-A Stop hook blocks the orchestrator from ending its turn while agent tasks it started (`subagent`, `teammate`,
-`workflow`, `cloud session` in Stop's `background_tasks`) are still running. It blocks once; when
-`stop_hook_active` is set it lets the stop through, so it can't loop. Copilot (`agentStop`), Codex (`Stop`),
+A Stop hook blocks the orchestrator from ending its turn while tasks it started are still running: any
+unfinished entry in Stop's `background_tasks` whose type isn't clearly a non-agent (`shell`, `bash`, `monitor`,
+`MCP task`). It blocks once per stop attempt; the next attempt carries `stop_hook_active` and is let through, so
+it can't loop. The off switch (`.cadence/tpm.off`) disables it like the rest of the guard. Copilot (`agentStop`), Codex (`Stop`),
 Cursor (`stop`) and Gemini (`AfterAgent`) have stop hooks that can force another turn, but their documented
 input has no list of running subagents, so there's no equivalent there yet.
 

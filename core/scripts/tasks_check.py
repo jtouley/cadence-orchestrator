@@ -31,14 +31,15 @@ def validate(data) -> list[str]:
             errors.append(f"{where}: must be an object")
             continue
         tid = task.get("id")
-        where = f"task {tid!r}" if tid else where
-        if not tid:
-            errors.append(f"{where}: missing id")
-        elif tid in seen:
-            errors.append(f"{where}: duplicate id")
-        seen.add(tid)
+        if not isinstance(tid, str) or not tid:
+            errors.append(f"{where}: id must be a non-empty string, not {tid!r}")
+        else:
+            where = f"task {tid!r}"
+            if tid in seen:
+                errors.append(f"{where}: duplicate id")
+            seen.add(tid)
         state = task.get("state")
-        if state not in STATES:
+        if not isinstance(state, str) or state not in STATES:
             errors.append(f"{where}: state must be one of {sorted(STATES)}, not {state!r}")
         if "evidence" in task and not isinstance(task["evidence"], list):
             errors.append(f"{where}: evidence must be a list")

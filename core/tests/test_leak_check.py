@@ -59,3 +59,14 @@ def test_cli_and_repo_is_clean():
     files = subprocess.run(["git", "-C", ROOT, "ls-files"], capture_output=True, text=True).stdout.split()
     clean = subprocess.run([sys.executable, CHECK, *files], cwd=ROOT, capture_output=True, text=True)
     assert clean.returncode == 0, clean.stderr
+
+
+def test_review_fixes_keys_git_hosts_and_example_subdomains():
+    assert found(f'"user_account_uuid": "{UUID}"')
+    assert found(f'"primaryOrgUuid": "{UUID}"')
+    assert found(f"git{AT}corp.com")  # a real mailbox, not a git remote
+    for host in ("github.com", "gitlab.com", "bitbucket.org"):
+        assert not found(f"git{AT}{host}:o/r.git"), host
+    assert not found(f"jane{AT}mail.example.com")
+    assert not found(f"ops{AT}eu.example.org")
+    assert found(f"jane{AT}notexample.com")

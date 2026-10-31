@@ -72,8 +72,9 @@ class Platform:
     render_stop: Callable[[str], Outcome] = lambda reason: Outcome()
 
 
-# Background task types the orchestrator itself starts, and statuses that mean finished.
-AGENT_TASK_TYPES = {"subagent", "teammate", "workflow", "cloud session"}
+# Background task types that are clearly not agents. Anything else unfinished blocks the stop:
+# the type labels aren't a closed, verified set, so an unknown one counts as an agent.
+NON_AGENT_TASK_TYPES = {"shell", "bash", "monitor", "mcp task"}
 FINISHED = {"completed", "complete", "done", "failed", "error", "killed", "cancelled", "canceled", "stopped"}
 
 
@@ -84,7 +85,7 @@ def outstanding_agents(tasks) -> list[dict]:
         t
         for t in tasks
         if isinstance(t, dict)
-        and t.get("type") in AGENT_TASK_TYPES
+        and str(t.get("type", "")).lower() not in NON_AGENT_TASK_TYPES
         and str(t.get("status", "")).lower() not in FINISHED
     ]
 
@@ -99,6 +100,31 @@ def stop_reason(tasks: list[dict]) -> str:
         "with work outstanding: wait for them and check their results, or tell the user exactly what is "
         "still running and what hasn't started."
     )
+
+
+# Argument names the guard reads, and the spellings platforms use for them. Shims call
+# canonical_args() so the core only ever sees file_path, content, old_string, new_string.
+ARG_ALIASES = {
+    "path": "file_path",
+    "absolute_path": "file_path",
+    "file_text": "content",
+    "contents": "content",
+    "old_str": "old_string",
+    "new_str": "new_string",
+}
+
+
+def canonical_args(args, aliases: dict | None = None) -> dict:
+    if not isinstance(args, dict):
+        return {}
+    aliases = ARG_ALIASES if aliases is None else aliases
+    out = dict(args)
+    for alias, name in aliases.items():
+        if alias in out and name not in out:
+            out[name] = out.pop(alias)
+    if isinstance(out.get("edits"), list):
+        out["edits"] = [canonical_args(e, aliases) if isinstance(e, dict) else e for e in out["edits"]]
+    return out
 
 
 def state_dir(platform: Platform) -> str:
@@ -130,8 +156,9 @@ def handle(platform: Platform, payload: dict) -> Outcome:
             armed_now = True
         return platform.render_prompt(armed_now)
     if ev.kind == "stop":
-        # Block once per stop; stop_hook_active means we already did, so never loop.
-        if ev.stop_hook_active or not is_armed(state, ev.session_id):
+        # The off switch wins. Block once per stop: stop_hook_active means we already did, so never loop.
+        off = os.path.exists(os.path.join(ev.project_dir or os.getcwd(), OFF_FILE))
+        if off or ev.stop_hook_active or not is_armed(state, ev.session_id):
             return platform.render_stop("")
         running = outstanding_agents(ev.background_tasks)
         return platform.render_stop(stop_reason(running) if running else "")
@@ -176,17 +203,10 @@ def main(platform: Platform, argv: list[str] | None = None) -> int:
             raise ValueError("payload is not an object")
         out = handle(platform, payload)
     except Exception as exc:  # fail open: a guard bug must not brick the session
-        out = platform.render_stop("") if _is_stop(raw) else _allow(platform)
+        out = _allow(platform)
         out.stderr = f"tpm guard: {type(exc).__name__}: {exc}; allowing."
     if out.stdout:
         print(out.stdout)
     if out.stderr:
         print(out.stderr, file=sys.stderr)
     return out.code
-
-
-def _is_stop(raw: str) -> bool:
-    try:
-        return json.loads(raw).get("hook_event_name") == "Stop"
-    except Exception:
-        return False

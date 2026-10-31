@@ -52,7 +52,7 @@ def parse(p: dict) -> Event:
             session,
             project,
             tool=TOOL_MAP.get(name, name),
-            args=args if isinstance(args, dict) else {},
+            args=runtime.canonical_args(args),
         )
     return Event("other", session, project)
 

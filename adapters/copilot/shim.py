@@ -38,6 +38,27 @@ def _args(value):
     return value if isinstance(value, dict) else {}
 
 
+# camelCase payloads carry Copilot's runtime tool names; PascalCase ones already use Claude's.
+# From the hooks reference's "Tool names for hook matching" table.
+TOOL_MAP = {
+    "bash": "Bash",
+    "powershell": "PowerShell",
+    "view": "Read",
+    "create": "Write",
+    "edit": "Edit",
+    "str_replace_editor": "Edit",
+    "apply_patch": "Edit",
+    "grep": "Grep",
+    "rg": "Grep",
+    "glob": "Glob",
+    "web_fetch": "WebFetch",
+    "web_search": "WebSearch",
+    "ask_user": "AskUserQuestion",
+    "update_todo": "TodoWrite",
+    "task": "Agent",
+}
+
+
 def parse(p: dict) -> Event:
     session = str(p.get("session_id") or p.get("sessionId") or "")
     project = p.get("cwd") or ""
@@ -46,12 +67,13 @@ def parse(p: dict) -> Event:
             "prompt", session, project, starts_tpm=bool(runtime.TPM_PROMPT.match(str(p.get("prompt", ""))))
         )
     if "tool_name" in p or "toolName" in p:
+        name = str(p.get("tool_name") or p.get("toolName") or "")
         return Event(
             "tool",
             session,
             project,
-            tool=str(p.get("tool_name") or p.get("toolName") or ""),
-            args=_args(p.get("tool_input", p.get("toolArgs"))),
+            tool=TOOL_MAP.get(name, name),
+            args=runtime.canonical_args(_args(p.get("tool_input", p.get("toolArgs")))),
             is_subagent=bool(p.get("agent_id") or p.get("agentId")),
         )
     return Event("other", session, project)
