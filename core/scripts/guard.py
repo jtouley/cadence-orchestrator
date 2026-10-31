@@ -35,7 +35,7 @@ DENY_MESSAGE = (
 )
 
 # Tools the main thread may use as-is: conversation, light reads, delegation, tracking.
-# Keep this list in step with skills/tpm/references/guard.md (a test checks it).
+# Keep this list in step with core/references/guard.md (a test checks it).
 SAFE_TOOLS = {
     "Read",
     "Grep",

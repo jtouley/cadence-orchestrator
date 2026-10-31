@@ -52,8 +52,7 @@ Done. Review and commit the changes; see README for per-platform notes.
 
 You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
 warns if `python3` is missing. To install from source instead of npm, use
-`npx github:jtouley/cadence-orchestrator --target claude`; the repository is private, so that needs GitHub access
-(an SSH key or a token that git can use).
+`npx github:jtouley/cadence-orchestrator --target claude`.
 
 `--repo <path>` installs into another repository; it defaults to the current directory. `--target all` installs
 for every platform. Re-running is safe: the installer replaces only its own entries in the files it touches. It
@@ -76,8 +75,7 @@ directory).
 
 ### Or as a Claude Code Plugin
 
-To use it in your own Claude Code without installing it into a repo, run these inside Claude Code. While the
-repository is private, this also needs GitHub access.
+To use it in your own Claude Code without installing it into a repo, run these inside Claude Code.
 
 ```text
 /plugin marketplace add jtouley/cadence-orchestrator
@@ -141,11 +139,6 @@ Use your platform's permissions or a real sandbox to contain an agent you don't 
 
 ## Troubleshooting
 
-### `npx github:` fails to fetch the package
-
-The repository is private. Give git access to GitHub (an SSH key, or a token through a credential helper), or
-clone it with credentials you already have and run `./install.sh --repo <path>` from the clone.
-
 ### The installer stops with a `SyntaxError` from `JSON.parse`
 
 The hook file it merges into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
@@ -176,7 +169,11 @@ The guard and shims use only the Python standard library; pytest, ruff and pre-c
 the installer tests also need Node. CI runs the same checks plus an installer smoke test and `npm pack --dry-run`.
 If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
 list against `guard.py`. `evals/` holds behaviour cases written against one app repository
-(coffee-data-tracker), so they don't run on their own.
+([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.
+
+## Contributing
+
+Issues and pull requests are welcome; run `pre-commit run --all-files` and `pytest` before you open one.
 
 ## License
 
