@@ -116,7 +116,9 @@ subagent tool calls that mention it.
 ## What the Guard Allows
 
 It allows reading, searching, delegating, task tracking and read-only shell commands, and denies edits, writes,
-other commands and any tool it doesn't recognise; the exact lists are in
+other commands and any tool it doesn't recognise. Subagents keep every tool, but a subagent write that would mark
+a task `done` without evidence (an invalid `workstreams/*.tasks.json`) is denied. On Claude Code a Stop hook also
+keeps the orchestrator from ending its turn while agents it started are still running. The exact rules are in
 [`core/references/guard.md`](core/references/guard.md).
 
 ## Threat Model
@@ -161,12 +163,19 @@ The install finishes, but the guard can't run until `python3` is installed. Mean
 
 ```sh
 pip install pre-commit==4.7.0 pytest==9.1.1    # the versions CI uses
-pre-commit install    # ruff, JSON/YAML checks and `node --check` on every commit
+pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
 pytest
 ```
 
+The pre-commit hooks also block email addresses, account UUIDs and session logs (`checks/leak_check.py`) and
+direct commits to `main`. To make `main` change only through pull requests on GitHub too, add a ruleset under
+**Settings → Rules → Rulesets** targeting the default branch with **Require a pull request before merging**,
+**Require status checks to pass** (the CI jobs), **Block force pushes** and **Restrict deletions**. The
+orchestration branch needs its own pre-commit setup; see
+[`core/references/workstream.md`](core/references/workstream.md).
+
 The guard and shims use only the Python standard library; pytest, ruff and pre-commit are for development, and
-the installer tests also need Node. CI runs the same checks plus an installer smoke test and `npm pack --dry-run`.
+the installer tests also need Node. CI runs the same checks, gitleaks over the full history, an installer smoke test and `npm pack --dry-run`.
 If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
 list against `guard.py`. `evals/` holds behaviour cases written against one app repository
 ([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.

@@ -71,7 +71,9 @@ PLATFORM = Platform(
         stdout="TPM guard armed for this session: the main thread delegates core work." if armed else ""
     ),
     state_env=("CLAUDE_PLUGIN_DATA",),
-    render_stop=lambda reason: Outcome(stdout=json.dumps({"decision": "block", "reason": reason}) if reason else ""),
+    render_stop=lambda reason: Outcome(
+        stdout=json.dumps({"decision": "block", "reason": reason}) if reason else ""
+    ),
 )
 
 if __name__ == "__main__":

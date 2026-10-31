@@ -48,7 +48,8 @@ The format and an example are in `references/workstream.md`.
 No hypotheses about causes and no file:line pointers to suspects: the doc is read by the agents who will
 investigate. A **scribe agent** writes and pushes these docs; you tell it what to record. That's the one place
 you dictate content, because it's your own coordination record, not the work. It keeps the guard simple:
-the main thread still writes nothing, and there's no path carve-out in the guard to get wrong or widen. Tell the scribe to retry with a rebase if a push is rejected (agents append to the same branch).
+the main thread still writes nothing, and there's no path carve-out in the guard to get wrong or widen. Tell the scribe to retry with a rebase if a push is rejected (agents append to the same branch), and to run
+`pre-commit run --all-files` before each push (setup in `references/workstream.md`).
 
 ## Dispatch prompts are one or two lines
 
