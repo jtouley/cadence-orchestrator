@@ -318,6 +318,27 @@ def test_workstream_reference_example_is_valid_and_complete():
     assert os.path.exists(os.path.join(refs, "sources.md"))
 
 
+def test_copilot_hook_fails_open_without_python3_or_shim():
+    # Copilot denies the tool call when a command preToolUse hook exits non-zero, so a
+    # missing python3 (exit 127) or a missing shim must still exit 0 with no deny.
+    repo = scratch_repo()
+    install(repo, "copilot")
+    cmd = json.load(open(os.path.join(repo, ".github/hooks/tpm.json")))["hooks"]["PreToolUse"][0]["bash"]
+    nopy = tempfile.mkdtemp()
+    for tool in ("git", "dirname"):
+        found = subprocess.run(["bash", "-c", f"command -v {tool}"], capture_output=True, text=True)
+        if found.stdout.strip():
+            os.symlink(found.stdout.strip(), os.path.join(nopy, tool))
+    payload = json.dumps({"session_id": "s", "tool_name": "Write", "tool_input": {}})
+    out = subprocess.run(["/bin/bash", "-c", cmd], input=payload, cwd=repo, capture_output=True,
+                         text=True, env={"PATH": nopy})
+    assert out.returncode == 0 and out.stdout == "" and "allowing" in out.stderr
+    os.remove(os.path.join(repo, ".github/skills/tpm/scripts/shim_copilot.py"))
+    out = subprocess.run(["/bin/bash", "-c", cmd], input=payload, cwd=repo, capture_output=True,
+                         text=True)
+    assert out.returncode == 0 and out.stdout == "" and "allowing" in out.stderr
+
+
 def test_install_rejects_non_repo():
     proc = subprocess.run([INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()],
                           capture_output=True, text=True)

@@ -5,7 +5,8 @@ Configured with the PascalCase (VS Code compatible) event names, so input uses
 snake_case and Claude tool names, and hooks inside a subagent carry agent_id
 (root-agent input has none). camelCase input (toolName/toolArgs/agentId) is also
 accepted. Deny = JSON permissionDecision on stdout, exit 0: a command preToolUse
-hook that crashes or exits non-zero denies the call on Copilot, so this never does.
+hook that crashes or exits non-zero denies the call on Copilot, so this never does,
+and the hook command in hooks.json exits 0 even when python3 or this file is missing.
 """
 FALLBACK_STDOUT = ""
 import json
