@@ -36,18 +36,28 @@ The full playbook is [`core/SKILL.md`](core/SKILL.md).
 
 ## Install
 
-Requires `git` and `python3` (standard library only). The installer copies the skill and its hooks into a
-repository; `--repo` must be the root of a git checkout. Commit the result so everyone working in that repo gets it.
+The installer needs Node 18 or later. The guard hooks it installs need `python3` (standard library only); the
+installer warns if it isn't on `PATH`. `--repo` must be the root of a git checkout. Commit the result so everyone
+working in that repo, including cloud sessions, gets it.
 
 ```sh
-git clone https://github.com/jtouley/cadence-orchestrator
-cd cadence-orchestrator
-./install.sh --target claude --repo ~/code/my-app
+npx cadence-orchestrator --target claude --repo ~/code/my-app
 ```
 
 ```console
 claude: .claude/skills/tpm/, .claude/settings.json
 Done. Review and commit the changes; see README for per-platform notes.
+```
+
+The npm package isn't published yet. Until it is, run it from GitHub or from a clone. The repository is private,
+so `npx github:` needs GitHub access (an SSH key or a token git can use); the npm package, once published,
+won't.
+
+```sh
+npx github:jtouley/cadence-orchestrator --target claude --repo ~/code/my-app
+# or, from a clone:
+git clone https://github.com/jtouley/cadence-orchestrator && cd cadence-orchestrator
+npx --yes ./ --target claude --repo ~/code/my-app    # ./install.sh does the same
 ```
 
 Use `--target all` for every platform at once. Re-running is safe: it replaces only its own hook entries and
@@ -75,7 +85,7 @@ The orchestrator routes work to skill sets listed in your catalogs: markdown fil
 catalog, used only as a format example unless you confirm it fits. To add yours while installing:
 
 ```sh
-./install.sh --target claude --repo ~/code/my-app --catalog ~/my-skills.md
+npx cadence-orchestrator --target claude --repo ~/code/my-app --catalog ~/my-skills.md
 ```
 
 The format and lookup rules are in [`core/references/catalogs.md`](core/references/catalogs.md).
@@ -141,7 +151,8 @@ Don't rely on it to contain an agent you don't trust; use your platform's permis
 ```text
 core/            the skill: SKILL.md, references/, scripts/ (guard.py policy, runtime.py), tests/
 adapters/        one folder per platform: a shim that maps its hook input onto the guard, plus hook templates
-install.sh       vendors the skill into a repo (runs tools/install.py)
+bin/             the installer (cadence-orchestrator.mjs, no dependencies); package.json publishes it to npm
+install.sh       runs the same installer from a clone
 .claude-plugin/  Claude Code plugin and marketplace manifests
 evals/           behaviour cases: a prompt, the expected outcome and LLM graders
 ```
@@ -151,7 +162,7 @@ The cases in `evals/` use the layout `claude plugin eval` reads. They were writt
 
 ## Development
 
-The tests need only the standard library:
+The tests need only the Python standard library, plus Node for the installer tests:
 
 ```sh
 python3 core/tests/test_guard.py
@@ -159,7 +170,8 @@ python3 core/tests/test_adapters.py
 ```
 
 If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
-list against `guard.py`.
+list against `guard.py`. `npm pack --dry-run` shows what the npm package ships: the installer, the skill and the
+adapters, without tests or evals.
 
 ## License
 

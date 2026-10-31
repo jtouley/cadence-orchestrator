@@ -1,4 +1,4 @@
-"""Tests for the normalized core CLI, every platform shim, and install.sh.
+"""Tests for the normalized core CLI, every platform shim, and the Node installer.
 
 Run with `python3 test_adapters.py` or `pytest`.
 """
@@ -13,7 +13,8 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 GUARD = os.path.join(ROOT, "core", "scripts", "guard.py")
-INSTALL = os.path.join(ROOT, "install.sh")
+INSTALL = os.path.join(ROOT, "bin", "cadence-orchestrator.mjs")  # the one installer
+INSTALL_SH = os.path.join(ROOT, "install.sh")  # thin wrapper over it
 
 
 def shim(platform):
@@ -278,6 +279,28 @@ def test_shipped_catalog_is_labeled_as_an_example_and_documented():
     for where in (".cadence/catalog/", "CADENCE_CATALOG_PATH", "~/.cadence/catalog/",
                   "example-registry.md"):
         assert where in lookup, where
+
+
+def test_install_sh_delegates_to_the_node_installer():
+    repo = scratch_repo()
+    proc = subprocess.run([INSTALL_SH, "--target", "cursor", "--repo", repo],
+                          capture_output=True, text=True)
+    assert proc.returncode == 0 and proc.stdout.startswith("cursor: ")
+    assert os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
+
+
+def test_installer_warns_without_python3_and_checks_arguments():
+    repo = scratch_repo()
+    node = subprocess.run(["bash", "-c", "command -v node"], capture_output=True, text=True).stdout.strip()
+    bare = tempfile.mkdtemp()
+    os.symlink(node, os.path.join(bare, "node"))  # PATH with node but no python3
+    proc = subprocess.run([os.path.join(bare, "node"), INSTALL, "--target", "claude", "--repo", repo],
+                          capture_output=True, text=True, env={"PATH": bare})
+    assert proc.returncode == 0 and "python3 is not on PATH" in proc.stderr
+    for argv in (["--target", "nope"], [], ["--repo"], ["--bogus"]):
+        assert subprocess.run([INSTALL] + argv, capture_output=True).returncode == 2, argv
+    helped = subprocess.run([INSTALL, "--help"], capture_output=True, text=True)
+    assert helped.returncode == 0 and "--target" in helped.stdout
 
 
 def test_install_rejects_non_repo():
