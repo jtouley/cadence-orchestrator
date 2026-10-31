@@ -100,7 +100,7 @@ Round 2 broke the first four. Round 3 kept them, except that every build/with_sk
   - write the SHA you diffed against to `outputs/git_diff_base`.
 
   The diff and the untracked files are then exactly the run's own work, `.claude/` included. The scorer refuses a run
-  whose `git_diff_base` is missing or differs from `post_setup_commit`.
+  that has no `post_setup_commit`, or whose `git_diff_base` is missing or differs from it.
 - **Environment scrubbed.** Start each run from an allowlisted environment, not the runner's own. In particular,
   unset `CLAUDE_AUTO_BACKGROUND_TASKS`, so Agent calls run in the foreground as they would for a user, and set
   `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, so `claude -p` waits for any background task instead of stopping it
@@ -128,7 +128,9 @@ Round 2 broke the first four. Round 3 kept them, except that every build/with_sk
 - **Layout.** Store runs as `<iteration>/<case>/<arm>/run-<n>/`, and invalid attempts as
   `<iteration>/_invalid/<case>/<arm>/<attempt>/`. A run directory holds `transcript.jsonl`, `final.md`,
   `timing.json`, `post_setup_commit`, `outputs/` (with `git_diff.patch`, `git_diff_base` and `git_status.txt`) and
-  the setup log. A `run-<n>/` directory that lacks a transcript is reported as not scored, not skipped.
+  the setup log. Anything the scorer can't score is reported as not scored, never skipped. That includes a
+  `run-<n>/`, or a non-empty one-run arm, without a transcript, and anything under a `_`-prefixed directory at any
+  level.
 
 ## Scoring and reporting
 
@@ -137,16 +139,29 @@ python3 evals/scripts/score.py split                              # case -> set 
 python3 evals/scripts/score.py facts <iteration-dir> --out <dir>  # per-run facts; refuses test cases
 python3 evals/scripts/score.py score <iteration-dir> --set test   # sealed scoring: totals and Wilson 95% only
 python3 evals/scripts/score.py recorded <iteration-dir> --set S   # totals of recorded grading.json verdicts
+python3 evals/scripts/score.py score <round-1..3-dir> --legacy     # rounds 1-3, which predate the setup commit
 ```
 
 `score` prints only totals per arm, summed over all of the arm's runs, and how many cases and runs it saw. It checks
 that each run's assertions match `evals/<case>/graders/`, and it reports agreement with any recorded
 `grading.json`. Because the setup is committed, it treats the diff and the untracked files as the run's own work
-and sets aside only `outputs/`. Rounds 1–3 predate the setup commit. For them the scorer sets aside diff files under
-`.claude/`, round 1's own rule, and untracked files that `git_status_post_setup.txt` lists, round 3's uncommitted
-install, by exact path. An edit to an installed file goes unseen in those rounds. Runs it can't score are counted per
-arm, within `--set`, with the reason: under `_invalid/`, missing transcript, or diff not taken against the
-post-setup commit. Its intervals treat each assertion-run as independent, but they cluster by run and case, so report
+and sets aside only `outputs/`. One function, `diff_base()`, decides how each run is read. A run without
+`post_setup_commit` is refused unless the round is scored with `--legacy`. That flag is only for rounds 1–3, which
+predate the setup commit, and it refuses a run that does record one.
+
+Under `--legacy` two things are set aside, and nothing else:
+- diff files under `.claude/` (round 1's own rule);
+- untracked files listed in `git_status_post_setup.txt`, by exact path (round 3's uncommitted install).
+
+Untracked `.cadence/` files, unlisted `.claude/` files, and tracked files such as `.gitignore` all count if
+present. On the stored rounds 1–3 this gives exactly the facts and totals of the c24a19e scorer, which set aside
+more. All 27 runs were checked, and no value differs, because none of those rounds has such files: round 3's
+runner left the install's `.gitignore` edit out of `git_diff.patch`. As a result, in round 3 a run's own edit to
+`.gitignore`, or to an installed `.claude/` file, is not visible.
+
+Runs it can't score are counted per arm, within `--set`, with a reason that never names a case. The reasons are:
+under a `_`-prefixed directory (`_invalid/` at any level; with `--set all` also entries that match no known case),
+missing transcript, both layouts in one arm, no `post_setup_commit`, or diff not taken against it. Its intervals treat each assertion-run as independent, but they cluster by run and case, so report
 case-level rates next to them for any decision. The scorer's tests are in `evals/tests/` (`pytest` runs them).
 
 Report `main` against `change` on every set: deterministic and judgment pass rates, each with a Wilson 95% interval.
@@ -177,7 +192,8 @@ Running total of runs whose verdicts changed since the last full evaluation: **0
 ## Results
 
 Results live on the `orchestration` branch under `results/<date>-round<N>/` and are not copied here. To read them:
-`git worktree add ../co-results orchestration`, or `git show orchestration:results/2026-10-31-round1/benchmark.md`.
+`git worktree add ../co-results orchestration`, or `git show orchestration:results/2026-10-31-round1/benchmark.md`. Score rounds 1–3
+with `--legacy`.
 
 - **2026-10-31-round1 (exploratory, not a ship decision):** 3 cases, n=1 run per arm, `with_skill` vs
   `without_skill`. Each run was graded once by one grader (Claude Opus 5.5), mixing script facts and judgment, with

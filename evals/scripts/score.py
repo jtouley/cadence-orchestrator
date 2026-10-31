@@ -6,22 +6,25 @@ runs per arm) or <case>/<arm>/ (one run, as in round 1), each holding transcript
 outputs/git_diff.patch and outputs/git_status.txt. Arms are the directories under <case>/ (with_skill / without_skill
 so far; main / change for a ship decision). Runs that can't be scored are counted per arm, never dropped silently:
 attempts kept under <iteration-dir>/_<name>/<case>/<arm>/ (e.g. _invalid/), a run-<n>/ without a transcript, and a
-run whose diff wasn't taken against its post-setup commit.
+run whose diff wasn't taken against its post-setup commit, all with a reason that never names a case.
 
 What the run changed: the runner commits the setup (kit install) in each clone and records that commit in the run
 directory (post_setup_commit), then takes outputs/git_diff.patch against it (outputs/git_diff_base). The diff and
-the untracked files are then the run's own work. Rounds 1-3 predate this; run_changes() says how they are read.
+the untracked files are then the run's own work. A run without post_setup_commit is not scored unless the round
+is scored with --legacy (rounds 1-3, which predate the setup commit); diff_base() decides, run_changes() reads.
 
   score.py split                                case -> set, from evals/cases.csv and the salted hash (test: counts only)
-  score.py facts <iteration-dir> [--out DIR]    per-run facts (the port of round 1's grade_checks.py); refuses
+  score.py facts <iteration-dir> [--out DIR] [--legacy]
+                                                per-run facts (the port of round 1's grade_checks.py); refuses
                                                 cases in the sealed test set
-  score.py score <iteration-dir> [--set S] [--exclude-outputs]
+  score.py score <iteration-dir> [--set S] [--exclude-outputs] [--legacy]
                                                 per-arm totals across all runs, with Wilson 95% intervals; never
                                                 a run or a case:
                                                 the deterministic assertions, the judgment assertions the script
                                                 settles (vacuous passes, failed preconditions), and agreement with
                                                 any recorded grading.json
-  score.py recorded <iteration-dir> [--set S]   totals of the recorded grading.json verdicts with Wilson intervals
+  score.py recorded <iteration-dir> [--set S] [--legacy]
+                                                totals of the recorded grading.json verdicts with Wilson intervals
 
 --set is train, validation, test or all (default all). Reads only; `facts` writes only under --out.
 
@@ -174,29 +177,40 @@ def _read(path: Path) -> str:
     return path.read_text() if path.exists() else ""
 
 
-def invalid_reason(run: Path) -> str | None:
-    """Why a run directory can't be scored, or None."""
-    if not (run / "transcript.jsonl").exists():
-        return "missing transcript"
-    if (run / POST_SETUP).exists():
-        base, diff_base = _read(run / POST_SETUP).strip(), _read(run / "outputs" / DIFF_BASE).strip()
-        if not diff_base or diff_base != base:
-            return "diff not taken against the post-setup commit"
-    return None
+def diff_base(run: Path, legacy: bool) -> tuple[str | None, str | None]:
+    """The one place that decides how a run's changes are read. Returns (base, None), or (None, reason) when the
+    run can't be scored. base is "legacy" for a round scored with --legacy (rounds 1-3, which predate the setup
+    commit), otherwise the post-setup commit that outputs/git_diff.patch was taken against."""
+    recorded, taken = _read(run / POST_SETUP).strip(), _read(run / "outputs" / DIFF_BASE).strip()
+    if legacy:
+        if recorded or taken:
+            return None, "setup commit recorded in a --legacy round"
+        return "legacy", None
+    if not recorded:
+        return None, "no post_setup_commit (rounds 1-3 need --legacy)"
+    if taken != recorded:
+        return None, "diff not taken against the post-setup commit"
+    return recorded, None
 
 
-def run_changes(run: Path) -> dict:
-    """The files the run itself changed.
+def run_changes(run: Path, base: str) -> dict:
+    """The files the run itself changed, given diff_base()'s verdict.
 
-    Current runs (post_setup_commit recorded): the runner committed the setup in the clone, and took
-    outputs/git_diff.patch against that commit (outputs/git_diff_base), so the diff and the untracked files in
-    outputs/git_status.txt are the run's own work. Only outputs/ is set aside.
+    base = a post-setup commit: the runner committed the setup in the clone and took outputs/git_diff.patch
+    against that commit, so the diff and the untracked files in outputs/git_status.txt are the run's own work.
+    Only outputs/ is set aside.
 
-    Rounds 1-3 (no post_setup_commit): round 1's rule, diff files under .claude/ are set aside (its baseline setup
-    deleted .claude/); and for round 3, untracked files that git_status_post_setup.txt lists (the uncommitted kit
-    install) are set aside, by exact path. A run that edited an installed file is not seen in those rounds.
+    base = "legacy" (rounds 1-3): two things are set aside, and nothing else.
+      - Diff files under .claude/ (round 1's rule: its baseline setup deleted .claude/).
+      - Untracked files that git_status_post_setup.txt lists, by exact path (round 3's uncommitted kit install).
+    Everything else counts, including untracked .cadence/ files and tracked files the install modified, if they
+    are in the diff. On the stored rounds 1-3 this gives the same facts as the c24a19e scorer, which also set
+    aside .claude/ and .cadence/ paths and install-only edits. Those rounds have no untracked kit files outside
+    round 3's listed ones, and no .gitignore or .cadence/ diff: round 3's runner left .gitignore out of
+    git_diff.patch (it is only in git_diff_full.patch). So in round 3 a run's own edit to .gitignore, or to an
+    installed .claude/ file, is not visible.
     """
-    legacy = not (run / POST_SETUP).exists()
+    legacy = base == "legacy"
     setup_untracked = {
         line[3:] for line in _read(run / "git_status_post_setup.txt").splitlines() if line.startswith("??")
     }
@@ -212,7 +226,7 @@ def run_changes(run: Path) -> dict:
     ]
     diff_files = [f for f, _ in files]
     return {
-        "diff_base": "legacy" if legacy else _read(run / POST_SETUP).strip(),
+        "diff_base": base,
         "diff_files": diff_files,
         "untracked_non_outputs": untracked,
         "code_or_test_files_changed": [f for f in diff_files + untracked if not f.startswith("outputs/")],
@@ -220,7 +234,7 @@ def run_changes(run: Path) -> dict:
     }
 
 
-def check_run(run: Path, case: str, label: str | None = None) -> dict:
+def check_run(run: Path, case: str, base: str, label: str | None = None) -> dict:
     events = []
     run_root = None
     for line in (run / "transcript.jsonl").read_text().splitlines():
@@ -344,7 +358,7 @@ def check_run(run: Path, case: str, label: str | None = None) -> dict:
             "diff_path": DIFF_PATH.findall(final),
             "questions": questions(final),
         },
-        **run_changes(run),
+        **run_changes(run, base),
     }
 
 
@@ -430,67 +444,102 @@ GATES = {
 }
 
 
-def check_graders(case_dir: Path, meta: dict) -> None:
+def check_graders(case_dir: Path, meta: dict, reg: dict) -> None:
     """The run's assertions must be the case's grader texts, in order, or the mapping above is wrong."""
     graders = sorted((EVALS / case_dir.name / "graders").glob("*.md"))
     texts = [g.read_text().split("---", 2)[2].strip() for g in graders]
     if texts != [a.strip() for a in meta["assertions"]]:
-        sys.exit(f"{case_dir.name}: eval_metadata.json assertions differ from evals/{case_dir.name}/graders/")
+        name = "a test-set case" if reg[case_dir.name]["set"] == "test" else case_dir.name
+        sys.exit(f"{name}: eval_metadata.json assertions differ from its evals/<case>/graders/")
 
 
 RUN_DIR = re.compile(r"run-\d+")
 
 
-def collect(root: Path, want: str, reg: dict) -> tuple[list, dict]:
-    """Scorable runs [(case, arm, run_dir, meta)] of the cases in set `want`, and the runs that can't be scored,
-    counted per arm: {arm: {reason: n}}. A run is not scored if it sits under a directory whose name starts with
-    "_" (e.g. _invalid/), or if invalid_reason() names a reason (e.g. a run-<n>/ without a transcript)."""
+def _arm_of(dirs: tuple[str, ...]) -> str:
+    """The arm in a path below a case: the first directory that isn't _-prefixed or a run-<n>... name."""
+    for d in dirs:
+        if not d.startswith("_"):
+            return "?" if d.startswith("run-") else d
+    return "?"
+
+
+def collect(root: Path, want: str, reg: dict, legacy: bool = False) -> tuple[list, dict]:
+    """Scorable runs [(case, arm, run_dir, meta, base)] of the cases in set `want`, and the runs that can't be
+    scored, counted per arm: {arm: {reason: n}}. Nothing is dropped silently. A run isn't scored if:
+      - it sits under a _-prefixed directory, at any depth (e.g. <iteration>/_invalid/<case>/<arm>/...,
+        <case>/_invalid/<arm>/..., <case>/<arm>/_retry/...);
+      - it is a run-<n>/, or a non-empty one-run arm, with no transcript;
+      - its arm has both run-<n>/ directories and a top-level transcript;
+      - diff_base() refuses it.
+    Runs under _-prefixed directories that name no known case count only with --set all. Reasons never name a
+    case, so `--set test` prints counts only."""
     ok, bad = [], {}
 
-    def note(arm: str, reason: str) -> None:
+    def note(arm: str, reason: str, n: int = 1) -> None:
         bad.setdefault(arm, {})
-        bad[arm][reason] = bad[arm].get(reason, 0) + 1
+        bad[arm][reason] = bad[arm].get(reason, 0) + n
 
     def in_set(case: str) -> bool:
-        if case not in reg:
-            sys.exit(f"{case} is not in evals/cases.csv")
         return want == "all" or reg[case]["set"] == want
 
+    def side_runs(case_dir: Path):
+        """(directories, first _-prefixed one) for each transcript below case_dir under a _-prefixed directory."""
+        for t in sorted(case_dir.rglob("transcript.jsonl")):
+            dirs = t.relative_to(case_dir).parts[:-1]
+            under = next((d for d in dirs if d.startswith("_")), None)
+            if under is not None:
+                yield dirs, under
+
     for case_dir in sorted(p for p in root.iterdir() if (p / "eval_metadata.json").exists()):
+        if case_dir.name not in reg:
+            sys.exit(f"{case_dir.name} is not in evals/cases.csv")
         if not in_set(case_dir.name):
             continue
         meta = json.loads((case_dir / "eval_metadata.json").read_text())
-        check_graders(case_dir, meta)
-        for arm_dir in sorted(p for p in case_dir.iterdir() if p.is_dir()):
-            if arm_dir.name.startswith("_"):
-                for _ in arm_dir.rglob("transcript.jsonl"):
-                    note("?", f"under {case_dir.name}/{arm_dir.name}/")
-                continue
+        check_graders(case_dir, meta, reg)
+        for dirs, under in side_runs(case_dir):
+            note(_arm_of(dirs), f"under {under}/")
+        for arm_dir in sorted(p for p in case_dir.iterdir() if p.is_dir() and not p.name.startswith("_")):
+            arm = arm_dir.name
             multi = sorted(
                 (p for p in arm_dir.iterdir() if p.is_dir() and RUN_DIR.fullmatch(p.name)),
                 key=lambda p: int(p.name[4:]),
             )
-            if multi and (arm_dir / "transcript.jsonl").exists():
-                sys.exit(
-                    f"{case_dir.name}/{arm_dir.name}: both run-<n>/ directories and a top-level transcript"
-                )
-            for run in multi or ([arm_dir] if (arm_dir / "transcript.jsonl").exists() else []):
-                reason = invalid_reason(run)
+            top = (arm_dir / "transcript.jsonl").exists()
+            if multi and top:
+                note(arm, "both run-<n>/ and a top-level transcript in the arm", len(multi) + 1)
+                continue
+            if not multi and not top:
+                if any(not p.name.startswith("_") for p in arm_dir.iterdir()):
+                    note(arm, "missing transcript")
+                continue
+            for run in multi or [arm_dir]:
+                if not (run / "transcript.jsonl").exists():
+                    note(arm, "missing transcript")
+                    continue
+                base, reason = diff_base(run, legacy)
                 if reason:
-                    note(arm_dir.name, reason)
+                    note(arm, reason)
                 else:
-                    ok.append((case_dir.name, arm_dir.name, run, meta))
-    # Invalid attempts kept as <root>/_<name>/<case>/<arm>/<attempt>/
+                    ok.append((case_dir.name, arm, run, meta, base))
+    # Attempts kept as <iteration>/_<name>/[...]/<case>/<arm>/<attempt>/
     for side in sorted(p for p in root.iterdir() if p.is_dir() and p.name.startswith("_")):
         for t in sorted(side.rglob("transcript.jsonl")):
-            parts = t.relative_to(side).parts
-            if in_set(parts[0]):
-                note(parts[1] if len(parts) > 2 else "?", f"under {side.name}/")
+            dirs = t.relative_to(root).parts[:-1]
+            under = dirs[0]
+            # the first known case anywhere in the path, so older layouts (_invalid/round2/<case>/...) still count
+            at = next((i for i, d in enumerate(dirs) if d in reg), None)
+            if at is not None:
+                if in_set(dirs[at]):
+                    note(_arm_of(dirs[at + 1 :]), f"under {under}/")
+            elif want == "all":
+                note("?", f"under {under}/, no known case")
     return ok, bad
 
 
-def runs(root: Path, want: str, reg: dict):
-    yield from collect(root, want, reg)[0]
+def runs(root: Path, want: str, reg: dict, legacy: bool = False):
+    yield from collect(root, want, reg, legacy)[0]
 
 
 def run_label(case: str, arm: str, run: Path) -> str:
@@ -523,14 +572,14 @@ def cmd_split(_args, reg):
 
 def cmd_facts(args, reg):
     out = Path(args.out) if args.out else None
-    ok, bad = collect(Path(args.dir), "all", reg)
+    ok, bad = collect(Path(args.dir), "all", reg, args.legacy)
     for arm, reasons in sorted(bad.items()):
         print(f"not scored, {arm}: {not_scored_line(reasons)}", file=sys.stderr)
-    for case, arm, run, _meta in ok:
+    for case, arm, run, _meta, base in ok:
         if reg[case]["set"] == "test":
-            sys.exit(f"{case} is in the sealed test set: use `score`, which prints totals only")
+            sys.exit("the iteration holds sealed test-set cases: use `score`, which prints totals only")
         label = run_label(case, arm, run)
-        r = check_run(run, case, label)
+        r = check_run(run, case, base, label)
         if out:
             dest = out / label
             dest.mkdir(parents=True, exist_ok=True)
@@ -556,7 +605,7 @@ def recorded(run: Path) -> list | None:
 
 def cmd_score(args, reg):
     tally: dict[str, dict[str, list]] = {}
-    ok, bad = collect(Path(args.dir), args.set, reg)
+    ok, bad = collect(Path(args.dir), args.set, reg, args.legacy)
 
     def arm_tally(arm: str) -> dict:
         return tally.setdefault(
@@ -565,10 +614,10 @@ def cmd_score(args, reg):
 
     for arm in bad:
         arm_tally(arm)
-    for case, arm, run, meta in ok:
+    for case, arm, run, meta, base in ok:
         t = arm_tally(arm)
         t["cases"][case] = t["cases"].get(case, 0) + 1
-        facts = check_run(run, case, run_label(case, arm, run))
+        facts = check_run(run, case, base, run_label(case, arm, run))
         rec = recorded(run)
         for i in range(1, len(meta["assertions"]) + 1):
             if (case, i) in DETERMINISTIC:
@@ -584,7 +633,8 @@ def cmd_score(args, reg):
             if rec is not None and v is not None:
                 t["agree"].append(v == rec[i - 1])
     reading = "outside outputs/" if args.exclude_outputs else "literal (outputs/ writes count)"
-    print(f"set={args.set}; main-thread write rule: {reading}")
+    legacy = "; --legacy (rounds 1-3)" if args.legacy else ""
+    print(f"set={args.set}; main-thread write rule: {reading}{legacy}")
     for arm, t in sorted(tally.items()):
         det = t["det"]
         per_case = sorted(set(t["cases"].values())) or [0]
@@ -612,8 +662,8 @@ def cmd_score(args, reg):
 def cmd_recorded(args, reg):
     print(f"set={args.set}; recorded verdicts (grading.json, whatever graded them)")
     tally: dict[str, list] = {}
-    ok, bad = collect(Path(args.dir), args.set, reg)
-    for _case, arm, run, _meta in ok:
+    ok, bad = collect(Path(args.dir), args.set, reg, args.legacy)
+    for _case, arm, run, _meta, _base in ok:
         tally.setdefault(arm, []).extend(recorded(run) or [])
     for arm in sorted(set(tally) | set(bad)):
         v = tally.get(arm, [])
@@ -627,12 +677,18 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("split")
+    legacy_help = (
+        "rounds 1-3, which predate the setup commit: read their diffs by the legacy rule (run_changes); "
+        "without it, a run with no post_setup_commit is not scored"
+    )
     p = sub.add_parser("facts")
     p.add_argument("dir")
     p.add_argument("--out")
+    p.add_argument("--legacy", action="store_true", help=legacy_help)
     for name in ("score", "recorded"):
         p = sub.add_parser(name)
         p.add_argument("dir")
+        p.add_argument("--legacy", action="store_true", help=legacy_help)
         p.add_argument("--set", default="all", choices=("all",) + SETS)
         if name == "score":
             p.add_argument(
