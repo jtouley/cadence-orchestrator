@@ -58,5 +58,29 @@ No live hook activity: the files are installed, but the guard hasn't been seen r
 ```
 
 Conclusion: in this one Codex cloud task on 2026-10-31, the project hooks didn't run, so the skill worked as
-instructions only. Our guess, not confirmed, is that project hooks need a one-time approval (`/hooks`) that the
-cloud task never prompted for. The local Codex CLI hasn't been tested live yet.
+instructions only. The local Codex CLI hasn't been tested live yet.
+
+OpenAI's Codex docs, as a second Codex cloud task read them on 2026-10-31 (quoted as it reported them; URLs to
+be added), say:
+
+- Hooks guide: "Project-local hooks load only when the project .codex/ layer is trusted", with trust reviewed per
+  hook in the CLI's `/hooks`; command handlers and hooks from local configuration or directories are listed as
+  "not supported with cloud orchestration".
+- Cloud environments guide: documents only an install script and a start skill, and no project-hook trust or
+  approval mechanism for cloud.
+
+So OpenAI's docs (as read on 2026-10-31) list local command hooks as not supported in cloud; we observed the same.
+
+### Codex cloud, 2026-10-31, kit 0.1.2: an instructions-only TPM run
+
+Same repo and branch, a second Codex cloud task. With no hooks running (above), this tests the instructions alone.
+
+- **Task:** `$tpm` to add a Testing section to the repo's docs.
+- **Orchestrator:** edited no files itself.
+- **Maker:** subagent `testing_writer` wrote the section.
+- **Review:** subagent `testing_reviewer` checked it independently against the Makefile and configs; verdict PASS,
+  no edits.
+- **Checks run:** whitespace checks and `make -n` dry runs passed. The real checks and tests weren't run.
+
+So the delegation and independent-review parts of the playbook held without the guard. What wasn't shown: that
+the documented commands actually pass, since only dry runs were made.

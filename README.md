@@ -58,9 +58,10 @@ There are two ways to use it, and only the second enforces anything.
 > [!IMPORTANT]
 > On Codex, Cursor and Gemini the guard is **advisory, not enforcement**: it warns and logs, and never blocks.
 > In a **Codex cloud** task the project hooks didn't run at all, so it's **instructions only** there (observed
-> 2026-10-31 with kit 0.1.2: no armed line, no advisory, no hook-approval prompt, `status` saw no hooks). Our guess,
-> not confirmed, is that project hooks need a one-time approval that cloud tasks never prompt for. In the local
-> Codex CLI the guard should be advisory; live hooks there are unverified. Check with `status` in each.
+> 2026-10-31 with kit 0.1.2: no armed line, no advisory, no hook-approval prompt, `status` saw no hooks). OpenAI's
+> docs (as read on 2026-10-31) list local command hooks as not supported in cloud; we observed the same (details and
+> sources in [`docs/live-testing.md`](docs/live-testing.md); URLs to be added). In the local Codex CLI the guard
+> should be advisory once its hooks are trusted in `/hooks`; live hooks there are unverified. Check with `status`.
 
 ### Install in a Repo
 
