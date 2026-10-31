@@ -63,7 +63,8 @@ for every platform. Re-running is safe: the installer replaces only its own entr
 also adds `.cadence/tpm.off` to `.gitignore`. Commit the result so everyone working in the repo, including cloud
 sessions, gets it. From a clone of this repository, run `./install.sh --repo <path>` with the same options.
 
-To check an install, run `npx cadence-orchestrator doctor --target claude` (or `all`). It checks that the files
+To check an install, run `npx cadence-orchestrator doctor --target claude` (`all` checks every target that's
+installed). It checks that the files
 and hook config are in place and point at existing scripts, that `python3` is on `PATH`, and runs the installed
 hooks on simulated events: arming, an orchestrator write (denied, or an advisory on Codex, Cursor and Gemini), a
 subagent write (allowed) and, on Claude Code, a stop. It prints one line per check, exits 1 if any fail, and

@@ -11,6 +11,15 @@ import os from "node:os";
 import path from "node:path";
 
 const SCRIPTS = ["guard.py", "runtime.py", "tasks_check.py"];
+// Environment variables a platform's runtime consults for its state dir (see each shim's state_env).
+const STATE_ENV = { claude: ["CLAUDE_PLUGIN_DATA"] };
+
+// A target counts as installed if its shim or its hook entries are present.
+export function installed(repo, target, spec) {
+  if (fs.existsSync(path.join(repo, spec.skill, "scripts", `shim_${target}.py`))) return true;
+  const hookFile = path.join(repo, spec.hooks[0][1]);
+  return fs.existsSync(hookFile) && fs.readFileSync(hookFile, "utf8").includes(`shim_${target}.py`);
+}
 
 // Per platform: how to find hook commands in its config, and the events to simulate.
 const PLATFORMS = {
@@ -94,15 +103,24 @@ export function doctor(repo, target, spec) {
   const py = spawnSync("python3", ["--version"], { encoding: "utf8" });
   check("python3 is on PATH", !py.error && py.status === 0, "the hooks run python3; without it they allow everything");
 
-  // Where the real hooks keep state and advisory.log, resolved by the installed runtime itself.
+  // Where the real hooks keep state and advisory.log: ask the installed runtime.py directly (not the
+  // shim, whose import-failure path prints its platform's "allow" output). Only an absolute path on a
+  // STATE= line is accepted; if runtime.py is missing or broken this check fails and nothing is created.
   const resolver =
-    "import sys, importlib.util as u\n" +
-    "s = u.spec_from_file_location('shim', sys.argv[1]); m = u.module_from_spec(s); s.loader.exec_module(m)\n" +
-    "print(m.runtime.state_dir(m.PLATFORM))";
-  const where = spawnSync("python3", ["-B", "-c", resolver, path.join(repo, shim)], { encoding: "utf8" });
-  const realState = where.status === 0 ? where.stdout.trim() : "";
+    "import sys, types\n" +
+    "sys.dont_write_bytecode = True\n" +
+    "sys.path.insert(0, sys.argv[1])\n" +
+    "import runtime\n" +
+    "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))";
+  const scripts = path.join(repo, spec.skill, "scripts");
+  const where = spawnSync("python3", ["-B", "-c", resolver, scripts, ...(STATE_ENV[target] ?? [])], {
+    encoding: "utf8",
+    cwd: os.tmpdir(),
+  });
+  const line = (where.stdout ?? "").split("\n").find((l) => l.startsWith("STATE=")) ?? "";
+  const realState = where.status === 0 ? line.slice("STATE=".length).trim() : "";
   let writable = false;
-  if (realState) {
+  if (realState && path.isAbsolute(realState)) {
     try {
       // Same as the runtime: create the directory if needed, then prove a file can be written there.
       fs.mkdirSync(realState, { recursive: true });
@@ -112,10 +130,15 @@ export function doctor(repo, target, spec) {
       writable = true;
     } catch {}
   }
+  const why = !realState
+    ? `couldn't load ${spec.skill}/scripts/runtime.py: ${(where.stderr || "no output").trim().split("\n").at(-1)}`
+    : !path.isAbsolute(realState)
+      ? `runtime returned a relative path (${realState})`
+      : "not writable: set CADENCE_STATE_DIR to a writable directory";
   check(
     `state dir ${realState || "(unresolved)"} is writable; advisory log: ${realState ? path.join(realState, "advisory.log") : "?"}`,
     writable,
-    realState ? "not writable: set CADENCE_STATE_DIR to a writable directory" : (where.stderr || "").trim().split("\n").at(-1),
+    why,
   );
 
   const state = fs.mkdtempSync(path.join(os.tmpdir(), "cadence-doctor-"));

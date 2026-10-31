@@ -65,6 +65,8 @@ function copySkill(repo, target, skill) {
   }
   write(path.join(dest, "SKILL.md"), text);
   copyDir(path.join(CORE, "references"), path.join(dest, "references"));
+  // 0.1.0 hooks left bytecode caches next to the vendored scripts; remove them (only inside the skill dir).
+  fs.rmSync(path.join(dest, "scripts", "__pycache__"), { recursive: true, force: true });
   fs.mkdirSync(path.join(dest, "scripts"), { recursive: true });
   for (const name of ["guard.py", "runtime.py", "tasks_check.py"]) {
     fs.copyFileSync(path.join(CORE, "scripts", name), path.join(dest, "scripts", name));
@@ -167,8 +169,18 @@ const opts = parseArgs(isDoctor ? argv.slice(1) : argv);
 const repo = path.resolve(opts.repo);
 if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
 if (isDoctor) {
-  const { doctor } = await import("./doctor.mjs");
-  const targets = opts.target === "all" ? Object.keys(TARGETS).sort() : [opts.target];
+  if (opts.catalog.length) fail(`doctor doesn't take --catalog\n${USAGE}`, 2);
+  const { doctor, installed } = await import("./doctor.mjs");
+  let targets = [opts.target];
+  if (opts.target === "all") {
+    targets = Object.keys(TARGETS)
+      .sort()
+      .filter((t) => installed(repo, t, TARGETS[t]) || (console.log(`skip ${t}: not installed`), false));
+    if (!targets.length) {
+      console.log(`FAIL no target is installed in ${repo}`);
+      process.exit(1);
+    }
+  }
   const results = targets.flatMap((t) => doctor(repo, t, TARGETS[t]));
   for (const r of results) {
     const mark = r.skip ? "skip" : r.ok ? "ok  " : "FAIL";

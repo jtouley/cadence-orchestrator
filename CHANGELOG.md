@@ -5,7 +5,8 @@
 - `cadence-orchestrator doctor --target <platform>` checks an install: files, hook config, `python3`, and the
   installed hooks on simulated events. It also prints where `advisory.log` is written and checks that the state
   directory is writable. It changes nothing in the repo.
-- Hooks no longer leave `__pycache__` folders next to the vendored scripts.
+- Hooks no longer leave `__pycache__` folders next to the vendored scripts, and re-installing removes the ones
+  0.1.0 left there.
 - README: arm Codex with `$tpm` (Codex mentions skills with `$`), and a Troubleshooting entry for `npx` cache
   errors (`npm_config_cache=/tmp/npm-cache`).
 

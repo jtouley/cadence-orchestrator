@@ -113,3 +113,52 @@ def test_doctor_reports_the_real_state_dir_and_checks_it_is_writable():
     not_a_dir = tempfile.mkstemp()[1]
     out = doctor(repo, "codex", env=dict(os.environ, CADENCE_STATE_DIR=os.path.join(not_a_dir, "sub")))
     assert out.returncode == 1 and "FAIL codex: state dir" in out.stdout and "CADENCE_STATE_DIR" in out.stdout
+
+
+# ------------------------------------------------------------- PR #4 review fixes
+
+RUNTIMES = {t: s.replace(f"shim_{t}.py", "runtime.py") for t, s in SHIMS.items()}
+
+
+def test_missing_runtime_fails_the_state_check_and_changes_nothing():
+    for target in TARGETS:
+        repo = repo_with(target)
+        os.remove(os.path.join(repo, RUNTIMES[target]))
+        before = snapshot(repo)
+        out = doctor(repo, target)
+        assert out.returncode == 1, target
+        assert f"FAIL {target}: state dir (unresolved)" in out.stdout and "couldn't load" in out.stdout, (
+            target
+        )
+        assert snapshot(repo) == before, target  # e.g. no `{}` directory from Gemini's fallback output
+
+
+def test_reinstall_removes_old_pycache_only_inside_the_skill_dir():
+    repo = repo_with("codex")
+    stale = os.path.join(repo, ".agents/skills/tpm/scripts/__pycache__")
+    mine = os.path.join(repo, "src/__pycache__")
+    for d in (stale, mine):
+        os.makedirs(d)
+        open(os.path.join(d, "x.cpython-313.pyc"), "wb").write(b"\0")
+    subprocess.run([CLI, "--target", "codex", "--repo", repo], check=True, capture_output=True)
+    assert not os.path.exists(stale) and os.path.exists(os.path.join(mine, "x.cpython-313.pyc"))
+
+
+def test_doctor_all_checks_only_installed_targets():
+    out = doctor(repo_with("claude", "cursor"), "all")
+    assert out.returncode == 0
+    for t in ("codex", "copilot", "gemini"):
+        assert f"skip {t}: not installed" in out.stdout and f"FAIL {t}" not in out.stdout
+    assert "ok   claude:" in out.stdout and "ok   cursor:" in out.stdout
+    none = doctor(repo_with(), "all")
+    assert none.returncode == 1 and "FAIL no target is installed" in none.stdout
+
+
+def test_doctor_rejects_catalog():
+    repo = repo_with("claude")
+    out = subprocess.run(
+        [CLI, "doctor", "--target", "claude", "--repo", repo, "--catalog", "x.md"],
+        capture_output=True,
+        text=True,
+    )
+    assert out.returncode == 2 and "doctor doesn't take --catalog" in out.stderr
