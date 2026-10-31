@@ -303,6 +303,21 @@ def test_installer_warns_without_python3_and_checks_arguments():
     assert helped.returncode == 0 and "--target" in helped.stdout
 
 
+def test_workstream_reference_example_is_valid_and_complete():
+    import re
+    refs = os.path.join(ROOT, "core", "references")
+    text = open(os.path.join(refs, "workstream.md")).read()
+    data = json.loads(re.search(r"```json\n(.*?)```", text, re.S).group(1))
+    for task in data["tasks"]:
+        for key in ("id", "owner", "doc_sha", "state", "evidence", "left_out", "tokens"):
+            assert key in task, key
+        if task["state"] == "done":
+            assert task["evidence"] and task["left_out_accepted_by"]
+    skill = open(os.path.join(ROOT, "core", "SKILL.md")).read()
+    assert "references/sources.md" in skill and "@<sha>" in skill
+    assert os.path.exists(os.path.join(refs, "sources.md"))
+
+
 def test_install_rejects_non_repo():
     proc = subprocess.run([INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()],
                           capture_output=True, text=True)

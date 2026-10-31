@@ -15,15 +15,21 @@ Each workstream has two files on the `orchestration` branch, written by the scri
     {
       "id": "build-finish-screen",
       "owner": "builder-1",
+      "doc_sha": "3f2a1c9",
       "state": "done",
       "evidence": ["https://github.com/<owner>/<repo>/pull/57", "a1b2c3d"],
+      "left_out": ["No animation on the finish button (doc says optional)"],
+      "left_out_accepted_by": "reviewer-1",
       "tokens": 182400
     },
     {
       "id": "spec-review",
       "owner": "reviewer-1",
+      "doc_sha": "3f2a1c9",
       "state": "claimed",
       "evidence": [],
+      "left_out": [],
+      "left_out_accepted_by": null,
       "tokens": null
     }
   ]
@@ -31,9 +37,13 @@ Each workstream has two files on the `orchestration` branch, written by the scri
 ```
 
 - `id`: short and stable. `owner`: exactly one agent, or `null` while unassigned.
+- `doc_sha`: the commit of `workstreams/<slug>.md` the dispatch prompt cited (`<slug>.md@<sha>`), so what the
+  agent was asked to do can be read back exactly.
 - `state`: `assigned`, `claimed`, `blocked` or `done`. A `blocked` task carries the reason in `evidence`
   (what was tried, the command and its output).
 - `evidence`: SHAs, PR or comment links, `command → output` excerpts. **A `done` task must have at least one.**
+- `left_out`: what the worker says it skipped or didn't finish (an empty list means "nothing"). The reviewer
+  judges it; `left_out_accepted_by` names that reviewer. **`done` needs evidence and an accepted `left_out`.**
 - `tokens`: total tokens the delegated agent reported spending, or `null` if the platform doesn't report it.
 
 The scribe rewrites the whole file on each update (no hand-merged fragments) and validates it as JSON before
@@ -43,7 +53,7 @@ pushing.
 
 On platforms where the guard enforces (Claude Code, Copilot), it could check this cheaply. A subagent's
 `Write` to a `*.tasks.json` path carries the new content in the tool input, so the guard can parse it and deny
-any task with `"state": "done"` and empty `evidence`. An `Edit` would need the guard to apply the edit to the
+any task with `"state": "done"` and empty `evidence` or no `left_out_accepted_by`. An `Edit` would need the guard to apply the edit to the
 file on disk first, and a shell-built file can't be seen at all. So the robust place is a check on the
 `orchestration` branch itself: a pre-push hook or a CI job that validates every `*.tasks.json` against these
 rules. On advisory platforms only that branch check can enforce it.
