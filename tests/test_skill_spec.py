@@ -91,3 +91,7 @@ def test_skill_version_matches_the_package_version():
 
     version = json.load(open(os.path.join(ROOT, "package.json")))["version"]
     assert frontmatter(SKILL_DIR)["metadata"]["version"] == version
+    # The README ships on the npm page: any "Version X.Y.Z" there must be the package version.
+    readme = open(os.path.join(ROOT, "README.md")).read()
+    for stated in re.findall(r"\bVersion (\d+\.\d+\.\d+)", readme):
+        assert stated == version, f"README says Version {stated}, package.json says {version}"

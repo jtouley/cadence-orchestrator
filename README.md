@@ -12,7 +12,7 @@ It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is a
 it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
 
 > [!NOTE]
-> Version 0.1.0, experimental. The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
+> Experimental (0.1.x). The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
 > only.
 
 Issues: [github.com/jtouley/cadence-orchestrator/issues](https://github.com/jtouley/cadence-orchestrator/issues)
