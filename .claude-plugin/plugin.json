@@ -15,6 +15,5 @@
     "tpm",
     "cadence"
   ],
-  "hooks": "./adapters/claude/plugin-hooks.json",
-  "skills": "./core"
+  "hooks": "./adapters/claude/plugin-hooks.json"
 }

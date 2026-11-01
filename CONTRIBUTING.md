@@ -13,7 +13,7 @@ pytest
 ```
 
 `main` changes only through pull requests: the `no-commit-to-branch` hook refuses local commits to it. If you
-change what the guard allows, update `core/references/guard.md` in the same change.
+change what the guard allows, update `skills/tpm/references/guard.md` in the same change.
 
 ## Repository settings (maintainers)
 
@@ -26,4 +26,4 @@ default branch, with:
 - **Restrict deletions**
 
 The `orchestration` branch used by the skill needs its own pre-commit setup; see
-[`core/references/workstream.md`](core/references/workstream.md).
+[`skills/tpm/references/workstream.md`](skills/tpm/references/workstream.md).

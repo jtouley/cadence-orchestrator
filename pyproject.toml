@@ -1,7 +1,7 @@
-# Dev tooling only. The runtime (core/scripts, adapters/*/shim.py) is stdlib-only Python and isn't packaged
+# Dev tooling only. The runtime (skills/tpm/scripts, adapters/*/shim.py) is stdlib-only Python and isn't packaged
 # here; the installer ships through npm (package.json).
 [tool.pytest.ini_options]
-testpaths = ["core/tests", "evals/tests"]
+testpaths = ["tests", "evals/tests"]
 addopts = "-ra"
 
 [tool.ruff]
@@ -16,4 +16,4 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # Shims add their own directory to sys.path before importing runtime.
 "adapters/*/shim.py" = ["E402"]
-"core/scripts/runtime.py" = ["E402"]
+"skills/tpm/scripts/runtime.py" = ["E402"]

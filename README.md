@@ -7,7 +7,9 @@ the work; the orchestrator plans it with you, hands every piece of it to subagen
 what comes back, and reports with evidence. A guard stops the orchestrator from doing the work itself.
 
 It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is an offshoot of
-[cadence-core](https://github.com/jtouley/cadence-core).
+[cadence-core](https://github.com/jtouley/cadence-core). The skill in [`skills/tpm/`](skills/tpm/) follows the
+[Agent Skills open standard](https://agentskills.io/specification), so any client that reads Agent Skills can use
+it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
 
 > [!NOTE]
 > Version 0.1.0, experimental. The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
@@ -43,7 +45,7 @@ Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR,
 
 There are two ways to use it, and only the second enforces anything.
 
-- **Use the instructions.** Any agent that reads [`core/SKILL.md`](core/SKILL.md) (or the installed skill) can
+- **Use the instructions.** Any agent that reads [`skills/tpm/SKILL.md`](skills/tpm/SKILL.md) (or the installed skill) can
   follow the playbook. Nothing checks it: no hooks run, and the skill tells you "guard not running in this session —
   instructions only" when it doesn't see the guard.
 - **Install and activate the guard.**
@@ -127,7 +129,7 @@ The plugin's command is `/cadence-orchestrator:tpm`.
 The orchestrator chooses which skills to route work to from catalogs: markdown files in the repo's
 `.cadence/catalog/` (commit them, so cloud sessions see them), then `$CADENCE_CATALOG_PATH` or
 `~/.cadence/catalog/`. Add one while installing with `--catalog <file.md>`; repeat the flag for more than one.
-The shipped [`example-registry.md`](core/references/example-registry.md) is one user's catalog; the orchestrator
+The shipped [`example-registry.md`](skills/tpm/references/example-registry.md) is one user's catalog; the orchestrator
 treats it as a format example unless you confirm it fits.
 
 ### Start and Stop
@@ -160,7 +162,7 @@ a task `done` without evidence (an invalid `workstreams/*.tasks.json`) is denied
 warned about on Codex, Cursor and Gemini; shell writes aren't seen, and the orchestration branch's pre-commit hook
 catches those. On Claude Code a Stop hook also blocks the orchestrator once per stop attempt while agents it started
 are still running; the next attempt goes through. The exact rules are in
-[`core/references/guard.md`](core/references/guard.md).
+[`skills/tpm/references/guard.md`](skills/tpm/references/guard.md).
 
 ## Threat Model
 
@@ -174,11 +176,11 @@ Use your platform's permissions or a real sandbox to contain an agent you don't 
 
 ## Further Reading
 
-- [`core/SKILL.md`](core/SKILL.md): the full playbook the orchestrator follows
-- [`core/references/guard.md`](core/references/guard.md): what the guard allows and denies
-- [`core/references/catalogs.md`](core/references/catalogs.md): catalog format and lookup order
-- [`core/references/workstream.md`](core/references/workstream.md): the workstream doc and `tasks.json` format
-- [`core/references/example-registry.md`](core/references/example-registry.md): an example catalog
+- [`skills/tpm/SKILL.md`](skills/tpm/SKILL.md): the full playbook the orchestrator follows
+- [`skills/tpm/references/guard.md`](skills/tpm/references/guard.md): what the guard allows and denies
+- [`skills/tpm/references/catalogs.md`](skills/tpm/references/catalogs.md): catalog format and lookup order
+- [`skills/tpm/references/workstream.md`](skills/tpm/references/workstream.md): the workstream doc and `tasks.json` format
+- [`skills/tpm/references/example-registry.md`](skills/tpm/references/example-registry.md): an example catalog
 
 ## Troubleshooting
 
@@ -221,7 +223,7 @@ The pre-commit hooks also block email addresses, account UUIDs and session logs 
 direct commits to `main`. The guard and shims use only the Python standard library; pytest, ruff and pre-commit
 are for development, and the installer tests also need Node. CI runs the same checks, gitleaks over the full
 history, an installer smoke test and `npm pack --dry-run`.
-If you change what the guard allows, update `core/references/guard.md` in the same change; a test checks its tool
+If you change what the guard allows, update `skills/tpm/references/guard.md` in the same change; a test checks its tool
 list against `guard.py`. `evals/` holds behaviour cases written against one app repository
 ([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.
 

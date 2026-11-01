@@ -15,7 +15,7 @@ Use every catalog found in the first two places. Fall back to the shipped exampl
    see the format, or for routing only if the user confirms it fits.
 
 When two catalogs describe the same skill set (the same `##` heading), the earlier source wins: the repo
-overrides the user, and the user overrides the example. Use Glob and Read to list and read them; they're
+overrides the user, and the user overrides the example. Use your agent's file-listing and file-reading tools; they're
 documents, so reading them is allowed. In the workstream doc, say which catalog each routing choice came from.
 
 To add one, write a file in the format below to `.cadence/catalog/` (commit it) or `~/.cadence/catalog/`.

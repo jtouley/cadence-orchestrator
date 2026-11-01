@@ -13,7 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CORE = path.join(ROOT, "core");
+const CORE = path.join(ROOT, "skills", "tpm"); // the skill, in the Agent Skills layout
 const ADAPTERS = path.join(ROOT, "adapters");
 const MARK = "skills/tpm/scripts/shim_"; // identifies our hook entries on re-install
 const BLOCK = /<!-- cadence-orchestrator:tpm begin -->[\s\S]*?<!-- cadence-orchestrator:tpm end -->\n?/g;

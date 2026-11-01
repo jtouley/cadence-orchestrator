@@ -11,8 +11,8 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
-SCRIPTS = os.path.join(ROOT, "core", "scripts")
+ROOT = os.path.dirname(HERE)
+SCRIPTS = os.path.join(ROOT, "skills", "tpm", "scripts")
 CHECK = os.path.join(SCRIPTS, "tasks_check.py")
 sys.path.insert(0, SCRIPTS)
 import tasks_check  # noqa: E402
@@ -35,7 +35,7 @@ def doc(*tasks):
 
 
 def test_reference_example_is_valid():
-    text = open(os.path.join(ROOT, "core", "references", "workstream.md")).read()
+    text = open(os.path.join(ROOT, "skills", "tpm", "references", "workstream.md")).read()
     example = json.loads(re.search(r"```json\n(.*?)```", text, re.S).group(1))
     assert tasks_check.validate(example) == []
 

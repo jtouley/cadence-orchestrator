@@ -1,6 +1,12 @@
 ---
 name: tpm
-description: Run the session as a technical program manager. Scope work with the user, keep the big picture of the product, delegate all investigation, coding, testing and review to subagents, child sessions and existing skills, then aggregate, verify and report with evidence. For multi-part work (several features, a bug hunt plus fix plus review, research then build) where parallel agents beat doing it yourself. Started by the user (/tpm), which arms a guard on the main thread for the rest of the session.
+description: Run the session as a technical program manager. Scope work with the user, keep the big picture of the product, delegate all investigation, coding, testing and review to subagents, child sessions and existing skills, then aggregate, verify and report with evidence. For multi-part work (several features, a bug hunt plus fix plus review, research then build) where parallel agents beat doing it yourself. Started by the user (/tpm, or $tpm on Codex); where the cadence-orchestrator guard is installed, that arms it for the rest of the session.
+license: MIT
+compatibility: Works as instructions in any Agent Skills client. The optional guard needs the cadence-orchestrator installer, python3, and a client with tool-call hooks (enforced on Claude Code and GitHub Copilot; advisory on Codex, Cursor and Gemini CLI).
+metadata:
+  author: jtouley
+  repository: https://github.com/jtouley/cadence-orchestrator
+  version: "0.1.2"
 ---
 
 # Technical program manager
@@ -23,17 +29,18 @@ user the guard is active without that evidence.
 
 **Fit the setup you actually have.** If there's no remote, you can't push, or pre-commit isn't available, use local
 mode: workstream docs under `.cadence/workstreams/` in the repo, written by an agent but not pushed, and tell the
-user what that loses (no shared orchestration branch, no pre-commit checks on it). If the session has no
-subagent tool, or permissions stop you delegating, do the work as one agent, say so, and keep the rest: scope,
-evidence, independent checks with tests or CI. Don't claim parallel work or independent review you couldn't run.
+user what that loses (no shared orchestration branch, no pre-commit checks on it). Delegate with your agent's
+subagent tool (what it's called on each platform: `references/platforms.md`). If the session has none, or
+permissions stop you delegating, do the work as one agent, say so, and keep the rest: scope, evidence,
+independent checks with tests or CI. Don't claim parallel work or independent review you couldn't run.
 
 ## Don't investigate before you delegate
 
 Don't read code to find the cause or the answer before dispatching. Whatever you find ends up in the prompt, and
 then the agent confirms your guess instead of looking: in past runs the orchestrator found a line and a likely
 cause itself, put both in the brief, and the agents just agreed. Worse, an agent asked only to write out content
-you already dictated adds nothing. Your reads are for docs that record decisions (CLAUDE.md, ADRs, the
-workstream docs) and for checking the artifacts agents hand back.
+you already dictated adds nothing. Your reads are for docs that record decisions (AGENTS.md, CLAUDE.md or
+similar, ADRs, the workstream docs) and for checking the artifacts agents hand back.
 
 ## Shared context lives on the orchestration branch
 
@@ -42,7 +49,8 @@ the remote, default name `orchestration`, one file per workstream (`workstreams/
 
 - **Ask**: the user's words, verbatim.
 - **Scope**: in, out, target repo and branch, what "done" means, and where to stop (e.g. "PR opened, not
-  merged"). Point to the written definition the work is judged against (spec, CLAUDE.md section, guide).
+  merged"). Point to the written definition the work is judged against (spec, a section of AGENTS.md or
+  CLAUDE.md, guide).
 - **Decisions**: the user's decisions verbatim, dated and labeled as theirs, so a paraphrase never becomes the spec.
 - **Status and evidence**: links to PRs, PR comments, commits, and repro commands with their output.
 
@@ -104,8 +112,8 @@ unwatched on a shared message board. These rules prevent each of those:
 
 ## Workflow
 
-1. **Scope with the user.** Read what's already decided first (CLAUDE.md, ADRs, workstream docs). The user often
-   works from a phone and replies tersely, so ask only real forks, each as a single choice ("A or B?").
+1. **Scope with the user.** Read what's already decided first (AGENTS.md, CLAUDE.md or similar, ADRs, workstream
+   docs). The user often works from a phone and replies tersely, so ask only real forks, each as a single choice.
 2. **Split into workstreams**, along independent lines; note dependencies. Delegate in parallel only what really
    splits into independent pieces; keep tightly sequential, coupled work with one agent, because handing it
    between agents loses context at every step. Keep each repo's concerns in that repo. Have the scribe write

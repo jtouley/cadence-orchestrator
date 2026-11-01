@@ -14,8 +14,8 @@ import sys
 # Hooks run inside the user's repo; don't leave __pycache__ next to the vendored scripts.
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
-# Vendored: runtime.py sits beside this file. Repo or plugin layout: core/scripts.
-for _d in (HERE, os.path.join(HERE, "..", "..", "core", "scripts")):
+# Vendored: runtime.py sits beside this file. Repo or plugin layout: skills/tpm/scripts.
+for _d in (HERE, os.path.join(HERE, "..", "..", "skills", "tpm", "scripts")):
     if os.path.exists(os.path.join(_d, "runtime.py")):
         sys.path.insert(0, os.path.abspath(_d))
         break

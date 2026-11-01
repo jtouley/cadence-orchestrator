@@ -6,7 +6,7 @@ import os
 import subprocess
 import tempfile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLI = os.path.join(ROOT, "bin", "cadence-orchestrator.mjs")
 TARGETS = ("claude", "codex", "copilot", "cursor", "gemini")
 SHIMS = {
