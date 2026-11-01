@@ -1,8 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.1.3
 
-- Docs: in one Codex cloud task on 2026-10-31 (kit 0.1.2), project hooks didn't run and the skill worked as
+- The skill follows the [Agent Skills open standard](https://agentskills.io/specification): it moves from `core/` to
+  `skills/tpm/` (directory named after the skill), its frontmatter uses only spec fields (`license`,
+  `compatibility` and `metadata` added; `skills-ref validate` passes), and its body names no client-specific
+  tools, with per-platform notes in `references/platforms.md`. Tests move to `tests/`. The installer and adapters
+  use the new path; the Claude-only `disable-model-invocation` is still added to the vendored Claude copy only.
+- Docs (#6): in one Codex cloud task on 2026-10-31 (kit 0.1.2), project hooks didn't run and the skill worked as
   instructions only; OpenAI's docs (as read on 2026-10-31) list local command hooks as not supported in cloud.
   A second, instructions-only TPM run in Codex cloud delegated the work and had it reviewed independently. Both are
   recorded in `docs/live-testing.md`.

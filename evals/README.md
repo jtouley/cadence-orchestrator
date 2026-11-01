@@ -14,7 +14,7 @@ baseline only.
 - **Item (key):** a case, `evals/<case>/` (`prompt.md`, `case.yaml`, `graders/NN-*.md`). The key is the directory
   name.
 - **Run:** one execution of a case under one arm, graded on each of its assertions.
-- **Arms:** for a ship decision, `main` (core/SKILL.md as on main) and `change` (the candidate), on the same cases with
+- **Arms:** for a ship decision, `main` (skills/tpm/SKILL.md as on main) and `change` (the candidate), on the same cases with
   the same runner, model and limits. `without_skill` is an optional reference arm. It shows what the skill adds, but
   a ship decision never rests on it.
 - **Runs per case:** agent runs vary from one run to the next, so each arm runs every case at least 3 times. Round 1
@@ -25,8 +25,8 @@ baseline only.
 `cases.csv` lists every case: `case, target_repo, author, author_read_skill, added`. The scorer refuses a case that
 isn't listed.
 
-**Taint rule:** a case has to be written by an agent or person who has not read `core/SKILL.md` or
-`core/references/`, so the cases test what a user needs rather than echo the skill's own wording. Give the author
+**Taint rule:** a case has to be written by an agent or person who has not read `skills/tpm/SKILL.md` or
+`skills/tpm/references/`, so the cases test what a user needs rather than echo the skill's own wording. Give the author
 the target repo and a plain description of what a good TPM does. Record who wrote it (person, or Claude and the model
 id) and `author_read_skill: no`. A case with any other value (`yes`, `unknown`) is tainted and stays in train
 whatever its hash says. The 3 current cases are `unknown`, so they are train.
@@ -180,10 +180,10 @@ because round 1 is exploratory and sets no floor.
 ## Scaling the effort
 
 The coffee model allows a light process when 50 or fewer items' outputs change. Any edit to text the agent reads
-(`core/SKILL.md`, `core/references/`, adapter prompts) can change every case, and you only find out by running them.
+(`skills/tpm/SKILL.md`, `skills/tpm/references/`, adapter prompts) can change every case, and you only find out by running them.
 So:
 - **Full process:** any change to what the agent reads, or to how a rule in it decides.
-- **Light process:** changes covered by unit tests (`core/scripts/guard.py`, adapters, installer: `core/tests/`), and
+- **Light process:** changes covered by unit tests (`skills/tpm/scripts/guard.py`, adapters, installer: `tests/`), and
   fixes to the scorer or graders. Re-score the recorded transcripts, list each verdict that changed (for test cases
   give a count only), and keep the floors passing.
 

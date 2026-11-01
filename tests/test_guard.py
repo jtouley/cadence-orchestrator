@@ -11,11 +11,11 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))  # repo root
-GUARD = os.path.join(ROOT, "core", "scripts", "guard.py")
+ROOT = os.path.dirname(HERE)  # repo root
+GUARD = os.path.join(ROOT, "skills", "tpm", "scripts", "guard.py")
 SHIM = os.path.join(ROOT, "adapters", "claude", "shim.py")
-SKILL_MD = os.path.join(ROOT, "core", "SKILL.md")
-GUARD_DOC = os.path.join(ROOT, "core", "references", "guard.md")
+SKILL_MD = os.path.join(ROOT, "skills", "tpm", "SKILL.md")
+GUARD_DOC = os.path.join(ROOT, "skills", "tpm", "references", "guard.md")
 HOOKS_JSON = os.path.join(ROOT, "adapters", "claude", "plugin-hooks.json")
 STATE = tempfile.mkdtemp()  # CADENCE_STATE_DIR for every run
 ARMED_SESSION = "s-armed"
@@ -444,7 +444,8 @@ def test_claude_plugin_hooks_point_at_bundled_shim():
     assert out.returncode == 2 and "TPM mode" in out.stderr
     manifest = json.load(open(os.path.join(ROOT, ".claude-plugin", "plugin.json")))
     assert os.path.normpath(os.path.join(ROOT, manifest["hooks"])) == HOOKS_JSON
-    assert os.path.exists(os.path.join(ROOT, manifest["skills"], "SKILL.md"))
+    # The skill lives where Claude Code's default plugin scan and the Agent Skills layout both expect it.
+    assert "skills" not in manifest and os.path.exists(os.path.join(ROOT, "skills", "tpm", "SKILL.md"))
 
 
 def test_shim_crash_fails_open():

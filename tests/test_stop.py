@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHIM = os.path.join(ROOT, "adapters", "claude", "shim.py")
 RUNNING_AGENT = {"id": "t1", "type": "subagent", "status": "running", "description": "build finish screen"}
 

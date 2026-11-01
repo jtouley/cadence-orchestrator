@@ -10,7 +10,7 @@
   minimum_pre_commit_version: "4.4.0"
 - id: cadence-tasks-check
   name: workstream tasks.json (no done without evidence)
-  entry: core/scripts/tasks_check.py
+  entry: skills/tpm/scripts/tasks_check.py
   language: unsupported_script
   files: (^|/)workstreams/[^/]+\.tasks\.json$
   minimum_pre_commit_version: "4.4.0"

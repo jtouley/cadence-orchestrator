@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHECK = os.path.join(ROOT, "checks", "leak_check.py")
 sys.path.insert(0, os.path.dirname(CHECK))
 import leak_check  # noqa: E402

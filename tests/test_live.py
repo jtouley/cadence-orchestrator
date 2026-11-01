@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLI = os.path.join(ROOT, "bin", "cadence-orchestrator.mjs")
 
 
@@ -91,7 +91,7 @@ def test_a_broken_heartbeat_never_changes_the_decision():
 
 
 def test_skill_says_instructions_only_when_the_marker_is_missing():
-    skill = open(os.path.join(ROOT, "core", "SKILL.md")).read()
+    skill = open(os.path.join(ROOT, "skills", "tpm", "SKILL.md")).read()
     assert "TPM guard armed" in skill and "guard not running in this session" in skill
     assert "instructions only" in skill.lower()
 

@@ -54,7 +54,7 @@ def deny_reason(why: str, is_subagent: bool) -> str:
 
 
 # Tools the main thread may use as-is: conversation, light reads, delegation, tracking.
-# Keep this list in step with core/references/guard.md (a test checks it).
+# Keep this list in step with skills/tpm/references/guard.md (a test checks it).
 SAFE_TOOLS = {
     "Read",
     "Grep",

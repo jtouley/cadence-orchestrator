@@ -374,7 +374,7 @@ def bucket(group: str) -> int:
 
 
 def assign(row: dict) -> str:
-    """Tainted cases (written by someone who had read core/SKILL.md) never leave train."""
+    """Tainted cases (written by someone who had read skills/tpm/SKILL.md) never leave train."""
     if row["author_read_skill"].strip().lower() != "no":
         return "train"
     b = bucket(row["target_repo"])

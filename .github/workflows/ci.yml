@@ -38,7 +38,7 @@ jobs:
           "$(go env GOPATH)/bin/gitleaks" git --redact --verbose .
       # The leak check on tracked files runs in the pre-commit job (local leak-check hook).
       - name: Workstream task files, if any
-        run: git ls-files -z 'workstreams/*.tasks.json' '**/workstreams/*.tasks.json' | xargs -0 -r python3 core/scripts/tasks_check.py
+        run: git ls-files -z 'workstreams/*.tasks.json' '**/workstreams/*.tasks.json' | xargs -0 -r python3 skills/tpm/scripts/tasks_check.py
 
   pytest:
     runs-on: ubuntu-latest

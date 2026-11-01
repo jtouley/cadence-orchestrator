@@ -12,8 +12,8 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
-GUARD = os.path.join(ROOT, "core", "scripts", "guard.py")
+ROOT = os.path.dirname(HERE)
+GUARD = os.path.join(ROOT, "skills", "tpm", "scripts", "guard.py")
 INSTALL = os.path.join(ROOT, "bin", "cadence-orchestrator.mjs")  # the one installer
 INSTALL_SH = os.path.join(ROOT, "install.sh")  # thin wrapper over it
 
@@ -314,7 +314,7 @@ def test_install_gitignores_only_the_off_switch_and_adds_catalogs():
 
 
 def test_shipped_catalog_is_labeled_as_an_example_and_documented():
-    refs = os.path.join(ROOT, "core", "references")
+    refs = os.path.join(ROOT, "skills", "tpm", "references")
     example = open(os.path.join(refs, "example-registry.md")).read()
     assert "One user's catalog, shipped as an example" in example
     assert "## " in example and "- **Source**:" in example and "- **Skills**:" in example
@@ -351,7 +351,7 @@ def test_installer_warns_without_python3_and_checks_arguments():
 def test_workstream_reference_example_is_valid_and_complete():
     import re
 
-    refs = os.path.join(ROOT, "core", "references")
+    refs = os.path.join(ROOT, "skills", "tpm", "references")
     text = open(os.path.join(refs, "workstream.md")).read()
     data = json.loads(re.search(r"```json\n(.*?)```", text, re.S).group(1))
     for task in data["tasks"]:
@@ -359,7 +359,7 @@ def test_workstream_reference_example_is_valid_and_complete():
             assert key in task, key
         if task["state"] == "done":
             assert task["evidence"] and task["left_out_accepted_by"]
-    skill = open(os.path.join(ROOT, "core", "SKILL.md")).read()
+    skill = open(os.path.join(ROOT, "skills", "tpm", "SKILL.md")).read()
     assert "references/sources.md" in skill and "@<sha>" in skill
     assert os.path.exists(os.path.join(refs, "sources.md"))
 
