@@ -1,6 +1,6 @@
 {
   "name": "cadence-orchestrator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "The tpm skill: turns an agent session into a technical program manager that delegates all execution to subagents, with a per-session guard. Installs into a repo for Claude Code, Copilot, Codex, Cursor and Gemini.",
   "license": "MIT",
   "author": "jtouley",

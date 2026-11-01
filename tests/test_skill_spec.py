@@ -84,3 +84,10 @@ def test_vendored_copies_follow_the_spec_except_claude_only_keys():
     assert problems(claude, allow_extra=("disable-model-invocation",)) == []
     assert frontmatter(claude)["disable-model-invocation"] == "true"
     assert "disable-model-invocation" not in frontmatter(SKILL_DIR)
+
+
+def test_skill_version_matches_the_package_version():
+    import json
+
+    version = json.load(open(os.path.join(ROOT, "package.json")))["version"]
+    assert frontmatter(SKILL_DIR)["metadata"]["version"] == version
