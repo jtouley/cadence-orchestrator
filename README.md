@@ -236,9 +236,9 @@ The install finishes, but the guard can't run until `python3` is installed. Mean
 ## Development
 
 ```sh
-pip install pre-commit==4.7.0 pytest==9.1.1    # the versions CI uses
-pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
-pytest
+uv sync    # dev tools from uv.lock, the versions CI uses (users of the kit never need uv)
+uv run pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
+uv run pytest
 ```
 
 The pre-commit hooks also block email addresses, account UUIDs and session logs (`checks/leak_check.py`) and
