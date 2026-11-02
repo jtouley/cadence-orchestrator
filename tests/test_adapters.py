@@ -804,10 +804,69 @@ def test_debug_prints_the_full_stack():
     )
 
 
-def test_cursor_arming_check_does_not_claim_this_chat():
-    text = open(os.path.join(ROOT, "skills/tpm/SKILL.md")).read()
-    assert "guard armed in a recent session; can't confirm this chat" in text
-    assert not os.path.exists(os.path.join(ROOT, "adapters/cursor/tpm.command.md"))
+def test_instructions_only_target_never_hides_a_broken_guard():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    install(repo, "antigravity")
+    os.remove(os.path.join(repo, ".cursor/hooks.json"))
+    os.remove(os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"))
+    st = cli(["status"], repo)
+    assert st.returncode == 1, st.stdout
+    assert "cursor: hook config and shim missing (found .cursor/rules/tpm.mdc)" in st.stdout
+    assert "antigravity: instructions only" in st.stdout
+    for target, remove in (("codex", [".codex/hooks.json"]), ("claude", [".claude/settings.json"])):
+        repo = scratch_repo()
+        install(repo, target)
+        install(repo, "antigravity")
+        skill = ".claude/skills/tpm" if target == "claude" else ".agents/skills/tpm"
+        for rel in remove + [f"{skill}/scripts/shim_{target}.py"]:
+            os.remove(os.path.join(repo, rel))
+        st = cli(["status"], repo)
+        assert st.returncode == 1 and f"{target}: hook config and shim missing" in st.stdout, (
+            target,
+            st.stdout,
+        )
+
+
+def test_cursor_session_start_puts_the_chat_id_in_context():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    hooks = json.load(open(os.path.join(repo, ".cursor/hooks.json")))["hooks"]
+    assert "shim_cursor.py" in hooks["sessionStart"][0]["command"]
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py")
+    state = tempfile.mkdtemp()
+    start = {"hook_event_name": "sessionStart", "session_id": "chat-7", "conversation_id": "chat-7"}
+    out = run(shim_path, dict(start, workspace_roots=[repo]), state)
+    assert out.returncode == 0, out.stderr
+    context = json.loads(out.stdout)["additional_context"]
+    assert context.startswith("tpm: this Cursor chat's id is chat-7.") and '"session chat-7"' in context
+    # The id it gives is the one `status` lists once /tpm arms that chat.
+    arm = {"hook_event_name": "beforeSubmitPrompt", "conversation_id": "chat-7", "prompt": "/tpm go"}
+    assert run(shim_path, dict(arm, workspace_roots=[repo]), state).returncode == 0
+    st = cli(["status", "--state-dir", state], repo)
+    assert "session chat-7: armed" in st.stdout, st.stdout
+    # Without python3 the fallback is still valid JSON.
+    bare = tempfile.mkdtemp()
+    for tool in ("bash",):
+        os.symlink(
+            subprocess.run(
+                ["bash", "-c", f"command -v {tool}"], capture_output=True, text=True
+            ).stdout.strip(),
+            os.path.join(bare, tool),
+        )
+    cmd = hooks["sessionStart"][0]["command"]
+    fb = subprocess.run(
+        ["/bin/bash", "-c", cmd], input="{}", capture_output=True, text=True, cwd=repo, env={"PATH": bare}
+    )
+    assert fb.returncode == 0 and json.loads(fb.stdout) == {}
+
+
+def test_skill_matches_the_cursor_chat_and_keeps_the_advisory_wording():
+    text = open(os.path.join(ROOT, "skills/tpm/SKILL.md")).read().replace("\n", " ")
+    assert "tpm: this Cursor chat's id is <id>" in text
+    assert "guard armed for this chat (advisory on Cursor: warns, doesn't block)" in text
+    assert "not armed in this chat" in text
+    assert "can't confirm this chat" in text  # the fallback when the id line is missing
 
 
 def test_npm_install_never_runs_scripts():
@@ -858,7 +917,11 @@ def test_status_uses_per_target_markers_and_notes_an_unowned_skill_folder():
     os.remove(os.path.join(repo, ".cursor/hooks.json"))
     os.remove(os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"))
     st = cli(["status"], repo)
-    assert st.returncode == 1 and "cursor: not installed" in st.stdout, st.stdout
+    assert st.returncode == 1, st.stdout
+    assert (
+        "cursor: hook config and shim missing (found .cursor/rules/tpm.mdc); "
+        "reinstall with `npx cadence-orchestrator --target cursor`" in st.stdout
+    )
     assert "note: .agents/skills/tpm/ has a tpm skill, but no target here is installed with it" in st.stdout
     assert "<name>" not in st.stdout
     repo = scratch_repo()

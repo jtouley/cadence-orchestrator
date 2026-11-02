@@ -23,8 +23,11 @@ rate, rework and recovery time.
   nothing can arm the guard. `doctor` and `status` report it as instructions only.
 - `status` exits 1, naming the reinstall command, when an installed guarded target's skill, shim or hook config is
   missing, and notes a skill folder that no installed target owns.
-- On Cursor, `/tpm` reports "guard armed in a recent session; can't confirm this chat" or "instructions only" with
+- Cursor: a `sessionStart` hook puts the chat's id in its context, so after `/tpm` the skill matches it in `status`
+  and says "guard armed for this chat (advisory on Cursor: warns, doesn't block)" or "not armed in this chat" with
   the fix command.
+- `status` also exits 1 when a guarded target's hook config and shim are gone but its own files remain, even if an
+  instructions-only target shares its skill folder.
 - Shared skill folders are copied once per run, and `.gitignore` is updated once.
 
 ## 0.1.6

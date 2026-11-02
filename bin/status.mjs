@@ -30,6 +30,20 @@ function sessions(stateDir, repo, hours) {
   return out.sort((a, b) => a.age - b.age);
 }
 
+// A guarded target's own files, other than its hook config and shim: files it writes, its pointer block, and its
+// skill folder when no other target shares it.
+function leftovers(repo, spec, TARGETS) {
+  const found = (spec.files ?? []).map(([, dst]) => dst).filter((f) => fs.existsSync(path.join(repo, f)));
+  for (const [, dst] of spec.blocks ?? []) {
+    try {
+      if (fs.readFileSync(path.join(repo, dst), "utf8").includes("<!-- cadence-orchestrator:tpm begin -->")) found.push(dst);
+    } catch {}
+  }
+  const shared = Object.values(TARGETS).filter((s) => s.skill === spec.skill).length > 1;
+  if (!shared && fs.existsSync(path.join(repo, spec.skill, "SKILL.md"))) found.push(`${spec.skill}/`);
+  return found;
+}
+
 export function status(repo, TARGETS, hours, stateDir = "") {
   const lines = [];
   let anyInstalled = false;
@@ -44,7 +58,13 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     const inst = installed(repo, target, spec);
     // Installed is per target: a guarded target's shim or hook entries, an instructions-only target's marker.
     if (!inst.installed) {
-      lines.push(`${target}: not installed`);
+      // Hook config and shim gone, but the target's own files left behind: its guard is broken, whatever else is
+      // installed (an instructions-only target sharing the skill folder must not hide it).
+      const left = hasGuard(spec) ? leftovers(repo, spec, TARGETS) : [];
+      if (left.length) {
+        broken = true;
+        lines.push(`${target}: hook config and shim missing (found ${left.join(", ")}); ${reinstall(target)}`);
+      } else lines.push(`${target}: not installed`);
       continue;
     }
     anyInstalled = true;
