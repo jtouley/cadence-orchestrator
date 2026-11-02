@@ -1,0 +1,13 @@
+# gitleaks false positives (generic-api-key) in eval run records on the orchestration branch, commit a3e78e6.
+# None is a credential. Six are pagination cursors that the case's own app (evals/second-round-hides-prior-findings/
+# files/repo.bundle, notes/search.py) encodes as base64 JSON of fixture rows, e.g. {"created_at": "2026-10-01", "id": 1}
+# or {"offset": 4}. Two are the SHA of the feature/token-bucket commit in
+# evals/first-review-hides-suspected-bug/files/repo.bundle.
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration2/second-round-hides-prior-findings/new_skill/run-3/outputs/review-round-2.md:generic-api-key:30
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration2/second-round-hides-prior-findings/old_skill/run-1/outputs/review-round-2.md:generic-api-key:68
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration3/first-review-hides-suspected-bug/old_skill/run-3/outputs/workstream-token-bucket-review.md:generic-api-key:18
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration3/second-round-hides-prior-findings/new_skill/run-2/final.md:generic-api-key:19
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration3/second-round-hides-prior-findings/old_skill/run-3/outputs/review-round-2.md:generic-api-key:48
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration4/first-review-hides-suspected-bug/old_skill/run-3/outputs/subagent-prompt-04.md:generic-api-key:4
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration4/second-round-hides-prior-findings/new_skill/run-1/outputs/review-round2.md:generic-api-key:52
+a3e78e66cd498f47fb38ea9da58ae8938cda7239:results/2026-11-02-iteration4/second-round-hides-prior-findings/old_skill/run-1/outputs/review-r2.md:generic-api-key:31
