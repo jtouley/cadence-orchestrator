@@ -1488,3 +1488,18 @@ def test_pycache_cleanup_touches_only_tpm_bytecode_in_tpm_folder():
     assert os.listdir(ours) == ["helper.cpython-313.pyc"]  # a foreign .pyc stays, so the folder stays
     assert os.listdir(other) == ["runtime.cpython-313.pyc"]
     assert os.path.exists(os.path.join(repo, ".agents/skills/other/scripts/__pycache__"))
+
+
+def test_status_names_targets_installed_before_manifests():
+    repo = scratch_repo()
+    install(repo, "claude")
+    install(repo, "cursor")
+    os.remove(os.path.join(repo, ".claude/skills/tpm/.cadence-install.json"))  # as a 0.1.6 install would be
+    st = cli(["status"], repo)
+    line = "claude: installed by 0.1.6 or earlier; run `npx cadence-orchestrator` once to upgrade"
+    assert line in st.stdout.splitlines(), st.stdout
+    assert "cursor: installed by 0.1.6" not in st.stdout
+    data = json.loads(cli(["status", "--json"], repo).stdout)
+    assert next(t for t in data["targets"] if t["target"] == "claude")["manifest"] is False
+    install(repo, "claude")
+    assert "installed by 0.1.6 or earlier" not in cli(["status"], repo).stdout

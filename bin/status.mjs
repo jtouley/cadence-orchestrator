@@ -85,7 +85,10 @@ export function status(repo, TARGETS, hours, stateDir = "", version = "") {
     owned.add(spec.skill);
     const entry = { target, installed: true, guard: hasGuard(spec), complete: true, version: installedVersion(repo, spec.skill) };
     data.targets.push(entry);
-    if (version && entry.version && entry.version !== version) {
+    if (!readManifest(repo, spec.skill)) {
+      entry.manifest = false;
+      lines.push(`${target}: installed by 0.1.6 or earlier; run \`npx cadence-orchestrator\` once to upgrade`);
+    } else if (version && entry.version && entry.version !== version) {
       lines.push(`${target}: installed ${entry.version}, this is ${version}; ${reinstall(target)} to update`);
     }
     if (!hasGuard(spec)) {
