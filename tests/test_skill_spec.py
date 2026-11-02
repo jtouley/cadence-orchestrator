@@ -95,3 +95,12 @@ def test_skill_version_matches_the_package_version():
     readme = open(os.path.join(ROOT, "README.md")).read()
     for stated in re.findall(r"\bVersion (\d+\.\d+\.\d+)", readme):
         assert stated == version, f"README says Version {stated}, package.json says {version}"
+
+
+def test_user_hunches_are_kept_away_from_reviewers():
+    # The user's suspected causes live in a section reviewers are told not to read.
+    skill = open(os.path.join(SKILL_DIR, "SKILL.md")).read()
+    workstream = open(os.path.join(SKILL_DIR, "references", "workstream.md")).read()
+    for text in (skill, workstream):
+        assert "## Notes (not for reviewers)" in text
+    assert "Reviewers read only Ask, Scope and Decisions" in skill

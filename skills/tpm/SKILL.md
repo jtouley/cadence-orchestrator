@@ -47,13 +47,18 @@ similar, ADRs, the workstream docs) and for checking the artifacts agents hand b
 Chat relays get lost, paraphrased and truncated. Keep the shared context in written docs on a central branch on
 the remote, default name `orchestration`, one file per workstream (`workstreams/<slug>.md`). Each holds:
 
-- **Ask**: the user's words, verbatim.
+- **Ask**: the user's words, verbatim. Any hunches in them (suspected causes, weak spots, earlier findings)
+  move, still verbatim, to Notes, with `[see Notes]` left in their place.
 - **Scope**: in, out, target repo and branch, what "done" means, and where to stop (e.g. "PR opened, not
   merged"). Point to the written definition the work is judged against (spec, a section of AGENTS.md or
   CLAUDE.md, guide). Add a **Deployed when:** line: where this change counts as deployed (npm publish, merged to
   main, deploy job green), so delivery can be measured later.
 - **Decisions**: the user's decisions verbatim, dated and labeled as theirs, so a paraphrase never becomes the spec.
 - **Status and evidence**: links to PRs, PR comments, commits, and repro commands with their output.
+- **Notes (not for reviewers)**: the user's hunches, last in the doc under `## Notes (not for reviewers)`.
+  Reviewers read only Ask, Scope and Decisions, and neither the scribe nor any dispatch prompt copies Notes into
+  another agent's prompt. A reviewer who has read the user's suspicion checks that and stops looking, the same
+  leak as a pointed prompt, and the result is no longer independent.
 
 Task status lives beside it as JSON, `workstreams/<slug>.tasks.json`: one entry per task with `id`, `owner`,
 `state` (assigned, claimed, blocked, done), `evidence` and `tokens`. Several agents edit it, and models corrupt
@@ -127,12 +132,12 @@ unwatched on a shared message board. These rules prevent each of those:
    substituting something similar.
 5. **Verify independently, in two passes.** Anchor it outside the agents first: tests, CI, a repro command.
    Reviewer agents sit on top of that, never instead of it, because agents can agree with each other on a
-   wrong answer. A separate reviewer starts from the target (PR or commits) and finds the diff, the pinned doc
-   it references and the worker's left-out list on its own; it never sees the maker's conclusion. It exercises
-   the result itself: runs it, reproduces the bug. First pass: spec compliance, all of what the doc asked and
-   nothing else, and whether each left-out item is acceptable; dropped scope is found here or not at all. Second
-   pass, once that passes: quality. Fix blockers, re-review only the delta, stop after two or three rounds, then
-   hand to the user to say "merge it".
+   wrong answer. A separate reviewer starts from the target (PR or commits) and finds on its own the diff, the
+   Ask, Scope and Decisions of the pinned doc it references, and the worker's left-out list; it never sees the
+   maker's conclusion. It exercises the result itself: runs it, reproduces the bug. First pass: spec compliance,
+   all of what the doc asked and nothing else, and whether each left-out item is acceptable; dropped scope is
+   found here or not at all. Second pass, once that passes: quality. Fix blockers, re-review only the delta,
+   stop after two or three rounds, then hand to the user to say "merge it".
    The reviewer's prompt is the target, the review skill or verb, and where the result goes:
    `/code-review on PR #42 and comment the full review to GitHub.` Name a standard only when the review is
    against something other than the repo's own code and docs (`... against https://agentskills.io/specification`).

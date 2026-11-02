@@ -3,8 +3,28 @@
 Each workstream has two files on the `orchestration` branch, written by the scribe agent:
 
 - `workstreams/<slug>.md`: the ask (verbatim), scope, the user's decisions (verbatim, dated), status and links
-  to evidence. Prose, for people.
+  to evidence, then the user's hunches under `## Notes (not for reviewers)`. Prose, for people.
 - `workstreams/<slug>.tasks.json`: task status, for agents and for checking mechanically.
+
+## The doc
+
+```markdown
+# Finish a bag
+## Ask
+"Let me mark a bag finished from its detail screen. [see Notes]"
+## Scope
+In: the detail screen. Out: the bag list. Done: PR opened, not merged. Judged against DESIGN.md#bags.
+Deployed when: merged to main.
+## Decisions
+- 2026-11-02, user: "No undo for now."
+## Status and evidence
+## Notes (not for reviewers)
+- From the ask, user: "I think the finish button is hidden behind the keyboard on small phones."
+```
+
+Notes hold the user's suspected causes, weak spots and earlier findings, verbatim, so nothing they said is lost.
+Reviewers are told to read Ask, Scope and Decisions only, and nobody copies Notes into an agent's prompt: a
+reviewer who knows the user's suspicion checks that and misses the rest.
 
 ## tasks.json
 
