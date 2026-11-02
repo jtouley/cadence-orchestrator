@@ -513,7 +513,23 @@ def test_no_repository_fails_with_one_short_line():
 def test_doctor_status_and_dora_resolve_the_repo_like_the_installer():
     repo, sub = _repo_with_subfolder()
     install(repo, "cursor")
-    subprocess.run(["git", "-C", repo, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            repo,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.com",
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "x",
+        ],
+        check=True,
+    )
     for argv in (["doctor", "--target", "cursor"], ["status"], ["dora", "--json"]):
         for extra in ([], ["--repo"], ["--repo", sub]):
             proc = subprocess.run([INSTALL, *argv, *extra], capture_output=True, text=True, cwd=sub)
