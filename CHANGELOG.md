@@ -6,6 +6,8 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+## 0.1.7
+
 - `npx cadence-orchestrator` with no `--target` installs for each editor the repo has config for (`.claude/`,
   `.codex/`, `.cursor/`, `.gemini/`, `.github/copilot-instructions.md` or `.github/hooks/`, Antigravity's
   `.agent/` or `.agents/rules|workflows|hooks.json`). With none, it uses the agent it runs under, from documented
