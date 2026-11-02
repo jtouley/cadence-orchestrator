@@ -178,6 +178,23 @@ def test_off_switch_applies_to_every_platform():
 # ------------------------------------------------------------- install.sh
 
 
+# Variables agents set in the commands they run; cleared so detection sees only what a test sets.
+AGENT_VARS = (
+    "CLAUDECODE",
+    "CODEX_THREAD_ID",
+    "CODEX_SANDBOX",
+    "CODEX_SANDBOX_NETWORK_DISABLED",
+    "CURSOR_AGENT",
+    "GEMINI_CLI",
+)
+
+
+def clean_env(**extra):
+    env = {k: v for k, v in os.environ.items() if k not in AGENT_VARS}
+    env.update(extra)
+    return env
+
+
 def scratch_repo():
     d = tempfile.mkdtemp()
     subprocess.run(["git", "init", "-q", d], check=True)
@@ -201,7 +218,7 @@ def snapshot(repo):
 
 
 EXPECTED = {
-    "antigravity": [".agents/skills/tpm/SKILL.md"],
+    "antigravity": [".agents/skills/tpm/SKILL.md", ".agents/rules/tpm.md"],
     "claude": [
         ".claude/skills/tpm/SKILL.md",
         ".claude/skills/tpm/scripts/shim_claude.py",
@@ -344,7 +361,8 @@ def test_installer_warns_without_python3_and_checks_arguments():
     )
     assert proc.returncode == 0 and "python3 is not on PATH" in proc.stderr
     for argv in (["--target", "nope"], [], ["--repo"], ["--bogus"]):  # [] and --repo: nothing detected
-        assert subprocess.run([INSTALL] + argv, capture_output=True, cwd=scratch_repo()).returncode == 2, argv
+        out = subprocess.run([INSTALL] + argv, capture_output=True, cwd=scratch_repo(), env=clean_env())
+        assert out.returncode == 2, argv
     helped = subprocess.run([INSTALL, "--help"], capture_output=True, text=True)
     assert helped.returncode == 0 and "--target" in helped.stdout
 
@@ -466,12 +484,8 @@ def test_install_rejects_non_repo():
     assert proc.returncode == 1
 
 
-def _installs_into(repo, argv, cwd):
-    proc = subprocess.run([INSTALL, "--target", "cursor", *argv], capture_output=True, text=True, cwd=cwd)
-    assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.splitlines()[0] == f"Installing into {os.path.realpath(repo)}"
-    assert os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
-    assert cwd == repo or not os.path.exists(os.path.join(cwd, ".cursor"))
+def cli(argv, cwd, **env):
+    return subprocess.run([INSTALL, *argv], capture_output=True, text=True, cwd=cwd, env=clean_env(**env))
 
 
 def _repo_with_subfolder():
@@ -481,6 +495,14 @@ def _repo_with_subfolder():
     return repo, sub
 
 
+def _installs_into(repo, argv, cwd):
+    proc = cli(["--target", "cursor", *argv], cwd)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.splitlines()[0] == f"Installing into {repo}"
+    assert os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
+    assert cwd == repo or not os.path.exists(os.path.join(cwd, ".cursor"))
+
+
 def test_install_from_a_subfolder_uses_the_repo_top_level():
     repo, sub = _repo_with_subfolder()
     _installs_into(repo, [], cwd=sub)
@@ -488,69 +510,86 @@ def test_install_from_a_subfolder_uses_the_repo_top_level():
 
 def test_bare_repo_flag_means_the_current_repo():
     repo, sub = _repo_with_subfolder()
-    _installs_into(repo, ["--repo"], cwd=sub)  # at the end, as typed in the report
-    proc = subprocess.run([INSTALL, "--repo", "--target", "cursor"], capture_output=True, text=True, cwd=sub)
+    _installs_into(repo, ["--repo"], cwd=sub)  # last, as typed in the report
+    proc = cli(["--repo", "--target", "cursor"], sub)  # followed by a known flag
     assert proc.returncode == 0 and proc.stdout.startswith(f"Installing into {repo}\n"), proc.stderr
 
 
-def test_repo_flag_pointing_at_a_subfolder_uses_its_repo():
+def test_repo_path_starting_with_a_dash_is_a_path():
+    parent = os.path.realpath(tempfile.mkdtemp())
+    repo = os.path.join(parent, "-proj")
+    subprocess.run(["git", "init", "-q", "--", repo], check=True)
+    for argv in (["--repo", "-proj"], ["--repo=-proj"]):
+        proc = cli(["--target", "cursor", *argv], parent)
+        assert proc.returncode == 0 and proc.stdout.startswith(f"Installing into {repo}\n"), (
+            argv,
+            proc.stderr,
+        )
+
+
+def test_explicit_repo_must_be_a_repository_root():
     repo, sub = _repo_with_subfolder()
-    _installs_into(repo, ["--repo", sub], cwd=tempfile.mkdtemp())
-    _installs_into(repo, ["--repo", "src"], cwd=repo)
+    proc = cli(["--target", "cursor", "--repo", sub], tempfile.mkdtemp())
+    assert (
+        proc.returncode == 1 and proc.stderr == f"cadence-orchestrator: {sub} is not a git repository root\n"
+    )
+    assert not os.path.exists(os.path.join(repo, ".cursor"))
+    _installs_into(repo, ["--repo", repo], cwd=sub)
 
 
 def test_no_repository_fails_with_one_short_line():
     outside = os.path.realpath(tempfile.mkdtemp())
-    for argv in ([], ["--repo"], ["--repo", outside]):
-        proc = subprocess.run(
-            [INSTALL, "--target", "cursor", *argv], capture_output=True, text=True, cwd=outside
-        )
+    for argv in ([], ["--repo"]):
+        proc = cli(["--target", "cursor", *argv], outside)
         assert proc.returncode == 1, argv
         assert proc.stderr == f"cadence-orchestrator: {outside} is not inside a git repository\n", argv
         assert proc.stdout == "" and not os.path.exists(os.path.join(outside, ".cursor"))
 
 
+def test_never_installs_into_a_home_directory_repo():
+    home = os.path.realpath(tempfile.mkdtemp())
+    subprocess.run(["git", "init", "-q", home], check=True)  # dotfiles in git
+    for rel in (".claude", ".cursor", ".codex"):
+        os.makedirs(os.path.join(home, rel))
+    sub = os.path.join(home, "Downloads", "foo")
+    os.makedirs(sub)
+    for argv, cwd in (([], sub), (["--repo"], home), (["--repo", home], sub)):
+        proc = cli(argv, cwd, HOME=home)
+        assert proc.returncode == 1 and proc.stdout == "", (argv, proc.stdout)
+        assert (
+            proc.stderr
+            == f"cadence-orchestrator: {home} is your home directory; run this inside a project's repository\n"
+        )
+    assert not os.path.exists(os.path.join(home, ".claude/settings.json"))
+    assert not os.path.exists(os.path.join(home, ".cursor/hooks.json"))
+
+
 def test_doctor_status_and_dora_resolve_the_repo_like_the_installer():
     repo, sub = _repo_with_subfolder()
     install(repo, "cursor")
-    subprocess.run(
-        [
-            "git",
-            "-C",
-            repo,
-            "-c",
-            "user.name=t",
-            "-c",
-            "user.email=t@example.com",
-            "commit",
-            "-q",
-            "--allow-empty",
-            "-m",
-            "x",
-        ],
-        check=True,
-    )
+    git = ["git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@example.com"]
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
     for argv in (["doctor", "--target", "cursor"], ["status"], ["dora", "--json"]):
-        for extra in ([], ["--repo"], ["--repo", sub]):
-            proc = subprocess.run([INSTALL, *argv, *extra], capture_output=True, text=True, cwd=sub)
+        for extra in ([], ["--repo"]):
+            proc = cli([*argv, *extra], sub)
             assert "not inside a git repository" not in proc.stderr, (argv, extra)
             assert "cursor: not installed" not in proc.stdout, (argv, extra)  # found the top level's install
-            if argv[0] != "dora":
+            if argv[0] == "dora":
+                assert proc.returncode == 0 and json.loads(proc.stdout), (extra, proc.stderr)
+            else:
                 assert "cursor: skill files found" in proc.stdout or "ok   cursor:" in proc.stdout, (
                     proc.stdout
                 )
-            if argv[0] == "dora":
-                assert proc.returncode == 0 and json.loads(proc.stdout), (extra, proc.stderr)
     outside = tempfile.mkdtemp()
     for argv in (["doctor", "--target", "cursor"], ["status"], ["dora"]):
-        proc = subprocess.run([INSTALL, *argv], capture_output=True, text=True, cwd=outside)
+        proc = cli(argv, outside)
         assert proc.returncode == 1 and proc.stderr.count("\n") == 1, argv
 
 
 MARKERS = {
     "antigravity": [".agent/", ".agents/rules/", ".agents/workflows/", ".agents/hooks.json"],
     "claude": [".claude/"],
-    "codex": [".codex/", "AGENTS.md"],
+    "codex": [".codex/"],
     "copilot": [".github/copilot-instructions.md", ".github/hooks/"],
     "cursor": [".cursor/"],
     "gemini": [".gemini/"],
@@ -569,15 +608,11 @@ def _with_markers(*rels):
     return repo
 
 
-def _bare_run(repo):
-    return subprocess.run([INSTALL], capture_output=True, text=True, cwd=repo)
-
-
 def test_bare_run_installs_for_each_detected_editor_only():
     for target, markers in MARKERS.items():
         for marker in markers:
             repo = _with_markers(marker)
-            proc = _bare_run(repo)
+            proc = cli([], repo)
             assert proc.returncode == 0, (marker, proc.stderr)
             assert proc.stdout.startswith(f"Installing into {repo} for {target} (detected)\n"), marker
             for rel in EXPECTED[target]:
@@ -585,55 +620,170 @@ def test_bare_run_installs_for_each_detected_editor_only():
             others = {p for t, paths in EXPECTED.items() if t != target for p in paths} - set(
                 EXPECTED[target]
             )
-            others -= set(EXPECTED["antigravity"])  # the skill dir Codex, Cursor and Gemini share
+            others.discard(
+                ".agents/skills/tpm/SKILL.md"
+            )  # the skill folder Antigravity, Codex, Cursor, Gemini share
             assert not [p for p in others if os.path.exists(os.path.join(repo, p))], marker
     repo = _with_markers(".cursor/", ".claude/")
-    proc = _bare_run(repo)
-    assert proc.stdout.startswith(f"Installing into {repo} for claude, cursor (detected)\n"), proc.stdout
+    assert cli([], repo).stdout.startswith(f"Installing into {repo} for claude, cursor (detected)\n")
 
 
-def test_bare_run_is_idempotent_and_ends_with_reload_and_verify():
-    repo = _with_markers(".cursor/", "AGENTS.md")
-    first = _bare_run(repo)
+def test_agents_md_alone_does_not_select_codex():
+    repo = _with_markers("AGENTS.md", ".cursor/")
+    proc = cli([], repo)
+    assert proc.stdout.startswith(f"Installing into {repo} for cursor (detected)\n"), proc.stdout
+    assert (
+        not os.path.exists(os.path.join(repo, ".codex"))
+        and open(os.path.join(repo, "AGENTS.md")).read() == "# mine\n"
+    )
+
+
+def test_without_markers_the_host_agent_is_detected_from_its_documented_variable():
+    for var, target in (
+        ("CLAUDECODE", "claude"),
+        ("CODEX_THREAD_ID", "codex"),
+        ("CODEX_SANDBOX", "codex"),
+        ("CODEX_SANDBOX_NETWORK_DISABLED", "codex"),
+        ("CURSOR_AGENT", "cursor"),
+        ("GEMINI_CLI", "gemini"),
+    ):
+        repo = os.path.realpath(scratch_repo())
+        proc = cli([], repo, **{var: "1"})
+        assert proc.returncode == 0, (var, proc.stderr)
+        assert proc.stdout.startswith(f"Installing into {repo} for {target} (running under it: {var})\n"), var
+        assert all(os.path.exists(os.path.join(repo, p)) for p in EXPECTED[target]), var
+    marked = _with_markers(".gemini/")  # markers win over the environment
+    assert cli([], marked, CLAUDECODE="1").stdout.startswith(
+        f"Installing into {marked} for gemini (detected)\n"
+    )
+
+
+def test_bare_run_is_idempotent():
+    repo = _with_markers(".cursor/", ".codex/", ".agents/rules/")
+    first = cli([], repo)
     once = snapshot(repo)
-    second = _bare_run(repo)
+    second = cli([], repo)
     assert first.returncode == second.returncode == 0 and snapshot(repo) == once
     assert first.stdout == second.stdout  # installing adds no marker for another editor
-    assert first.stdout.splitlines()[-2:] == [
-        "Reload once: start a new chat or session in this repo, so the hooks load.",
-        "Then start with /tpm ($tpm on Codex) and verify with `npx cadence-orchestrator status`.",
+
+
+def test_closing_lines_are_per_target():
+    repo = _with_markers(".codex/", ".cursor/", ".agents/rules/")
+    tail = cli([], repo).stdout.splitlines()[-6:]
+    assert tail == [
+        "Done. Review and commit the changes; see README for per-platform notes.",
+        "Reload once: start a new chat or session in this repo, so the hooks load (approve them if asked).",
+        "antigravity: start with /tpm (instructions only)",
+        "codex: start with $tpm",
+        "cursor: start with /tpm",
+        "Then check the guard is running: npx cadence-orchestrator status",
     ]
+    only = cli([], _with_markers(".agent/")).stdout
+    assert "hook" not in only and "status" not in only, only
+    assert only.splitlines()[-1] == "antigravity: start with /tpm (instructions only)"
+
+
+def test_python3_warning_only_for_guarded_targets_and_after_the_repo_line():
+    node = subprocess.run(["bash", "-c", "command -v node"], capture_output=True, text=True).stdout.strip()
+    git = subprocess.run(["bash", "-c", "command -v git"], capture_output=True, text=True).stdout.strip()
+    bare = tempfile.mkdtemp()
+    os.symlink(node, os.path.join(bare, "node"))
+    os.symlink(git, os.path.join(bare, "git"))
+    run_bare = lambda repo, target: subprocess.run(  # noqa: E731
+        [os.path.join(bare, "node"), INSTALL, "--target", target, "--repo", repo],
+        capture_output=True,
+        text=True,
+        env={"PATH": bare, "HOME": os.environ.get("HOME", "/")},
+    )
+    assert "python3" not in run_bare(scratch_repo(), "antigravity").stderr
+    both = subprocess.run(
+        f"{os.path.join(bare, 'node')} {INSTALL} --target cursor --repo {scratch_repo()} 2>&1",
+        shell=True,
+        capture_output=True,
+        text=True,
+        env={"PATH": bare},
+    ).stdout.splitlines()
+    assert both[0].startswith("Installing into ") and "python3 is not on PATH" in both[1], both
+
+
+def test_shared_skill_folder_is_copied_once_and_gitignore_written_once():
+    repo = scratch_repo()
+    proc = subprocess.run(
+        [
+            "strace",
+            "-f",
+            "-e",
+            "trace=openat",
+            "-o",
+            "/dev/stdout",
+            INSTALL,
+            "--target",
+            "all",
+            "--repo",
+            repo,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0 or "openat" not in proc.stdout:
+        import pytest
+
+        pytest.skip("strace unavailable")
+    writes = [line for line in proc.stdout.splitlines() if "O_WRONLY" in line or "O_RDWR" in line]
+    assert sum(".agents/skills/tpm/SKILL.md" in w for w in writes) == 1
+    assert sum(".agents/skills/tpm/scripts/runtime.py" in w for w in writes) == 1
+    assert sum("/.gitignore" in w for w in writes) == 1
+
+
+def test_nothing_detected_fails_with_one_line():
+    repo = _with_markers(".agents/", ".github/workflows/", "AGENTS.md")  # none says which editor
+    before = snapshot(repo)
+    proc = cli([], repo)
+    assert proc.returncode == 2 and proc.stdout == ""
+    assert proc.stderr == (
+        f"cadence-orchestrator: no editor config found in {repo} and no supported agent detected; "
+        "choose one with --target <antigravity|claude|codex|copilot|cursor|gemini|all>\n"
+    )
+    assert snapshot(repo) == before
 
 
 def test_target_overrides_detection():
     repo = _with_markers(".cursor/")
-    proc = subprocess.run([INSTALL, "--target", "gemini"], capture_output=True, text=True, cwd=repo)
+    proc = cli(["--target", "gemini"], repo)
     assert proc.returncode == 0 and proc.stdout.startswith(f"Installing into {repo}\ngemini: ")
     assert not os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
 
 
-def test_nothing_detected_fails_with_one_line_naming_targets():
-    repo = _with_markers(".agents/", ".github/workflows/")  # neither says which editor
-    proc = _bare_run(repo)
-    assert proc.returncode == 2 and proc.stdout == ""
-    assert proc.stderr.count("\n") == 1, proc.stderr
-    assert proc.stderr.startswith(f"cadence-orchestrator: no editor config found in {repo} (")
-    assert "--target <antigravity|claude|codex|copilot|cursor|gemini|all>" in proc.stderr
-    assert snapshot(repo) == {}
+def test_permission_error_is_one_line_naming_the_path():
+    if os.geteuid() == 0:
+        import pytest
+
+        pytest.skip("root ignores file permissions")
+    repo = os.path.realpath(scratch_repo())
+    os.chmod(repo, 0o555)
+    try:
+        proc = cli(["--target", "codex"], repo)
+    finally:
+        os.chmod(repo, 0o755)
+    assert proc.returncode == 1
+    lines = proc.stderr.splitlines()
+    assert len(lines) == 1 and "Node.js" not in proc.stderr and "    at " not in proc.stderr, proc.stderr
+    assert lines[0].startswith("cadence-orchestrator: permission denied (EACCES) on " + repo)
+    assert lines[0].endswith("If an agent ran this, its sandbox may need to allow writes to the repo.")
 
 
-def test_cursor_gets_a_tpm_command_that_starts_the_skill():
-    repo = scratch_repo()
-    install(repo, "cursor")
-    text = open(os.path.join(repo, ".cursor/commands/tpm.md")).read()
-    assert "`.agents/skills/tpm/SKILL.md`" in text and "__SKILL__" not in text
-    # If Cursor hands the hook the command's text instead of "/tpm", it still arms the guard.
-    arm = run(
-        os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"),
-        {"conversation_id": "c1", "prompt": text, "workspace_roots": [repo]},
-        tempfile.mkdtemp(),
-    )
-    assert arm.returncode == 0 and "TPM guard armed (session c1" in arm.stderr
+def test_other_errors_are_one_line():
+    repo = _with_markers(".cursor/")
+    open(os.path.join(repo, ".cursor/hooks.json"), "w").write("{not json")
+    proc = cli([], repo)
+    assert proc.returncode == 1 and len(proc.stderr.splitlines()) == 1, proc.stderr
+    assert proc.stderr.startswith("cadence-orchestrator: ") and "JSON" in proc.stderr
+
+
+def test_cursor_arming_check_does_not_claim_this_chat():
+    text = open(os.path.join(ROOT, "skills/tpm/SKILL.md")).read()
+    assert "guard armed in a recent session; can't confirm this chat" in text
+    assert not os.path.exists(os.path.join(ROOT, "adapters/cursor/tpm.command.md"))
 
 
 def test_npm_install_never_runs_scripts():
@@ -642,23 +792,60 @@ def test_npm_install_never_runs_scripts():
     assert not lifecycle & set(pkg.get("scripts", {}))
 
 
-def test_antigravity_is_instructions_only_and_reported_as_such():
+def test_antigravity_is_instructions_only_with_its_own_marker():
     repo = _with_markers(".agents/rules/")
-    proc = _bare_run(repo)
+    proc = cli([], repo)
     assert proc.returncode == 0, proc.stderr
-    assert "antigravity: .agents/skills/tpm/ (instructions only: no guard hooks)" in proc.stdout
+    assert (
+        "antigravity: .agents/skills/tpm/, .agents/rules/tpm.md (instructions only, no guard)" in proc.stdout
+    )
+    rule = open(os.path.join(repo, ".agents/rules/tpm.md")).read()
+    assert (
+        rule.startswith("---\ntrigger: manual\n---\n")
+        and "instructions only: no guard hooks on Antigravity" in rule
+    )
     assert not os.path.exists(os.path.join(repo, ".agents/hooks.json"))
     assert not [
         n for n in os.listdir(os.path.join(repo, ".agents/skills/tpm/scripts")) if n.startswith("shim_")
     ]
-    doc = subprocess.run(
-        [INSTALL, "doctor", "--target", "antigravity"], capture_output=True, text=True, cwd=repo
-    )
+    doc = cli(["doctor", "--target", "antigravity"], repo)
     assert doc.returncode == 0 and "FAIL" not in doc.stdout, doc.stdout
     assert "skip antigravity: instructions only: no guard hooks on this platform" in doc.stdout
-    st = subprocess.run([INSTALL, "status"], capture_output=True, text=True, cwd=repo)
+    st = cli(["status"], repo)
     assert st.returncode == 0, st.stdout
-    assert "antigravity: skill found (.agents/skills/tpm); instructions only: no guard hooks" in st.stdout
+    assert "antigravity: instructions only, no guard hooks on this platform; skill found" in st.stdout
     assert "No live hook activity" not in st.stdout
-    alldoc = subprocess.run([INSTALL, "doctor", "--target", "all"], capture_output=True, text=True, cwd=repo)
+    alldoc = cli(["doctor", "--target", "all"], repo)
     assert alldoc.returncode == 0 and "FAIL" not in alldoc.stdout, alldoc.stdout
+
+
+def test_shared_skill_folder_does_not_make_antigravity_installed():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    st = cli(["status"], repo)
+    assert "antigravity: not installed" in st.stdout, st.stdout
+    doc = cli(["doctor", "--target", "all"], repo)
+    assert "skip antigravity: not installed" in doc.stdout, doc.stdout
+
+
+def test_status_fails_and_says_reinstall_when_hooks_or_shim_are_gone():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    os.remove(os.path.join(repo, ".cursor/hooks.json"))
+    os.remove(os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"))
+    st = cli(["status"], repo)
+    assert st.returncode == 1, st.stdout
+    assert (
+        ".agents/skills/tpm/ has the skill but no hook config or shim for codex or cursor or gemini"
+        in st.stdout
+    )
+    assert "reinstall with `npx cadence-orchestrator --target <name>`" in st.stdout
+    repo = scratch_repo()
+    install(repo, "claude")
+    os.remove(os.path.join(repo, ".claude/settings.json"))
+    st = cli(["status"], repo)
+    assert (
+        st.returncode == 1
+        and "claude: incomplete install; reinstall with `npx cadence-orchestrator --target claude`"
+        in st.stdout
+    )

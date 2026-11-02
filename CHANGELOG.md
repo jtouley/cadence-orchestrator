@@ -7,17 +7,24 @@ rate, rework and recovery time.
 ## Unreleased
 
 - `npx cadence-orchestrator` with no `--target` installs for each editor the repo has config for (`.claude/`,
-  `.cursor/`, `.gemini/`, `.codex/` or `AGENTS.md`, `.github/copilot-instructions.md` or `.github/hooks/`), or
-  fails with one line if it finds none; it ends by saying to reload once and check with `status`.
-- `--repo` defaults to the git repository you're in, at its top level, also from a subfolder or as a bare
-  `--repo`; `--repo <path>` uses the repository containing that path (also for `doctor`, `status` and `dora`). The
-  installer prints which repository it installs into, and outside a repository fails with one line.
-- Cursor: also installs `.cursor/commands/tpm.md`, so `/tpm` is a command in the picker; after `/tpm` the skill
-  checks `status` and says "guard armed (advisory on Cursor: warns, doesn't block)" or "instructions only" with
+  `.codex/`, `.cursor/`, `.gemini/`, `.github/copilot-instructions.md` or `.github/hooks/`, Antigravity's
+  `.agent/` or `.agents/rules|workflows|hooks.json`). With none, it uses the agent it runs under, from documented
+  variables (`CLAUDECODE`, `CODEX_THREAD_ID`/`CODEX_SANDBOX*`, `CURSOR_AGENT`, `GEMINI_CLI`); otherwise it fails
+  with one line. It ends with per-target next steps: reload once where hooks were installed, `$tpm` on Codex and
+  `/tpm` elsewhere, then `status`.
+- `--repo` defaults to the git repository you're in, at its top level, also from a subfolder or as a bare `--repo`
+  (last, or followed by another flag). `--repo <path>` must still be a repository root. It never resolves to the
+  home directory. The installer prints which repository it installs into; outside a repository it fails with one
+  line. `doctor`, `status` and `dora` resolve it the same way.
+- Errors print one line instead of a stack trace; a permission error names the path and says an agent's sandbox may
+  need to allow writes to the repo.
+- New `antigravity` target (Google Antigravity): the skill in `.agents/skills/tpm/` (run as `/tpm`) and a manual rule
+  `.agents/rules/tpm.md` that marks the install. Instructions only: no Antigravity hook input carries the prompt, so
+  nothing can arm the guard. `doctor` and `status` report it as instructions only.
+- `status` exits 1, naming the reinstall command, when a guarded target's skill, shim or hook config is missing.
+- On Cursor, `/tpm` reports "guard armed in a recent session; can't confirm this chat" or "instructions only" with
   the fix command.
-- New `antigravity` target (Google Antigravity): installs the skill in `.agents/skills/tpm/`, which Antigravity runs
-  as `/tpm`. Instructions only, no guard: Antigravity's hooks get no prompt text to arm on. `doctor` and `status`
-  report it as instructions only, not as a failure.
+- Shared skill folders are copied once per run, and `.gitignore` is updated once.
 
 ## 0.1.6
 

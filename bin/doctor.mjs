@@ -14,10 +14,13 @@ const SCRIPTS = ["guard.py", "runtime.py", "tasks_check.py"];
 // Environment variables a platform's runtime consults for its state dir (see each shim's state_env).
 const STATE_ENV = { claude: ["CLAUDE_PLUGIN_DATA"] };
 
-// A target counts as installed if its shim or its hook entries are present. Returns
-// { installed, error }; error is set when the hook file exists but can't be read.
+// False for an instructions-only target (the skill, no hooks); see TARGETS in cadence-orchestrator.mjs.
+export const hasGuard = (spec) => spec.guard !== false;
+
+// A target counts as installed if its shim or its hook entries are present, or, for an instructions-only target,
+// the marker file only it writes. Returns { installed, error }; error is set when the hook file can't be read.
 export function installed(repo, target, spec) {
-  if (!spec.hooks) return { installed: fs.existsSync(path.join(repo, spec.skill, "SKILL.md")) }; // instructions only
+  if (!hasGuard(spec)) return { installed: fs.existsSync(path.join(repo, spec.marker)) };
   if (fs.existsSync(path.join(repo, spec.skill, "scripts", `shim_${target}.py`))) return { installed: true };
   const hookFile = path.join(repo, spec.hooks[0][1]);
   if (!fs.existsSync(hookFile)) return { installed: false };
@@ -123,8 +126,8 @@ export function doctor(repo, target, spec) {
   const results = [];
   const check = (name, ok, detail = "", skip = false) => results.push({ name: `${target}: ${name}`, ok, detail, skip });
   const shim = `${spec.skill}/scripts/shim_${target}.py`;
-  if (!spec.hooks) {
-    check(`${spec.skill}/SKILL.md exists`, fs.existsSync(path.join(repo, spec.skill, "SKILL.md")));
+  if (!hasGuard(spec)) {
+    for (const rel of [`${spec.skill}/SKILL.md`, spec.marker]) check(`${rel} exists`, fs.existsSync(path.join(repo, rel)));
     check("instructions only: no guard hooks on this platform", true, "", true);
     return results;
   }

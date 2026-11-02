@@ -4,7 +4,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { hookEntries, installed, resolveStateDir } from "./doctor.mjs";
+import { hasGuard, hookEntries, installed, resolveStateDir } from "./doctor.mjs";
 
 const ago = (seconds) =>
   seconds < 90 ? `${Math.round(seconds)} s ago` : seconds < 5400 ? `${Math.round(seconds / 60)} min ago` : `${(seconds / 3600).toFixed(1)} h ago`;
@@ -35,6 +35,10 @@ export function status(repo, TARGETS, hours, stateDir = "") {
   let anyInstalled = false;
   let anyLive = false;
   let anyHooked = false;
+  let broken = false;
+  const reinstall = (t) => `reinstall with \`npx cadence-orchestrator --target ${t}\``;
+  const used = new Set(); // skill folders an installed target accounts for
+  const orphans = new Map(); // skill folder -> hooked targets that use it but aren't installed
   const states = new Map();
   for (const target of Object.keys(TARGETS).sort()) {
     const spec = TARGETS[target];
@@ -42,11 +46,20 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     const skillFiles = ["SKILL.md", `scripts/shim_${target}.py`].every((f) => fs.existsSync(path.join(repo, spec.skill, f)));
     if (!inst.installed && !skillFiles) {
       lines.push(`${target}: not installed`);
+      if (hasGuard(spec) && fs.existsSync(path.join(repo, spec.skill, "SKILL.md"))) {
+        orphans.set(spec.skill, [...(orphans.get(spec.skill) ?? []), target]);
+      }
       continue;
     }
     anyInstalled = true;
-    if (!spec.hooks) {
-      lines.push(`${target}: skill found (${spec.skill}); instructions only: no guard hooks on this platform`);
+    used.add(spec.skill);
+    if (!hasGuard(spec)) {
+      const skill = fs.existsSync(path.join(repo, spec.skill, "SKILL.md"));
+      lines.push(`${target}: instructions only, no guard hooks on this platform; skill ${skill ? "found" : "missing"} (${spec.skill})`);
+      if (!skill) {
+        broken = true;
+        lines.push(`${target}: ${reinstall(target)}`);
+      }
       continue;
     }
     anyHooked = true;
@@ -60,6 +73,10 @@ export function status(repo, TARGETS, hours, stateDir = "") {
         (missing.length ? `; missing ${missing.join(", ")}` : "") +
         (hooks.error ? `; can't read it (${hooks.error})` : ""),
     );
+    if (!skillFiles || missing.length || hooks.error) {
+      broken = true;
+      lines.push(`${target}: incomplete install; ${reinstall(target)}`);
+    }
     const resolved = stateDir
       ? { dir: path.resolve(stateDir), error: "", source: "--state-dir" }
       : resolveStateDir(repo, target, spec);
@@ -90,7 +107,15 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     lines.push(`state dir: ${dir} (from ${source})`);
     lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
   }
-  if (!anyInstalled) lines.push("No target is installed in this repo.");
+  for (const [skill, targets] of orphans) {
+    if (used.has(skill)) continue;
+    broken = true;
+    lines.push(
+      `${skill}/ has the skill but no hook config or shim for ${targets.join(" or ")}; ` +
+        `${reinstall(targets.length > 1 ? "<name>" : targets[0])}`,
+    );
+  }
+  if (!anyInstalled && !broken) lines.push("No target is installed in this repo.");
   else if (anyHooked && !anyLive) {
     lines.push(
       "No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session " +
@@ -98,5 +123,5 @@ export function status(repo, TARGETS, hours, stateDir = "") {
         "that session (so it sees the agent's environment), or pass --state-dir.",
     );
   }
-  return { lines, ok: anyLive || (anyInstalled && !anyHooked) };
+  return { lines, ok: !broken && (anyLive || (anyInstalled && !anyHooked)) };
 }

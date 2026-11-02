@@ -27,9 +27,10 @@ without it. Installed files and a passing `doctor` don't mean the guard is runni
 the platform can't show it, as on Copilot, a subagent running `npx cadence-orchestrator status`). Never tell the
 user the guard is active without that evidence.
 
-On Cursor the line never shows, so have a subagent run `npx cadence-orchestrator status` here once you start. If
-it lists a `cursor` session as `armed` with its last event in the last few minutes, tell the user "guard armed
-(advisory on Cursor: warns, doesn't block)". Otherwise tell them "instructions only — to fix, run
+On Cursor the line never shows, so have a subagent run `npx cadence-orchestrator status` here once you start.
+`status` can't tell which Cursor chat a session is. If it lists a `cursor` session as `armed` with its last event in
+the last few minutes, tell the user "guard armed in a recent session; can't confirm this chat (advisory on Cursor:
+warns, doesn't block)". Otherwise tell them "instructions only — to fix, run
 `npx cadence-orchestrator --target cursor`, start a new chat, then /tpm again", and carry on without it. On
 Antigravity there's no guard to check: tell the user "instructions only: no guard hooks on Antigravity".
 
