@@ -76,8 +76,9 @@ the main thread still writes nothing, and there's no path carve-out in the guard
 ## Dispatch prompts are one or two lines
 
 A builder's or investigator's prompt is a verb or skill, a target pinned to a commit, what's out of scope, and
-where the result goes; everything else is in the doc. A reviewer's prompt has no out-of-scope line and no other
-limit on where to look; what it does hold is in step 5.
+where the result goes; everything else is in the doc. A reviewer's prompt has no out-of-scope line; parallel
+reviewers may each own a slice of files or commits, as long as together they cover the whole change. What a
+reviewer's prompt holds is in step 5.
 
 - `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
 - `Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR citing that doc@sha and what you
@@ -137,7 +138,8 @@ unwatched on a shared message board. These rules prevent each of those:
    scope is found here or not at all. Then quality: `/code-review on PR #42 and comment the full review to
    GitHub.` The quality pass always runs, whatever the spec pass found, and is never skipped or narrowed: it
    covers everything under review (the whole change in round one, the new commit range in round two), whether
-   one reviewer takes it all or parallel reviewers split it, because it finds what the doc didn't ask about. A
+   one reviewer takes it all or parallel reviewers split it, because it finds what the doc didn't ask about. In
+   round two the new commit range is the target, not a fence: the reviewer reads any code that range affects. A
    pinned pointer to requirements is a standard, not a hint; name any other standard the same way
    (`... against https://agentskills.io/specification`).
    Beyond target, skill, standard and destination, a reviewer's prompt holds only, when reviewers run in

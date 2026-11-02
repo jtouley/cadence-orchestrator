@@ -6,8 +6,8 @@ rate, rework and recovery time.
 
 ## Unreleased
 
-- Reviewer prompts get no out-of-scope line or other limit on where to look, and the quality pass always runs over
-  everything under review; the full reviewer-prompt rule lives in step 5 only, and README and sources.md agree.
+- Reviewer prompts get no out-of-scope line (parallel reviewers may each own a slice that together covers the whole
+  change), and the quality pass always runs over everything under review; the full rule lives in step 5.
 - Evals: record the blind-notes results in `evals/README.md`: two designs for keeping hunches from reviewers,
   neither shipped.
 - Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,

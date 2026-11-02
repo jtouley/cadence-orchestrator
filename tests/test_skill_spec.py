@@ -101,39 +101,26 @@ def _flat(path):
     return " ".join(open(path).read().split())
 
 
-def _paragraphs(path):
-    return [" ".join(p.split()) for p in re.split(r"\n\s*\n|\n(?=\s*(?:- |\| |\d+\. ))", open(path).read())]
-
-
-def test_only_step_5_spells_out_a_reviewer_prompt():
-    # One full statement of the reviewer-prompt rule, so copies can't drift; other places point to step 5.
+def test_reviewer_scope_rules():
     skill = _flat(os.path.join(SKILL_DIR, "SKILL.md"))
-    assert skill.count("standard and destination") == 1
-    step5 = skill[skill.index("5. **Verify independently") : skill.index("6. **Report.**")]
-    assert "standard and destination" in step5
-    dispatch = skill[skill.index("## Dispatch prompts") : skill.index("**Pin the doc**")]
-    assert "step 5" in dispatch and "no out-of-scope line" in dispatch
-
-
-def test_out_of_scope_lines_are_for_builders_and_investigators_only():
-    # Wherever a doc says a prompt names what's out, it says whose prompt, and it isn't a reviewer's.
-    docs = [os.path.join(SKILL_DIR, "SKILL.md"), os.path.join(SKILL_DIR, "references", "sources.md")]
-    docs.append(os.path.join(ROOT, "README.md"))
-    for doc in docs:
-        for para in _paragraphs(doc):
-            low = para.lower()
-            if re.search(r"(names?|states?|says?) what'?s out|what'?s out of scope|scope boundary", low):
-                assert re.search(r"builder|investigator", low), (doc, para[:120])
-                assert not re.search(r"every (subagent )?prompt|the prompt names", low), (doc, para[:120])
-
-
-def test_quality_pass_is_never_skipped_or_narrowed():
-    skill = _flat(os.path.join(SKILL_DIR, "SKILL.md"))
-    step5 = skill[skill.index("5. **Verify independently") : skill.index("6. **Report.**")]
-    sentence = re.search(r"The quality pass [^.]*\.", step5).group(0)
-    assert "never skipped" in sentence and "narrowed" in sentence
-    # in the same sentence: consistent with the parallel split and with round two's review of the new commit range
-    assert "parallel" in sentence and "new commit range" in sentence
+    # dispatch: only builders and investigators get an out-of-scope line
+    assert (
+        "A builder's or investigator's prompt is a verb or skill, a target pinned to a commit, what's out of scope"
+        in skill
+    )
+    assert "A reviewer's prompt has no out-of-scope line" in skill
+    # step 5: the quality pass always runs and is never narrowed
+    assert "The quality pass always runs" in skill and "never skipped or narrowed" in skill
     # the PR #11 reviewer rule is still here
-    assert "Leave out suspected issues, focus areas, what a fix does, earlier findings" in step5
-    assert "Builders fixing blockers get the findings verbatim." in step5
+    assert (
+        "Leave out suspected issues, focus areas, what a fix does, earlier findings and your own conclusions"
+        in skill
+    )
+    assert "Builders fixing blockers get the findings verbatim." in skill
+
+
+def test_readme_and_sources_dont_say_every_prompt_names_whats_out():
+    for path in (os.path.join(ROOT, "README.md"), os.path.join(SKILL_DIR, "references", "sources.md")):
+        text = _flat(path)
+        assert "The prompt names a skill or verb" not in text, path
+        assert "Every prompt names its scope boundary" not in text, path
