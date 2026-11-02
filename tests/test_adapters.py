@@ -1428,3 +1428,63 @@ def test_path_note_is_computed_once_per_run():
     assert "pathNote ??= probePath()" in src
     body = src[src.index("export function doctor(") :]
     assert "guiPathNote()" not in body  # not per target
+
+
+def _package_copy(extra=None):
+    dest = tempfile.mkdtemp()
+    for part in ("bin", "skills", "adapters", "package.json"):
+        src = os.path.join(ROOT, part)
+        (shutil.copytree if os.path.isdir(src) else shutil.copy)(src, os.path.join(dest, part))
+    for rel, text in (extra or {}).items():
+        open(os.path.join(dest, rel), "w").write(text)
+    return os.path.join(dest, "bin", "cadence-orchestrator.mjs")
+
+
+def test_upgrade_removes_files_the_new_version_no_longer_installs():
+    old = _package_copy(
+        {"skills/tpm/references/legacy.md": "legacy\n", "skills/tpm/references/gone.md": "gone\n"}
+    )
+    repo = scratch_repo()
+    subprocess.run(
+        [old, "--target", "cursor", "--repo", repo], check=True, capture_output=True, env=clean_env()
+    )
+    open(os.path.join(repo, ".agents/skills/tpm/references/gone.md"), "a").write("my edit\n")
+    out = cli(["--target", "cursor"], repo)
+    assert "removed .agents/skills/tpm/references/legacy.md (no longer part of tpm " in out.stdout, out.stdout
+    assert "backed up hand-edited .agents/skills/tpm/references/gone.md to .cadence/backups/" in out.stdout
+    assert "before removing it" in out.stdout
+    skill = os.path.join(repo, ".agents/skills/tpm")
+    manifest = json.load(open(os.path.join(skill, ".cadence-install.json")))
+    on_disk = sorted(
+        os.path.relpath(os.path.join(b, n), skill)
+        for b, _, ns in os.walk(skill)
+        for n in ns
+        if n != ".cadence-install.json"
+    )
+    assert sorted(manifest["files"]) == on_disk  # the manifest matches what's on disk
+    cli(["uninstall"], repo)
+    assert not os.path.exists(skill)
+
+
+def test_pycache_cleanup_touches_only_tpm_bytecode_in_tpm_folder():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    other = os.path.join(repo, ".agents/skills/other/scripts/__pycache__")
+    os.makedirs(other)
+    open(os.path.join(other, "runtime.cpython-313.pyc"), "w").write("theirs")  # same stem, another skill
+    ours = os.path.join(repo, ".agents/skills/tpm/scripts/__pycache__")
+    os.makedirs(ours)
+    for name in (
+        "runtime.cpython-313.pyc",
+        "guard.cpython-313.pyc",
+        "shim_cursor.cpython-313.pyc",
+        "helper.cpython-313.pyc",
+    ):
+        open(os.path.join(ours, name), "w").write("x")
+    install(repo, "cursor")  # reinstall cleans tpm's own bytecode only
+    assert sorted(os.listdir(ours)) == ["helper.cpython-313.pyc"]
+    assert os.listdir(other) == ["runtime.cpython-313.pyc"]
+    cli(["uninstall"], repo)
+    assert os.listdir(ours) == ["helper.cpython-313.pyc"]  # a foreign .pyc stays, so the folder stays
+    assert os.listdir(other) == ["runtime.cpython-313.pyc"]
+    assert os.path.exists(os.path.join(repo, ".agents/skills/other/scripts/__pycache__"))

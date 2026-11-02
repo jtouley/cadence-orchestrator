@@ -32,7 +32,7 @@ rate, rework and recovery time.
 - `npx cadence-orchestrator uninstall [--target …] [--dry-run]` removes only what the installer added (marked hook
   entries, the managed block, its files, the shim, a skill folder no remaining target uses, the `.gitignore` lines)
   and prints what it removed; re-running is safe. It removes the files its install manifest records (plus bytecode
-  caches in folders it owns), backs up hand-edited ones first, and removes a folder only if the installer created it
+  compiled from tpm's own scripts, `<script>.*.pyc` in tpm's `scripts/__pycache__`; other skills are never touched), backs up hand-edited ones first, and removes a folder only if the installer created it
   (recorded in the manifest) and it's empty, never a `skills` or `hooks` folder. Older installs keep their folders.
 - Every file a run touches is parsed and checked before anything is written: invalid JSON, or a managed block whose
   begin or end marker is missing, stops the run with the repo unchanged.
@@ -42,7 +42,8 @@ rate, rework and recovery time.
   reinstall when it differs. Each skill folder gets a `.cadence-install.json` with the version and file hashes.
 - A vendored skill file edited by hand is backed up to `.cadence/backups/<time>/` before a reinstall overwrites it
   (installs made with this version or later). Manifests are read before any write and written last, so an upgrade
-  doesn't mistake upstream changes for hand edits.
+  doesn't mistake upstream changes for hand edits. A reinstall removes files an older version installed that this
+  one doesn't (backing up edited ones), so the manifest always matches what's on disk.
 - A managed block is replaced or removed in place, without touching the rest of `AGENTS.md`/`GEMINI.md`. A hook
   event that isn't a list stops the run with a one-line error naming the file.
 - `doctor` and `status` report a missing Cursor `sessionStart` entry, and note when python3 isn't on the default

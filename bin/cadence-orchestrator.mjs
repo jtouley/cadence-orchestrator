@@ -220,6 +220,8 @@ function planTarget(plan, target) {
   return touched;
 }
 
+const stale = []; // files earlier versions installed that this one doesn't
+
 function planSkill(plan, target, skill, targets) {
   const files = skillFiles(target);
   for (const [rel, text] of Object.entries(files)) plan.set(`${skill}/${rel}`, text);
@@ -227,9 +229,18 @@ function planSkill(plan, target, skill, targets) {
     files[`scripts/shim_${t}.py`] = read(path.join(ADAPTERS, t, "shim.py"));
   }
   const hashes = Object.fromEntries(Object.entries(files).sort().map(([rel, text]) => [rel, sha(text)]));
-  // Keep hashes of shims other targets installed into this shared folder earlier.
   const old = readManifest(skill);
-  for (const [rel, h] of Object.entries(old?.files ?? {})) if (!(rel in hashes) && rel.startsWith("scripts/shim_")) hashes[rel] = h;
+  for (const [rel, h] of Object.entries(old?.files ?? {})) {
+    if (rel in hashes) continue;
+    // Shims other targets installed into this shared folder earlier stay, with their hashes.
+    if (rel.startsWith("scripts/shim_") && exists(path.join(repo, skill, rel))) hashes[rel] = h;
+    // A file an older version installed and this one doesn't: removed (backed up first if edited), so the
+    // manifest always matches what's on disk.
+    else if (!rel.startsWith("scripts/shim_")) {
+      plan.set(`${skill}/${rel}`, null);
+      stale.push(`${skill}/${rel}`);
+    }
+  }
   plan.set(`${skill}/${MANIFEST}`, JSON.stringify({ version: PKG_VERSION, files: sortKeys(hashes) }, null, 2) + "\n");
 }
 
@@ -277,7 +288,7 @@ function apply(plan) {
       const dest = path.join(repo, ".cadence", "backups", STAMP, rel);
       fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.copyFileSync(file, dest);
-      backups.push({ rel, to: path.relative(repo, dest) });
+      backups.push({ rel, to: path.relative(repo, dest), removed: text === null });
     }
     if (text === null) fs.rmSync(file, { force: true });
     else {
@@ -299,7 +310,26 @@ function addCatalogs(plan, files) {
 
 // Uninstall: only what the installer adds. Hook entries carrying our marker, our managed block, our files, our
 // shim, the skill folder once no remaining target uses it, and the .gitignore lines once nothing is left.
-const pycache = []; // bytecode caches inside the skill folders uninstall removes
+// Bytecode compiled from tpm's own scripts, in tpm's own skill folder: <stem>.*.pyc for each script the manifest lists
+// (or this version's scripts for an older install). Other files there, and every other skill's folders, are left
+// alone; __pycache__ itself goes only if that leaves it empty.
+function cleanPycache(skill, manifest) {
+  const dir = path.join(repo, skill, "scripts", "__pycache__");
+  if (!exists(dir)) return;
+  const scripts = manifest?.files
+    ? Object.keys(manifest.files).filter((f) => /^scripts\/[^/]+\.py$/.test(f))
+    : [...SCRIPTS.map((n) => `scripts/${n}`), ...Object.keys(TARGETS).map((t) => `scripts/shim_${t}.py`)];
+  const stems = new Set(scripts.map((f) => path.basename(f, ".py")));
+  for (const name of fs.readdirSync(dir)) {
+    const m = name.match(/^(.+?)\.[^.]+\.pyc$/);
+    if (m && stems.has(m[1])) fs.rmSync(path.join(dir, name), { force: true });
+  }
+  try {
+    if (!fs.readdirSync(dir).length) fs.rmdirSync(dir);
+  } catch {}
+}
+
+const pycache = []; // [skill folder, manifest] pairs whose tpm bytecode uninstall cleans
 
 function planUninstall(plan, targets, remaining) {
   const removed = [];
@@ -358,7 +388,7 @@ function planUninstall(plan, targets, remaining) {
     const owner = targets.find((t) => TARGETS[t].skill === skill);
     const ours = [...Object.keys(manifest?.files ?? skillFiles(owner)), "SKILL.md", MANIFEST];
     for (const rel of ours) if (current(plan, `${skill}/${rel}`) !== null) plan.set(`${skill}/${rel}`, null);
-    pycache.push(`${skill}/scripts/__pycache__`);
+    pycache.push([skill, manifest]);
     removed.push(`${skill}/ (${manifest ? "the files its install manifest records" : "this version's skill files"})`);
   }
   if (!remaining.length) {
@@ -391,6 +421,13 @@ function recordCreatedDirs(plan) {
 // What earlier installs recorded as created, read before uninstall deletes the manifests. Installs from before
 // manifests recorded it give nothing, so their folders are kept.
 const createdDirs = () => Object.values(TARGETS).flatMap((s) => readManifest(s.skill)?.created_dirs ?? []);
+
+// A file's parent folders inside the repo, deepest first.
+function parentsWithin(rel) {
+  const out = [];
+  for (let dir = path.dirname(rel); dir !== "."; dir = path.dirname(dir)) out.push(dir);
+  return out;
+}
 
 // Remove a folder only if the installer created it and it's now empty, and never a skills or hooks folder (other
 // tools keep theirs there).
@@ -581,7 +618,7 @@ if (mode === "uninstall") {
   }
   const dirs = createdDirs();
   const backups = apply(plan);
-  for (const dir of pycache) fs.rmSync(path.join(repo, dir), { recursive: true, force: true });
+  for (const [skill, m] of pycache) cleanPycache(skill, m);
   for (const b of backups) console.log(`backed up hand-edited ${b.rel} to ${b.to} before removing it`);
   const pruned = pruneCreated(dirs);
   if (pruned.length) console.log(`Removed empty folders it had created: ${pruned.join(", ")}`);
@@ -624,13 +661,17 @@ if (py.error || py.status !== 0) {
   console.error("warning: python3 is not on PATH. The guard hooks run python3 and will not work until it is installed.");
 }
 // 0.1.0 hooks left bytecode caches next to the vendored scripts; remove them (only inside the skill dir).
-for (const skill of folders.keys()) fs.rmSync(path.join(repo, skill, "scripts", "__pycache__"), { recursive: true, force: true });
+const oldManifests = new Map([...folders.keys()].map((skill) => [skill, readManifest(skill)]));
+const dirs = createdDirs();
 const backups = apply(plan);
+for (const [skill, m] of oldManifests) cleanPycache(skill, m ?? null);
+for (const rel of stale) console.log(`removed ${rel} (no longer part of tpm ${PKG_VERSION})`);
+pruneCreated(stale.flatMap((rel) => parentsWithin(rel)).filter((d) => dirs.includes(d)));
 targets.forEach((t, k) => {
   console.log(`${t}: ${touched[k].join(", ")}${hasGuard(TARGETS[t]) ? "" : " (instructions only, no guard)"}`);
 });
 if (catalogs.length) console.log(`catalog: ${catalogs.join(", ")}`);
-for (const b of backups) console.log(`backed up hand-edited ${b.rel} to ${b.to}`);
+for (const b of backups) console.log(`backed up hand-edited ${b.rel} to ${b.to}${b.removed ? " before removing it" : ""}`);
 console.log("Done. Review and commit the changes; see README for per-platform notes.");
 if (guarded.length) console.log("Reload once: start a new chat or session in this repo, so the hooks load (approve them if asked).");
 for (const t of targets) {
