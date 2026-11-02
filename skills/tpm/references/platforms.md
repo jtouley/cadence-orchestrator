@@ -10,6 +10,7 @@ The skill is written for any Agent Skills client. This is what differs between t
 | Codex (CLI) | `$tpm`, or pick it in `/skills` | Codex subagents (tool name unverified) | Advisory; live hooks unverified |
 | Codex (cloud) | `$tpm` | Codex subagents (seen working on 2026-10-31) | None: project hooks didn't run (observed) |
 | Cursor | `/tpm` or `$tpm` | `Task` | Advisory |
+| Google Antigravity | `/tpm` (the skill, from `.agents/skills/`) | unverified | None: instructions only (no hook input carries the prompt, so nothing can arm it) |
 | Gemini CLI | `/tpm` or `$tpm` | unverified | Advisory |
 | Any other Agent Skills client | as the client invokes skills | whatever the client offers | None: instructions only |
 

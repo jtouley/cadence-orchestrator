@@ -6,6 +6,50 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+- `npx cadence-orchestrator` with no `--target` installs for each editor the repo has config for (`.claude/`,
+  `.codex/`, `.cursor/`, `.gemini/`, `.github/copilot-instructions.md` or `.github/hooks/`, Antigravity's
+  `.agent/` or `.agents/rules|workflows|hooks.json`). With none, it uses the agent it runs under, from documented
+  variables (`CLAUDECODE`, `CODEX_THREAD_ID`/`CODEX_SANDBOX*`, `CURSOR_AGENT`, `GEMINI_CLI`); otherwise it fails
+  with one line. It ends with per-target next steps: reload once where hooks were installed, `$tpm` on Codex and
+  `/tpm` elsewhere, then `status`.
+- `--repo` defaults to the git repository you're in, at its top level, also from a subfolder or as a bare `--repo`
+  (last, or followed by a `--` argument). `--repo <path>` must still be a repository root. When installing, the
+  walk up from the current folder never lands on the home directory. The installer prints which repository it installs into; outside a repository it fails with one
+  line. `doctor`, `status` and `dora` resolve it the same way.
+- Errors print one line instead of a stack trace (`DEBUG=1` adds the stack); a permission error names the path and
+  says an agent's sandbox may need to allow writes to the repo, and a hook file that isn't valid JSON is named.
+- New `antigravity` target (Google Antigravity): the skill in `.agents/skills/tpm/` (run as `/tpm`) and a manual rule
+  `.agents/rules/tpm.md` that marks the install. Instructions only: no Antigravity hook input carries the prompt, so
+  nothing can arm the guard. `doctor` and `status` report it as instructions only.
+- `status` exits 1, naming the reinstall command, when an installed guarded target's skill, shim or hook config is
+  missing, and notes a skill folder that no installed target owns.
+- Cursor: a `sessionStart` hook puts the chat's id in its context, so after `/tpm` the skill matches it in `status`
+  and says "guard armed for this chat (advisory on Cursor: warns, doesn't block)" or "not armed in this chat" with
+  the fix command.
+- `status` also exits 1 when a guarded target's hook config and shim are gone but its own files remain, even if an
+  instructions-only target shares its skill folder.
+- Shared skill folders are copied once per run, and `.gitignore` is updated once.
+- `npx cadence-orchestrator uninstall [--target …] [--dry-run]` removes only what the installer added (marked hook
+  entries, the managed block, its files, the shim, a skill folder no remaining target uses, the `.gitignore` lines)
+  and prints what it removed; re-running is safe. It removes the files its install manifest records (plus bytecode
+  compiled from tpm's own scripts, `<script>.*.pyc` in tpm's `scripts/__pycache__`; other skills are never touched), backs up hand-edited ones first, and removes a folder only if the installer created it
+  (recorded in the manifest) and it's empty, never a `skills` or `hooks` folder. Older installs keep their folders.
+- Every file a run touches is parsed and checked before anything is written: invalid JSON, or a managed block whose
+  begin or end marker is missing, stops the run with the repo unchanged.
+- `--dry-run` lists what an install would change and writes nothing; `--check` exits 1 when installed files differ
+  from what this version would write.
+- `status --json` and `doctor --json` print one JSON object. `status` shows the installed version and says to
+  reinstall when it differs. Each skill folder gets a `.cadence-install.json` with the version and file hashes.
+- A vendored skill file edited by hand is backed up to `.cadence/backups/<time>/` before a reinstall overwrites it
+  (installs made with this version or later). Manifests are read before any write and written last, so an upgrade
+  doesn't mistake upstream changes for hand edits. A reinstall removes files an older version installed that this
+  one doesn't (backing up edited ones), so the manifest always matches what's on disk.
+- A managed block is replaced or removed in place, without touching the rest of `AGENTS.md`/`GEMINI.md`. A hook
+  event that isn't a list stops the run with a one-line error naming the file.
+- `doctor` and `status` report a missing Cursor `sessionStart` entry, and note when python3 isn't on the default
+  PATH an editor started from the desktop may get. The Cursor shim recognises `sessionStart` input without
+  `hook_event_name`.
+
 ## 0.1.6
 
 - Releases publish with npm trusted publishing (OIDC) from `.github/workflows/release.yml`: no npm token, a pinned

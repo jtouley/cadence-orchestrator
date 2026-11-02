@@ -6,10 +6,10 @@ cadence-orchestrator is a skill that makes your coding agent act as a technical 
 the work; the orchestrator plans it with you, hands every piece of it to subagents, has separate reviewers check
 what comes back, and reports with evidence. A guard stops the orchestrator from doing the work itself.
 
-It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is an offshoot of
-[cadence-core](https://github.com/jtouley/cadence-core). The skill in [`skills/tpm/`](skills/tpm/) follows the
-[Agent Skills open standard](https://agentskills.io/specification), so any client that reads Agent Skills can use
-it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
+It works with Claude Code, GitHub Copilot, Codex, Cursor, Gemini CLI and (instructions only) Google Antigravity. It is
+an offshoot of [cadence-core](https://github.com/jtouley/cadence-core). The skill in [`skills/tpm/`](skills/tpm/)
+follows the [Agent Skills open standard](https://agentskills.io/specification), so any client that reads Agent Skills
+can use it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
 
 > [!NOTE]
 > Experimental (0.1.x). The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
@@ -53,14 +53,7 @@ There are two ways to use it, and only the second enforces anything.
 - **Use the instructions.** Any agent that reads [`skills/tpm/SKILL.md`](skills/tpm/SKILL.md) (or the installed skill) can
   follow the playbook. Nothing checks it: no hooks run, and the skill tells you "guard not running in this session —
   instructions only" when it doesn't see the guard.
-- **Install and activate the guard.**
-  1. Install it into the repo (below) and commit the result.
-  2. Start a **new** session in that repo; hooks load when a session starts.
-  3. Approve the hooks if the agent asks. On Codex the local CLI asks you to review and trust project hooks in
-     `/hooks` (unverified); the observed cloud task never asked.
-  4. Begin your message with `$tpm` on Codex, `/tpm` everywhere else.
-  5. Confirm it's armed: the agent sees `TPM guard armed (session <id>, log <path>)` on Claude Code, Codex and
-     Gemini. Copilot and Cursor can't show that line, so run `npx cadence-orchestrator status` in the repo.
+- **Install and activate the guard**: the five steps in [Install in a Repo](#install-in-a-repo).
 
 > [!IMPORTANT]
 > On Codex, Cursor and Gemini the guard is **advisory, not enforcement**: it warns and logs, and never blocks.
@@ -72,37 +65,65 @@ There are two ways to use it, and only the second enforces anything.
 
 ### Install in a Repo
 
-From the root of the git repository you want to use it in:
+From anywhere inside the git repository you want to use it in:
 
-```sh
-npx cadence-orchestrator --target claude
-```
+1. Run `npx cadence-orchestrator`.
+2. Review and commit the result, so everyone working in the repo, including cloud sessions, gets it.
+3. Reload once: start a **new** chat or session in the repo; hooks load when a session starts. Approve the hooks
+   if asked: on Codex, review and trust them in `/hooks`.
+4. Start the skill: `$tpm` on Codex, `/tpm` everywhere else.
+5. Check the guard with `npx cadence-orchestrator status`. Claude Code, Codex and Gemini also show the agent
+   `TPM guard armed (session <id>, log <path>)`. Copilot can't, so run `status` there. On Cursor, the skill runs
+   `status` for you after `/tpm` and says whether this chat is armed.
+
+In a repo that already has `.claude/` and `.cursor/`:
 
 ```console
+Installing into /home/you/project for claude, cursor (detected)
 claude: .claude/skills/tpm/, .claude/settings.json
+cursor: .agents/skills/tpm/, .cursor/hooks.json, .cursor/rules/tpm.mdc
 Done. Review and commit the changes; see README for per-platform notes.
+Reload once: start a new chat or session in this repo, so the hooks load (approve them if asked).
+claude: start with /tpm
+cursor: start with /tpm
+Then check the guard is running: npx cadence-orchestrator status
 ```
+
+A bare run installs for every editor it detects from the repo's config (`.claude/`, `.codex/`, `.cursor/`, `.gemini/`,
+`.github/copilot-instructions.md` or `.github/hooks/`, and for Antigravity `.agent/`, `.agents/rules/`,
+`.agents/workflows/` or `.agents/hooks.json`). With none of those, it installs for the agent it's running under (Claude
+Code, Codex, Cursor or Gemini CLI, from the variables they set), or else stops and asks for `--target`. Detection can
+pick up config you no longer use, so check the `(detected)` line. `--target <name>` installs for that one platform
+instead (`all` for every one). `npm i` alone writes nothing into the repo. On Antigravity there's no guard, only the
+skill: its hooks can't see that you typed `/tpm`.
 
 You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
 warns if `python3` is missing. To install from source instead of npm, use
-`npx github:jtouley/cadence-orchestrator --target claude`.
+`npx github:jtouley/cadence-orchestrator`.
 
-`--repo <path>` installs into another repository; it defaults to the current directory. `--target all` installs
-for every platform. Re-running is safe: the installer replaces only its own entries in the files it touches. It
-also adds `.cadence/tpm.off` to `.gitignore`. Commit the result so everyone working in the repo, including cloud
-sessions, gets it. From a clone of this repository, run `./install.sh --repo <path>` with the same options.
+`--repo <path>` installs into the repository whose root is that path; without it, into the one you're in, at its top
+level (but not your home directory, if that's a git repository). Re-running is safe: the installer replaces only its own
+entries in the files it touches, and adds `.cadence/tpm.off` to `.gitignore`. From a clone of this repository,
+`./install.sh` takes the same options.
 
-To check an install, run `npx cadence-orchestrator doctor --target claude` (`all` checks every target that's
-installed). It checks that the files and hook config are in place and point at existing scripts, that `python3`
-is on `PATH`, and runs the installed hooks on simulated events: arming, an orchestrator write (denied, or an
-advisory on Codex, Cursor and Gemini), a subagent write (allowed) and, on Claude Code, a stop. It prints one line
-per check, exits 1 if any fail, and changes nothing in the repo. A passing `doctor` doesn't show that the hooks
-fire in a real session; `npx cadence-orchestrator status` does. It lists, separately, the skill files, the hook
-config, the sessions whose hooks have fired in the last 24 hours (`--hours <n>`) and whether each is armed, and the
-advisory log path. It exits 1 when no live hook activity has been seen. Run it from inside the agent's session (ask the
-agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as the hooks, or pass `--state-dir <path>`;
-it prints where the state dir came from. To test in a real session, follow
-[`docs/live-testing.md`](docs/live-testing.md).
+| Command | What it does | Exits non-zero when |
+| --- | --- | --- |
+| `npx cadence-orchestrator [--target <name>\|all] [--repo <path>]` | Installs (detects targets without `--target`) | 2: nothing detected; 1: other errors |
+| `… --dry-run` | Lists `would create\|update <file>`; writes nothing | |
+| `… --check` | Lists files that differ from what this version would write (for CI) | 1: any differ, or nothing is installed |
+| `… uninstall [--target <name>] [--dry-run]` | Removes only what the installer added | 1: on error |
+| `… doctor --target all [--json]` | Checks files and hook config, runs the hooks on simulated events; changes nothing | 1: a check fails |
+| `… status [--hours <n>] [--state-dir <path>] [--json]` | Installed targets and version, and live hook activity | 1: an install is incomplete, nothing is installed, or a guarded target has no live activity |
+
+A passing `doctor` doesn't show that the hooks fire in a real session; `status` does. Run `status` from inside the
+agent's session (ask the agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as the hooks, or pass
+`--state-dir <path>`. To test in a real session, follow [`docs/live-testing.md`](docs/live-testing.md).
+
+A reinstall backs up a vendored skill file you edited to `.cadence/backups/<time>/` before replacing it, for installs
+made with this version or later (older installs have no record of what they wrote). Uninstall removes the hook
+entries, the block in `AGENTS.md` or `GEMINI.md`, the installer's files and the `.gitignore` lines, and only empty
+folders the installer created, never a `skills` or `hooks` folder. Your own hooks and text, `--catalog` files and
+`.cadence/backups/` stay.
 
 | Platform | `--target` | What it adds | Guard |
 | --- | --- | --- | --- |
@@ -110,6 +131,7 @@ it prints where the state dir came from. To test in a real session, follow
 | GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Blocks** |
 | Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | CLI: warns (live hooks unverified). Cloud: **instructions only**; hooks didn't run in the one observed task (2026-10-31, kit 0.1.2) |
 | Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc` | Warns |
+| Google Antigravity | `antigravity` | `.agents/skills/tpm/`, `.agents/rules/tpm.md` | **Instructions only** |
 | Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns |
 
 Claude Code and Copilot mark tool calls made by subagents, so the guard can block the orchestrator and let
@@ -139,11 +161,11 @@ treats it as a format example unless you confirm it fits.
 
 ### Start and Stop
 
-Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Codex, begin
-the message with `$tpm`: Codex mentions skills with `$` (or the `/skills` picker), and `/tpm` isn't a Codex
-command. On Copilot, Cursor and Gemini, begin it with `/tpm` or `$tpm`. That arms the guard for this session
-only; a model loading the skill by itself doesn't arm it. On Claude Code the hook reports it, and an edit by the
-orchestrator is then refused (exit code 2, message shortened here):
+Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Codex, begin the
+message with `$tpm`: Codex mentions skills with `$` (or the `/skills` picker), and `/tpm` isn't a Codex command. On
+Copilot, Cursor and Gemini, begin it with `/tpm` or `$tpm`; on Antigravity, `/tpm` (instructions only). That arms the
+guard for this session only; a model loading the skill by itself doesn't arm it. On Claude Code the hook reports it, and
+an edit by the orchestrator is then refused (exit code 2, message shortened here):
 
 ```text
 TPM guard armed (session 4f1c…, log /tmp/cadence-orchestrator/advisory.log)
@@ -220,16 +242,32 @@ isn't writable), point npm at a writable cache:
 npm_config_cache=/tmp/npm-cache npx cadence-orchestrator --target codex
 ```
 
-### The installer stops with a `SyntaxError` from `JSON.parse`
+### The installer stops with "isn't valid JSON"
 
-The hook file it merges into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
+A hook file it would merge into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
 
 ```console
-SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)
+cadence-orchestrator: .claude/settings.json isn't valid JSON (…parse error…); fix it and run again. Nothing was changed.
 ```
 
-The skill files were copied but no hooks were added, and the file is unchanged. Remove the comments and run the
-installer again.
+Every file the run would touch is checked before anything is written, so the repo is unchanged. Remove the
+comments and run the installer again. A managed block in `AGENTS.md` or `GEMINI.md` whose begin or end marker
+was deleted stops the run the same way. Errors print one line; set `DEBUG=1` to also print the full stack trace.
+
+### "no editor config found … and no supported agent detected" (exit 2)
+
+The repo has none of the editor folders listed under [Install in a Repo](#install-in-a-repo), and the run isn't
+inside a supported agent. Choose the platform: `npx cadence-orchestrator --target cursor` (or `all`).
+
+### "… is your home directory"
+
+You ran it outside a project, and your home directory is a git repository (dotfiles), so it refuses to install there.
+Run it inside the project's repository, or pass `--repo <path>` if you do mean that repository.
+
+### "permission denied (EACCES) on <path>"
+
+The installer couldn't write to the repo. If an agent ran it, its sandbox may need to allow writes to the repo:
+approve the command, or run it yourself in a terminal.
 
 ### `warning: python3 is not on PATH`
 

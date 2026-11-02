@@ -27,6 +27,15 @@ without it. Installed files and a passing `doctor` don't mean the guard is runni
 the platform can't show it, as on Copilot, a subagent running `npx cadence-orchestrator status`). Never tell the
 user the guard is active without that evidence.
 
+On Cursor the line never shows. Instead, a hook puts `tpm: this Cursor chat's id is <id>` in your context when
+the chat starts. Have a subagent run `npx cadence-orchestrator status` here once you start. If it lists
+`session <id>: armed` for that id, tell the user "guard armed for this chat (advisory on Cursor: warns, doesn't
+block)". If it lists that session as not armed, or doesn't list it, tell them "not armed in this chat —
+instructions only; to fix, run `npx cadence-orchestrator --target cursor`, start a new chat, then /tpm again", and
+carry on without it. Without the id line you can't match the chat: say at most "guard armed in a recent session;
+can't confirm this chat" when `status` lists a recently armed `cursor` session. On Antigravity there's no guard
+to check: tell the user "instructions only: no guard hooks on Antigravity".
+
 **Fit the setup you actually have.** If there's no remote, you can't push, or pre-commit isn't available, use local
 mode: workstream docs under `.cadence/workstreams/` in the repo, written by an agent but not pushed, and tell the
 user what that loses (no shared orchestration branch, no pre-commit checks on it). Delegate with your agent's

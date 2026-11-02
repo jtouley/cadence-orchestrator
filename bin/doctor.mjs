@@ -10,13 +10,26 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const SCRIPTS = ["guard.py", "runtime.py", "tasks_check.py"];
+export const SCRIPTS = ["guard.py", "runtime.py", "tasks_check.py"];
+// In each skill folder: the installed version, a hash of each file written, and the folders the install created.
+export const MANIFEST = ".cadence-install.json";
+export function readManifest(repo, skill) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(repo, skill, MANIFEST), "utf8"));
+  } catch {
+    return null;
+  }
+}
 // Environment variables a platform's runtime consults for its state dir (see each shim's state_env).
 const STATE_ENV = { claude: ["CLAUDE_PLUGIN_DATA"] };
 
-// A target counts as installed if its shim or its hook entries are present. Returns
-// { installed, error }; error is set when the hook file exists but can't be read.
+// False for an instructions-only target (the skill, no hooks); see TARGETS in cadence-orchestrator.mjs.
+export const hasGuard = (spec) => spec.guard !== false;
+
+// A target counts as installed if its shim or its hook entries are present, or, for an instructions-only target,
+// the marker file only it writes. Returns { installed, error }; error is set when the hook file can't be read.
 export function installed(repo, target, spec) {
+  if (!hasGuard(spec)) return { installed: fs.existsSync(path.join(repo, spec.marker)) };
   if (fs.existsSync(path.join(repo, spec.skill, "scripts", `shim_${target}.py`))) return { installed: true };
   const hookFile = path.join(repo, spec.hooks[0][1]);
   if (!fs.existsSync(hookFile)) return { installed: false };
@@ -63,6 +76,25 @@ export function resolveStateDir(repo, target, spec) {
   return { dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir), error: "", source };
 }
 
+// Editors started from the desktop (not a shell) may get only the system's default PATH, so a python3 found only
+// on the shell's PATH (pyenv, Homebrew, a venv) may be missing there. The hook command stays as it is; this is a note.
+export const DEFAULT_PATH = "/usr/bin:/bin:/usr/sbin:/sbin";
+let pathNote; // computed once per run
+export function guiPathNote() {
+  pathNote ??= probePath();
+  return pathNote;
+}
+function probePath() {
+  const here = spawnSync("bash", ["-c", "command -v python3"], { encoding: "utf8" });
+  if (here.status !== 0) return "";
+  const there = spawnSync("/bin/sh", ["-c", "command -v python3"], { encoding: "utf8", env: { PATH: DEFAULT_PATH } });
+  if (there.status === 0 && there.stdout.trim()) return "";
+  return (
+    `python3 is at ${here.stdout.trim()}, not on the default PATH (${DEFAULT_PATH}); an editor started from the ` +
+    "desktop may not find it, and the hooks then allow everything. Start the editor from a shell if hooks don't fire"
+  );
+}
+
 // Per platform: how to find hook commands in its config, and the events to simulate.
 const PLATFORMS = {
   claude: {
@@ -105,6 +137,8 @@ const PLATFORMS = {
     commands: (hooks, event) => (hooks[event] ?? []).map((h) => h.command),
     arm: ["beforeSubmitPrompt", { hook_event_name: "beforeSubmitPrompt", prompt: "/tpm doctor" }],
     tool: "preToolUse",
+    // sessionStart puts the chat's id in its context (https://cursor.com/docs/agent/hooks).
+    start: ["sessionStart", { hook_event_name: "sessionStart", is_background_agent: false }],
     write: () => ({ hook_event_name: "preToolUse", tool_name: "Write", tool_input: { path: "doctor-check.txt" } }),
     advisory: (r) => r.status === 0 && /"permission":\s*"allow"/.test(r.stdout) && r.stderr.includes("tpm advisory"),
   },
@@ -122,6 +156,11 @@ export function doctor(repo, target, spec) {
   const results = [];
   const check = (name, ok, detail = "", skip = false) => results.push({ name: `${target}: ${name}`, ok, detail, skip });
   const shim = `${spec.skill}/scripts/shim_${target}.py`;
+  if (!hasGuard(spec)) {
+    for (const rel of [`${spec.skill}/SKILL.md`, spec.marker]) check(`${rel} exists`, fs.existsSync(path.join(repo, rel)));
+    check("instructions only: no guard hooks on this platform", true, "", true);
+    return results;
+  }
 
   for (const f of ["SKILL.md", ...SCRIPTS.map((s) => `scripts/${s}`), `scripts/shim_${target}.py`]) {
     const rel = `${spec.skill}/${f}`;
@@ -137,7 +176,7 @@ export function doctor(repo, target, spec) {
     check(`${hookFile} is valid JSON`, false, e.message);
   }
   const ours = (event) => (hooks ? p.commands(hooks, event).filter((c) => typeof c === "string" && c.includes(shim)) : []);
-  const events = [p.arm[0], p.tool, ...(p.stop ? [p.stop[0]] : [])];
+  const events = [...(p.start ? [p.start[0]] : []), p.arm[0], p.tool, ...(p.stop ? [p.stop[0]] : [])];
   for (const event of events) {
     check(`${event} hook points at ${shim}`, ours(event).length > 0, "not found in " + hookFile);
   }
@@ -196,6 +235,14 @@ export function doctor(repo, target, spec) {
       check("advisory is logged", logged, "no advisory.log in the state directory");
       check("subagent Write (this platform doesn't mark subagents)", true, "", true);
     }
+    if (p.start) {
+      const start = run(p.start[0], p.start[1]);
+      let context = "";
+      try {
+        context = JSON.parse(start.stdout).additional_context ?? "";
+      } catch {}
+      check("sessionStart puts the chat id in context", start.status === 0 && context.includes(session), show(start));
+    }
     if (p.stop) {
       const stop = run(p.stop[0], p.stop[1]);
       check("Stop with no running agents is allowed", stop.status === 0 && stop.stdout.trim() === "", show(stop));
@@ -212,7 +259,7 @@ export function hookEntries(repo, target, spec) {
   const p = PLATFORMS[target];
   const file = spec.hooks[0][1];
   const shim = `${spec.skill}/scripts/shim_${target}.py`;
-  const events = [p.arm[0], p.tool, ...(p.stop ? [p.stop[0]] : [])];
+  const events = [...(p.start ? [p.start[0]] : []), p.arm[0], p.tool, ...(p.stop ? [p.stop[0]] : [])];
   let hooks = {};
   try {
     hooks = JSON.parse(fs.readFileSync(path.join(repo, file), "utf8")).hooks ?? {};

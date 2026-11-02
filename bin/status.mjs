@@ -4,7 +4,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { hookEntries, installed, resolveStateDir } from "./doctor.mjs";
+import { guiPathNote, hasGuard, hookEntries, installed, readManifest, resolveStateDir } from "./doctor.mjs";
 
 const ago = (seconds) =>
   seconds < 90 ? `${Math.round(seconds)} s ago` : seconds < 5400 ? `${Math.round(seconds / 60)} min ago` : `${(seconds / 3600).toFixed(1)} h ago`;
@@ -30,20 +30,76 @@ function sessions(stateDir, repo, hours) {
   return out.sort((a, b) => a.age - b.age);
 }
 
-export function status(repo, TARGETS, hours, stateDir = "") {
+// A guarded target's own files, other than its hook config and shim: files it writes, its pointer block, and its
+// skill folder when no other target shares it.
+function leftovers(repo, spec, TARGETS) {
+  const found = (spec.files ?? []).map(([, dst]) => dst).filter((f) => fs.existsSync(path.join(repo, f)));
+  for (const [, dst] of spec.blocks ?? []) {
+    try {
+      if (fs.readFileSync(path.join(repo, dst), "utf8").includes("<!-- cadence-orchestrator:tpm begin -->")) found.push(dst);
+    } catch {}
+  }
+  const shared = Object.values(TARGETS).filter((s) => s.skill === spec.skill).length > 1;
+  if (!shared && fs.existsSync(path.join(repo, spec.skill, "SKILL.md"))) found.push(`${spec.skill}/`);
+  return found;
+}
+
+// The version a skill folder was installed from: its install manifest, or SKILL.md's metadata for older installs.
+function installedVersion(repo, skill) {
+  const manifest = readManifest(repo, skill);
+  if (manifest?.version) return manifest.version;
+  try {
+    const m = fs.readFileSync(path.join(repo, skill, "SKILL.md"), "utf8").match(/^\s+version:\s*"?([^"\n]+)"?/m);
+    return m ? m[1] : "";
+  } catch {
+    return "";
+  }
+}
+
+export function status(repo, TARGETS, hours, stateDir = "", version = "") {
   const lines = [];
+  const data = { targets: [] };
   let anyInstalled = false;
   let anyLive = false;
+  let anyHooked = false;
+  let broken = false;
+  const reinstall = (t) => `reinstall with \`npx cadence-orchestrator --target ${t}\``;
+  const owned = new Set(); // skill folders an installed target accounts for
   const states = new Map();
   for (const target of Object.keys(TARGETS).sort()) {
     const spec = TARGETS[target];
     const inst = installed(repo, target, spec);
-    const skillFiles = ["SKILL.md", `scripts/shim_${target}.py`].every((f) => fs.existsSync(path.join(repo, spec.skill, f)));
-    if (!inst.installed && !skillFiles) {
-      lines.push(`${target}: not installed`);
+    // Installed is per target: a guarded target's shim or hook entries, an instructions-only target's marker.
+    if (!inst.installed) {
+      // Hook config and shim gone, but the target's own files left behind: its guard is broken, whatever else is
+      // installed (an instructions-only target sharing the skill folder must not hide it).
+      const left = hasGuard(spec) ? leftovers(repo, spec, TARGETS) : [];
+      if (left.length) {
+        broken = true;
+        lines.push(`${target}: hook config and shim missing (found ${left.join(", ")}); ${reinstall(target)}`);
+      } else lines.push(`${target}: not installed`);
+      data.targets.push({ target, installed: false, guard: hasGuard(spec), complete: !left.length, leftovers: left });
       continue;
     }
     anyInstalled = true;
+    owned.add(spec.skill);
+    const entry = { target, installed: true, guard: hasGuard(spec), complete: true, version: installedVersion(repo, spec.skill) };
+    data.targets.push(entry);
+    if (version && entry.version && entry.version !== version) {
+      lines.push(`${target}: installed ${entry.version}, this is ${version}; ${reinstall(target)} to update`);
+    }
+    if (!hasGuard(spec)) {
+      const skill = fs.existsSync(path.join(repo, spec.skill, "SKILL.md"));
+      lines.push(`${target}: instructions only, no guard hooks on this platform; skill ${skill ? "found" : "missing"} (${spec.skill})`);
+      if (!skill) {
+        broken = true;
+        entry.complete = false;
+        lines.push(`${target}: ${reinstall(target)}`);
+      }
+      continue;
+    }
+    anyHooked = true;
+    const skillFiles = ["SKILL.md", `scripts/shim_${target}.py`].every((f) => fs.existsSync(path.join(repo, spec.skill, f)));
     lines.push(`${target}: skill files ${skillFiles ? "found" : "missing"} (${spec.skill})`);
     const hooks = hookEntries(repo, target, spec);
     const have = hooks.events.filter((e) => e.installed).map((e) => e.event);
@@ -54,6 +110,12 @@ export function status(repo, TARGETS, hours, stateDir = "") {
         (missing.length ? `; missing ${missing.join(", ")}` : "") +
         (hooks.error ? `; can't read it (${hooks.error})` : ""),
     );
+    entry.missing_events = missing;
+    if (!skillFiles || missing.length || hooks.error) {
+      broken = true;
+      entry.complete = false;
+      lines.push(`${target}: incomplete install; ${reinstall(target)}`);
+    }
     const resolved = stateDir
       ? { dir: path.resolve(stateDir), error: "", source: "--state-dir" }
       : resolveStateDir(repo, target, spec);
@@ -64,6 +126,14 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     }
     if (!states.has(dir)) states.set(dir, source);
     const seen = sessions(dir, repo, hours).filter((s) => s.platform === target);
+    entry.state_dir = dir;
+    entry.sessions = seen.map((s) => ({
+      session: s.session,
+      armed: !!s.armed && !s.switched_off,
+      switched_off: !!s.switched_off,
+      last_event: s.last_event,
+      age_s: Math.round(s.age),
+    }));
     if (seen.length) {
       anyLive = true;
       const armed = seen.filter((s) => s.armed && !s.switched_off).length;
@@ -84,13 +154,20 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     lines.push(`state dir: ${dir} (from ${source})`);
     lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
   }
+  for (const skill of new Set(Object.values(TARGETS).map((s) => s.skill))) {
+    if (!owned.has(skill) && fs.existsSync(path.join(repo, skill, "SKILL.md"))) {
+      lines.push(`note: ${skill}/ has a tpm skill, but no target here is installed with it`);
+    }
+  }
+  const note = anyHooked ? guiPathNote() : "";
+  if (note) lines.push(`note: ${note}.`);
   if (!anyInstalled) lines.push("No target is installed in this repo.");
-  else if (!anyLive) {
+  else if (anyHooked && !anyLive) {
     lines.push(
       "No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session " +
         "in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again from inside " +
         "that session (so it sees the agent's environment), or pass --state-dir.",
     );
   }
-  return { lines, ok: anyLive };
+  return { lines, ok: !broken && (anyLive || (anyInstalled && !anyHooked)), data };
 }

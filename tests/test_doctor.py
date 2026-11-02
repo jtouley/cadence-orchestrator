@@ -139,9 +139,9 @@ def test_reinstall_removes_old_pycache_only_inside_the_skill_dir():
     mine = os.path.join(repo, "src/__pycache__")
     for d in (stale, mine):
         os.makedirs(d)
-        open(os.path.join(d, "x.cpython-313.pyc"), "wb").write(b"\0")
+        open(os.path.join(d, "runtime.cpython-313.pyc"), "wb").write(b"\0")  # bytecode of tpm's own script
     subprocess.run([CLI, "--target", "codex", "--repo", repo], check=True, capture_output=True)
-    assert not os.path.exists(stale) and os.path.exists(os.path.join(mine, "x.cpython-313.pyc"))
+    assert not os.path.exists(stale) and os.path.exists(os.path.join(mine, "runtime.cpython-313.pyc"))
 
 
 def test_doctor_all_checks_only_installed_targets():

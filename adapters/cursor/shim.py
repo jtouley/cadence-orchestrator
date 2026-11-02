@@ -8,6 +8,7 @@ prints valid JSON. Session = conversation_id.
 """
 
 FALLBACK_STDOUT = '{"permission": "allow"}'
+import io
 import json
 import os
 import sys
@@ -32,7 +33,7 @@ TOOL_MAP = {"Shell": "Bash", "Task": "Agent"}
 
 
 def parse(p: dict) -> Event:
-    session = str(p.get("conversation_id", ""))
+    session = str(p.get("conversation_id") or p.get("session_id") or "")
     roots = p.get("workspace_roots") or []
     project = (roots[0] if roots else "") or p.get("cwd") or ""
     if "prompt" in p and "tool_name" not in p:
@@ -69,5 +70,45 @@ PLATFORM = Platform(
     render_prompt=lambda message: Outcome(stdout='{"continue": true}', stderr=message),
 )
 
+
+def session_context(session: str) -> str:
+    """The line sessionStart puts in the chat's context, so /tpm can find this chat in `status`."""
+    return (
+        f"tpm: this Cursor chat's id is {session}. To check the guard for this chat, look for "
+        f'"session {session}" in `npx cadence-orchestrator status`.'
+    )
+
+
+def is_session_start(p: dict) -> bool:
+    # hook_event_name is a documented base field. Without it, go only by sessionStart's documented input
+    # (session_id, is_background_agent): sessionEnd adds reason, and a tool or prompt event is never a sessionStart,
+    # so a payload with tool_name, tool_input or prompt goes to the guard (https://cursor.com/docs/hooks).
+    if "hook_event_name" in p:
+        return p.get("hook_event_name") == "sessionStart"
+    if any(k in p for k in ("tool_name", "tool_input", "prompt", "reason")):
+        return False
+    return "session_id" in p and "is_background_agent" in p
+
+
+def main() -> int:
+    # sessionStart's session_id equals conversation_id, and its additional_context is added to the chat's
+    # context (https://cursor.com/docs/agent/hooks). Every other event goes to the shared runtime.
+    raw = sys.stdin.read()
+    try:
+        payload = json.loads(raw)
+    except ValueError:
+        payload = None
+    if isinstance(payload, dict) and is_session_start(payload):
+        session = str(payload.get("session_id") or payload.get("conversation_id") or "")
+        print(json.dumps({"additional_context": session_context(session)} if session else {}))
+        try:
+            runtime.handle(PLATFORM, payload)  # records the heartbeat; the decision doesn't apply here
+        except Exception:
+            pass
+        return 0
+    sys.stdin = io.StringIO(raw)
+    return runtime.main(PLATFORM)
+
+
 if __name__ == "__main__":
-    sys.exit(runtime.main(PLATFORM))
+    sys.exit(main())
