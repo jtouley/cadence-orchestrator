@@ -95,3 +95,29 @@ def test_skill_version_matches_the_package_version():
     readme = open(os.path.join(ROOT, "README.md")).read()
     for stated in re.findall(r"\bVersion (\d+\.\d+\.\d+)", readme):
         assert stated == version, f"README says Version {stated}, package.json says {version}"
+
+
+def test_reviewers_get_no_scope_limits_and_suspicions_go_through_a_diagnostic():
+    skill = " ".join(open(os.path.join(SKILL_DIR, "SKILL.md")).read().split())
+    # dispatch: only builders and investigators get an out-of-scope line
+    assert (
+        "A builder's or investigator's prompt is a verb or skill, a target pinned to a commit, what's out of scope"
+        in skill
+    )
+    assert "A reviewer's prompt has no out-of-scope line and no other limit on where to look" in skill
+    # step 5: the quality pass is unrestricted and always runs
+    assert (
+        "The quality pass always runs on the whole change, whatever the spec pass found, and is never skipped or narrowed"
+        in skill
+    )
+    # the user's suspicions: diagnostic skill first, only its report goes on, to builders
+    assert "send it to a diagnostic or debugging skill first" in skill
+    assert (
+        "Only that skill's report, with its repro command and output, goes on, and only to builders" in skill
+    )
+    # the PR #11 reviewer rule is unchanged
+    assert (
+        "Leave out suspected issues, focus areas, what a fix does, earlier findings and your own conclusions"
+        in skill
+    )
+    assert "Builders fixing blockers get the findings verbatim." in skill

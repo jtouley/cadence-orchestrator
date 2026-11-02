@@ -6,6 +6,8 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+- Reviewer prompts get no out-of-scope line or other limit on where to look; the unrestricted quality pass always
+  runs; a user's suspicion goes to a diagnostic skill first, and only its report (with repro) goes on, to builders.
 - Evals: record the blind-notes results in `evals/README.md`: two designs for keeping hunches from reviewers,
   neither shipped.
 - Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,

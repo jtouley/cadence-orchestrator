@@ -42,6 +42,11 @@ cause itself, put both in the brief, and the agents just agreed. Worse, an agent
 you already dictated adds nothing. Your reads are for docs that record decisions (AGENTS.md, CLAUDE.md or
 similar, ADRs, the workstream docs) and for checking the artifacts agents hand back.
 
+The same goes for the user's own suspicions. When the user brings one, send it to a diagnostic or debugging
+skill first. Only that skill's report, with its repro command and output, goes on, and only to builders: a
+reproduced bug is something to fix, a bare suspicion is something an agent will just confirm. Reviewers still
+get only target, skill, standard and destination (step 5).
+
 ## Shared context lives on the orchestration branch
 
 Chat relays get lost, paraphrased and truncated. Keep the shared context in written docs on a central branch on
@@ -75,9 +80,10 @@ the main thread still writes nothing, and there's no path carve-out in the guard
 
 ## Dispatch prompts are one or two lines
 
-The prompt is a verb or skill, a target pinned to a commit, what's out of scope, and where the result goes.
-Everything else is in the doc. For a reviewer, scope means only the split of files or commits it owns when
-reviewers run in parallel; its prompt carries nothing else about where to look (step 5).
+A builder's or investigator's prompt is a verb or skill, a target pinned to a commit, what's out of scope, and
+where the result goes; everything else is in the doc. A reviewer's prompt has no out-of-scope line and no other
+limit on where to look: target, skill, standard and destination, plus, only when reviewers run in parallel, the
+files or commits each owns, so that together they still cover the whole change (step 5).
 
 - `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
 - `Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR citing that doc@sha and what you
@@ -85,9 +91,9 @@ reviewers run in parallel; its prompt carries nothing else about where to look (
 - `Investigate workstreams/grind-advice.md@3f2a1c9, no fixes. Add findings, with the repro command and output.`
 
 **Pin the doc**: cite it as `workstreams/<slug>.md@<sha>` and have the scribe record that SHA on the task, so a
-later edit can't silently change what an agent was asked to do. **Name the boundary**: a prompt that says what
-is out stops two agents from both doing the overlap. **Ask for what was left out**: every worker reports what
-it skipped or didn't finish, alongside what it did.
+later edit can't silently change what an agent was asked to do. **Name the boundary**: a builder's or
+investigator's prompt that says what is out stops two agents from both doing the overlap. **Ask for what was
+left out**: every worker reports what it skipped or didn't finish, alongside what it did.
 
 Results land as durable artifacts (PR comments, commits, doc updates), not as chat you have to relay. Name an
 existing skill when one fits (code review, security review, cleanup, running the app, project skills). For big
@@ -135,8 +141,9 @@ unwatched on a shared message board. These rules prevent each of those:
    `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
    It checks all of what the doc asked and nothing else, and whether each left-out item is acceptable; dropped
    scope is found here or not at all. Then quality: `/code-review on PR #42 and comment the full review to
-   GitHub.` A pinned pointer to requirements is a standard, not a hint; name any other standard the same way
-   (`... against https://agentskills.io/specification`).
+   GitHub.` The quality pass always runs on the whole change, whatever the spec pass found, and is never
+   skipped or narrowed: it finds what the doc didn't think to ask about. A pinned pointer to requirements is a
+   standard, not a hint; name any other standard the same way (`... against https://agentskills.io/specification`).
    Beyond target, skill, standard and destination, a reviewer's prompt holds only, when reviewers run in
    parallel, which files or commits each owns: a boundary that splits the work is fine, a pointer to where
    problems might be is not. Leave out suspected issues, focus areas, what a fix does, earlier findings and
