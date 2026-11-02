@@ -428,3 +428,10 @@ def test_fixes_must_be_a_version_or_another_task_in_the_file():
     for bad in ("0.1", "latest", "missing-task", "fix-1", None, 3):  # fix-1 would fix itself
         errors = tasks_check.validate(doc(CLAIMED, dict(fix, fixes=bad)))
         assert any("a fix must say what it fixes" in e for e in errors), bad
+
+
+def test_fixed_in_must_be_a_version():
+    fix = dict(CLAIMED, id="fix-1", kind="fix", fixes="0.1.0")
+    assert tasks_check.validate(doc(dict(fix, fixed_in="0.1.1"))) == []
+    for bad in ("next", "0.1", 5):
+        assert any("fixed_in must be" in e for e in tasks_check.validate(doc(dict(fix, fixed_in=bad)))), bad

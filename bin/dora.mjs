@@ -25,10 +25,20 @@ const FEW_DEPLOYS = 10;
 const ISO8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3}|\.\d{6})?)?(Z|[+-]\d{2}:\d{2})$/;
 const SEMVER = /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 const bare = (v) => v.replace(/^v/, "");
+const isPlaceholder = (v) => /^0\.0\.0(-|$)/.test(v);
+const isPrerelease = (v) => v.includes("-");
 
 export function parseTime(value) {
-  // Seconds since the epoch, or null when the value doesn't follow the shared ISO 8601 rule.
+  // Seconds since the epoch, or null when the value doesn't follow the shared ISO 8601 rule or names an
+  // impossible date or time (2026-02-30, 24:00). The fields are checked by a round trip, as Python does.
   if (typeof value !== "string" || !ISO8601.test(value)) return null;
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/);
+  const [y, mo, d, h, mi, s] = m.slice(1, 7).map((x) => Number(x ?? 0));
+  const local = new Date(Date.UTC(y, mo - 1, d, h, mi, s));
+  const sameFields =
+    local.getUTCFullYear() === y && local.getUTCMonth() === mo - 1 && local.getUTCDate() === d &&
+    local.getUTCHours() === h && local.getUTCMinutes() === mi && local.getUTCSeconds() === s;
+  if (!sameFields || (m[7] !== "Z" && (Number(m[9]) > 23 || Number(m[10]) > 59))) return null;
   const ms = Date.parse(value);
   return Number.isNaN(ms) ? null : ms / 1000;
 }
@@ -117,7 +127,7 @@ function deploysFromNpm(repo, warnings) {
       const hits = lines(git(repo, ["log", "--format=%H", "--reverse", "-S", `"version": "${version}"`, "--", "package.json"]));
       commit = hits[0] ?? "";
     }
-    if (!commit) unmapped.push(version);
+    if (!commit && !isPlaceholder(version) && !isPrerelease(version)) unmapped.push(version);
     deploys.push({ name: version, version, commit: commit || null, time });
   }
   if (unmapped.length) {
@@ -164,7 +174,8 @@ function taskFixes(repo, warnings) {
         if (t.deployed_at != null && fixedAt === null) {
           warnings.push(`${file}: task ${t.id}: deployed_at ${JSON.stringify(t.deployed_at)} isn't ISO 8601 with a timezone`);
         }
-        out.push({ failedVersion: bare(t.fixes), fixedAt, source: file, task: t.id });
+        const fixedIn = typeof t.fixed_in === "string" && SEMVER.test(t.fixed_in) ? bare(t.fixed_in) : null;
+        out.push({ failedVersion: bare(t.fixes), fixedAt, fixedIn, source: file, task: t.id });
       }
     }
   }
@@ -185,7 +196,10 @@ const human = (seconds) => {
 };
 const pct = (a, n) => `${a}/${n} deploys (${((100 * a) / n).toFixed(0)}%)`;
 
-export function dora(repo, { since = null, deploys: mode = "tags", now = Date.now() / 1000 } = {}) {
+export function dora(
+  repo,
+  { since = null, deploys: mode = "tags", includePrereleases = false, now = Date.now() / 1000 } = {},
+) {
   const warnings = [];
   const source = {
     tags: "git: release tags v* (annotated: tagger date)",
@@ -194,7 +208,17 @@ export function dora(repo, { since = null, deploys: mode = "tags", now = Date.no
   }[mode];
   const loaded =
     mode === "merges" ? deploysFromMerges(repo) : mode === "npm" ? deploysFromNpm(repo, warnings) : deploysFromTags(repo, warnings);
-  const all = loaded.sort((a, b) => a.time - b.time);
+  // Production deploys only: placeholders (0.0.0*) never count; prereleases only with --include-prereleases.
+  const excluded = loaded.filter(
+    (d) => d.version && (isPlaceholder(d.version) || (!includePrereleases && isPrerelease(d.version))),
+  );
+  if (excluded.length) {
+    warnings.push(
+      `Not counted as deploys: ${excluded.map((d) => d.version).join(", ")} (0.0.0 placeholders` +
+        (includePrereleases ? ")" : " and prereleases; --include-prereleases counts prereleases)"),
+    );
+  }
+  const all = loaded.filter((d) => !excluded.includes(d)).sort((a, b) => a.time - b.time);
   if (mode === "tags" && all.length) {
     warnings.push("Tag mode counts every v* tag, even one whose release failed; --deploys npm counts only published versions.");
   }
@@ -234,7 +258,10 @@ export function dora(repo, { since = null, deploys: mode = "tags", now = Date.no
   let skewed = 0;
   for (const d of inWindow) {
     if (!d.commit) continue;
-    const earlier = all.filter((e) => e.time < d.time && e.commit).map((e) => e.commit);
+    // Tags and npm versions can be out of order (maintenance releases), so exclude every earlier deploy.
+    // Merges are main's linear first-parent history, where the previous deploy alone is enough.
+    const before = all.filter((e) => e.time < d.time && e.commit);
+    const earlier = mode === "merges" ? before.slice(-1).map((e) => e.commit) : before.map((e) => e.commit);
     const out = git(repo, ["log", "--no-merges", "--format=%ct", d.commit, ...(earlier.length ? ["--not", ...earlier] : [])]);
     for (const l of lines(out)) {
       const committed = Number(l);
@@ -269,49 +296,77 @@ export function dora(repo, { since = null, deploys: mode = "tags", now = Date.no
   } else {
     const byVersion = new Map(all.map((d) => [d.version, d]));
     const windowVersions = new Set(inWindow.map((d) => d.version));
-    const unmatched = [...new Set(records.map((r) => r.failedVersion).filter((v) => !byVersion.has(v)))];
-    const failedVersions = [...new Set(records.map((r) => r.failedVersion))].filter((v) => windowVersions.has(v));
-    // The deploy that fixed each failed version: the CHANGELOG's fixing release, or the deploy that shipped a
-    // task's deployed_at; the earliest wins. Fixes with neither are counted as unknown.
+    const failedAll = [...new Set(records.map((r) => r.failedVersion))];
+    const unmatchedFailures = failedAll.filter((v) => !byVersion.has(v));
+    const failedVersions = failedAll.filter((v) => windowVersions.has(v));
+    // The deploy that shipped each fix, per failed version (the earliest wins):
+    // - CHANGELOG: the release whose section lists the fix;
+    // - tasks.json: the version in `fixed_in`, else the latest deploy at or before `deployed_at` (the tag comes
+    //   before the publish), if it's within 48 h and isn't the failed version itself.
+    const WINDOW = 48 * 3600;
     const fixOf = new Map();
-    let unknownFix = 0;
+    const unmatchedFixes = [];
     for (const v of failedVersions) {
-      const failedAt = byVersion.get(v).time;
+      const failed = byVersion.get(v);
       const candidates = [];
       for (const r of records.filter((r) => r.failedVersion === v)) {
-        if (r.fixingVersion && byVersion.has(r.fixingVersion)) candidates.push(byVersion.get(r.fixingVersion));
+        let deploy = null;
+        let at = null;
+        if (r.fixingVersion) deploy = byVersion.get(r.fixingVersion) ?? null;
+        else if (r.fixedIn) deploy = byVersion.get(r.fixedIn) ?? null;
         else if (r.fixedAt !== null && r.fixedAt !== undefined) {
-          const shipped = all.find((d) => d.time >= r.fixedAt);
-          candidates.push(shipped ? { ...shipped, time: r.fixedAt } : { name: "(after last deploy)", time: r.fixedAt });
+          const live = all.filter((d) => d.time <= r.fixedAt).at(-1);
+          if (live && live.version !== v && r.fixedAt - live.time <= WINDOW) deploy = live;
+          at = r.fixedAt;
         }
+        if (deploy && deploy.time >= failed.time) candidates.push({ ...deploy, time: at ?? deploy.time });
       }
-      const valid = candidates.filter((c) => c.time >= failedAt).sort((a, b) => a.time - b.time);
-      if (valid.length) fixOf.set(v, valid[0]);
-      else unknownFix += 1;
+      candidates.sort((a, b) => a.time - b.time);
+      if (candidates.length) fixOf.set(v, candidates[0]);
+      else unmatchedFixes.push(v);
     }
     const n = inWindow.length;
-    const note = unmatched.length ? `; ${unmatched.length} record(s) name versions with no deploy: ${unmatched.join(", ")}` : "";
     if (!n) {
       for (const k of keys) metrics[k] = unmeasurable("no deploys in the window");
-    } else if (!failedVersions.length && unmatched.length) {
-      for (const k of keys) metrics[k] = unmeasurable(`failure records don't match any deploy here (${unmatched.join(", ")})`);
+    } else if (!failedVersions.length && unmatchedFailures.length) {
+      for (const k of keys) {
+        metrics[k] = unmeasurable(`failure records don't match any deploy here (${unmatchedFailures.join(", ")})`);
+      }
     } else {
-      metrics.change_fail_rate = { value: pct(failedVersions.length, n) + note, failed: failedVersions, sample: n, source: recordSources };
-      const rework = new Set([...fixOf.values()].filter((f) => windowVersions.has(f.version)).map((f) => f.version));
-      metrics.deployment_rework_rate = {
-        value: pct(rework.size, n) + (unknownFix ? `; the fixing deploy of ${unknownFix} failure(s) is unknown` : "") + note,
-        rework: [...rework],
+      // Never a bare percentage when some records couldn't be matched: give the counts instead.
+      const matchNote = (matched, unmatched, what) =>
+        `${matched} ${what} matched, ${unmatched.length} unmatched (${unmatched.join(", ")})`;
+      metrics.change_fail_rate = {
+        value: unmatchedFailures.length
+          ? `${failedVersions.length}/${n} deploys failed; ` +
+            matchNote(failedVersions.length, unmatchedFailures, "failure record(s)")
+          : pct(failedVersions.length, n),
+        failed: failedVersions,
+        unmatched: unmatchedFailures,
         sample: n,
-        source: `${recordSources}; the deploy that shipped each fix (CHANGELOG release, or the deploy at deployed_at)`,
+        source: recordSources,
+      };
+      const rework = new Set([...fixOf.values()].filter((f) => windowVersions.has(f.version)).map((f) => f.version));
+      const unmatchedRework = [...unmatchedFixes.map((v) => `fix of ${v}`), ...unmatchedFailures];
+      metrics.deployment_rework_rate = {
+        value: unmatchedRework.length
+          ? `${rework.size}/${n} deploys were fixes; ${matchNote(fixOf.size, unmatchedRework, "fix(es)")}`
+          : pct(rework.size, n),
+        rework: [...rework],
+        unmatched: unmatchedRework,
+        sample: n,
+        source:
+          `${recordSources}; the deploy that shipped each fix: the CHANGELOG release, tasks.json fixed_in, or the ` +
+          "latest deploy at or before deployed_at (within 48 h)",
       };
       const recoveries = [...fixOf.entries()].map(([v, f]) => f.time - byVersion.get(v).time);
       metrics.failed_deployment_recovery_time = {
         value:
           (recoveries.length ? `median ${human(median(recoveries))}` : "not measurable: no recorded fix times") +
-          (unknownFix ? `; ${unknownFix} failure(s) have no fix time` : ""),
+          (unmatchedFixes.length ? `; ${unmatchedFixes.length} failure(s) have no matched fix` : ""),
         median_seconds: median(recoveries),
         sample: recoveries.length,
-        source: `${recordSources}; failed deploy → first deploy (or deployed_at) that fixes it`,
+        source: `${recordSources}; failed deploy → the matched fix's deploy (or its deployed_at)`,
       };
     }
   }

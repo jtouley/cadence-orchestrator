@@ -81,6 +81,18 @@ def validate(data) -> list[str]:
                 errors.append(f"{where}: {b} is before {a}")
         if "kind" in task and task["kind"] not in KINDS:
             errors.append(f"{where}: kind must be one of {sorted(KINDS)}, not {task['kind']!r}")
+        if "fixed_in" in task and not (
+            isinstance(task["fixed_in"], str) and re.match(SEMVER, task["fixed_in"])
+        ):
+            errors.append(
+                f"{where}: fixed_in must be the version that shipped the fix, like 0.1.1, not {task['fixed_in']!r}"
+            )
+        if "fixed_in" in task and not (
+            isinstance(task["fixed_in"], str) and re.match(SEMVER, task["fixed_in"])
+        ):
+            errors.append(
+                f"{where}: fixed_in must be the version that shipped the fix, like 0.1.1, not {task['fixed_in']!r}"
+            )
         if task.get("kind") == "fix":
             fixes = task.get("fixes")
             ids = {t.get("id") for t in data["tasks"] if isinstance(t, dict)}

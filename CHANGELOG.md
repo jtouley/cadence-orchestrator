@@ -12,11 +12,13 @@ rate, rework and recovery time.
 - `cadence-orchestrator dora [--since] [--deploys tags|merges|npm] [--json]` reports DORA's five delivery metrics:
   deploys from annotated tags, main, or npm publish times; lead time counted once per commit against the first
   deploy containing it, with older commits as the baseline; failures only from CHANGELOG and tasks.json records,
-  de-duplicated per failed version, and "not measurable" (never 0%) when there are none or they don't match.
+  de-duplicated per failed version, and "not measurable" (never 0%) when there are none or they don't match;
+  unmatched records are counted and listed instead of a bare percentage. Prereleases aren't deploys unless
+  `--include-prereleases`; `0.0.0` placeholders never are.
 - tasks.json: optional `committed_at`, `merged_at`, `deployed_at` (ISO 8601 with a timezone, ordered; one rule shared
-  with `dora`) and `kind: planned|fix` with `fixes` (a version or another task's id); `tasks_check.py` validates
-  them. Workstream docs get a "Deployed when:" line, and the report step gives
-  the merge SHA and deployed version.
+  with `dora`, impossible dates rejected on both sides) and `kind: planned|fix` with `fixes` (a version or another
+  task's id) and `fixed_in` (the version that shipped the fix); `tasks_check.py` validates them. Workstream docs
+  get a "Deployed when:" line, and the report step gives the merge SHA and deployed version.
 
 ## 0.1.3
 

@@ -142,7 +142,7 @@ function fail(message, code = 1) {
 const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
        cadence-orchestrator doctor --target <...|all> [--repo <path>]
        cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
-       cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges|npm] [--json]
+       cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges|npm] [--include-prereleases] [--json]
 
 Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
 \`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
@@ -165,6 +165,7 @@ function parseArgs(argv, mode) {
       opts.deploys = value();
       if (!["tags", "merges", "npm"].includes(opts.deploys)) fail(`--deploys is tags, merges or npm\n${USAGE}`, 2);
     } else if (flag === "--json" && mode === "dora") opts.json = true;
+    else if (flag === "--include-prereleases" && mode === "dora") opts.includePrereleases = true;
     else if (flag === "--hours" && mode === "status") {
       opts.hours = Number(value());
       if (!(opts.hours > 0)) fail(`--hours needs a positive number\n${USAGE}`, 2);
@@ -172,7 +173,7 @@ function parseArgs(argv, mode) {
     else if (flag === "-h" || flag === "--help") {
       console.log(USAGE);
       process.exit(0);
-    } else if (["--catalog", "--hours", "--target", "--state-dir", "--since", "--deploys", "--json"].includes(flag)) {
+    } else if (["--catalog", "--hours", "--target", "--state-dir", "--since", "--deploys", "--json", "--include-prereleases"].includes(flag)) {
       fail(`${mode === "install" ? "install" : mode} doesn't take ${flag}\n${USAGE}`, 2);
     } else fail(`unknown argument ${argv[i]}\n${USAGE}`, 2);
   }
@@ -193,7 +194,7 @@ const repo = path.resolve(opts.repo);
 if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
 if (mode === "dora") {
   const { dora, formatDora } = await import("./dora.mjs");
-  const report = dora(repo, { since: opts.since, deploys: opts.deploys });
+  const report = dora(repo, { since: opts.since, deploys: opts.deploys, includePrereleases: opts.includePrereleases });
   console.log(opts.json ? JSON.stringify(report, null, 2) : formatDora(report).join("\n"));
   process.exit(0);
 }

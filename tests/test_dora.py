@@ -119,20 +119,49 @@ def iso(ts):
 def test_task_records_and_since():
     repo = synthetic(changelog="")
     os.makedirs(os.path.join(repo, "workstreams"))
-    fixed_at = T0 + 3 * DAY + 6 * 3600  # six hours after v0.1.1 shipped
-    tasks = {
-        "tasks": [
-            {"id": "hotfix", "state": "done", "kind": "fix", "fixes": "0.1.1", "deployed_at": iso(fixed_at)}
-        ]
-    }
-    json.dump(tasks, open(os.path.join(repo, "workstreams", "w.tasks.json"), "w"))
+    # The fix shipped in v0.1.2 (tagged T0 + 5 days); deployed_at is the npm publish, 2 h after the tag.
+    deployed = T0 + 5 * DAY + 2 * 3600
+    task = {"id": "hotfix", "state": "done", "kind": "fix", "fixes": "0.1.1", "deployed_at": iso(deployed)}
+    json.dump({"tasks": [task]}, open(os.path.join(repo, "workstreams", "w.tasks.json"), "w"))
     m = dora(repo)["metrics"]
     assert m["change_fail_rate"]["failed"] == ["0.1.1"]
-    assert m["deployment_rework_rate"]["rework"] == ["0.1.2"]  # the deploy that shipped the task's fix
-    assert m["failed_deployment_recovery_time"]["median_seconds"] == 6 * 3600
+    # Matched to the latest deploy at or before deployed_at, which shipped it; recovery runs to deployed_at.
+    assert m["deployment_rework_rate"]["rework"] == ["0.1.2"]
+    assert m["deployment_rework_rate"]["value"].startswith("1/3 deploys (33%)")
+    assert m["failed_deployment_recovery_time"]["median_seconds"] == deployed - (T0 + 3 * DAY)
     since = dora(repo, "--since", iso(T0 + 4 * DAY))  # only v0.1.2 (T0 + 5 days) is after this
     assert since["metrics"]["deployment_frequency"]["count"] == 1
     assert since["metrics"]["change_fail_rate"]["failed"] == []  # v0.1.1 is outside the window
+
+
+def task_repo(task):
+    repo = synthetic(changelog="")
+    os.makedirs(os.path.join(repo, "workstreams"))
+    json.dump(
+        {"tasks": [dict({"id": "hotfix", "state": "done", "kind": "fix", "fixes": "0.1.1"}, **task)]},
+        open(os.path.join(repo, "workstreams", "w.tasks.json"), "w"),
+    )
+    return dora(repo)["metrics"]
+
+
+def test_task_fix_matching_rules():
+    # fixed_in names the release outright.
+    m = task_repo({"fixed_in": "0.1.2"})
+    assert m["deployment_rework_rate"]["rework"] == ["0.1.2"]
+    assert m["failed_deployment_recovery_time"]["median_seconds"] == 2 * DAY
+    # deployed_at right after the failed release itself: that deploy is the failure, not its fix -> unmatched.
+    m = task_repo({"deployed_at": iso(T0 + 3 * DAY + 6 * 3600)})
+    assert m["deployment_rework_rate"]["rework"] == []
+    assert (
+        "%" not in m["deployment_rework_rate"]["value"]
+        and "1 unmatched (fix of 0.1.1)" in m["deployment_rework_rate"]["value"]
+    )
+    # More than 48 h after the latest tag: too far to credit that tag -> unmatched.
+    m = task_repo({"deployed_at": iso(T0 + 8 * DAY)})
+    assert m["deployment_rework_rate"]["rework"] == [] and "unmatched" in m["deployment_rework_rate"]["value"]
+    # fixed_in naming a version with no deploy -> unmatched, no bare percentage.
+    m = task_repo({"fixed_in": "0.9.0"})
+    assert "%" not in m["deployment_rework_rate"]["value"]
 
 
 def test_merges_mode_and_no_tags():
@@ -307,7 +336,8 @@ def test_bad_task_files_and_times_warn_and_changelog_resets_on_other_headings():
     assert any("isn't ISO 8601" in w for w in report["warnings"])
     m = report["metrics"]
     assert m["deployment_rework_rate"]["rework"] == []  # "## Notes" isn't a release
-    assert "no fix time" in m["failed_deployment_recovery_time"]["value"]
+    assert "no matched fix" in m["failed_deployment_recovery_time"]["value"]
+    assert "%" not in m["deployment_rework_rate"]["value"]
 
 
 ISO_CASES = {
@@ -320,6 +350,10 @@ ISO_CASES = {
     "20261102T093000Z": False,  # basic format
     "2026-11-02 09:30:00Z": False,
     "2026-11-02T09:30:00.1Z": False,
+    "2026-02-30T00:00Z": False,  # no such day
+    "2026-11-02T24:00Z": False,  # no such hour
+    "2026-11-02T09:60Z": False,
+    "2028-02-29T12:00Z": True,  # leap day
     "yesterday": False,
 }
 
