@@ -8,6 +8,7 @@ rate, rework and recovery time.
 
 ## 0.1.5
 
+- Also first publishes 0.1.4's changes (below): 0.1.4 was tagged but never reached npm.
 - Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,
   never suspected issues, focus areas, fix summaries, earlier findings, the orchestrator's conclusions or an
   out-of-scope line. The two review passes differ only in the standard (spec against the pinned doc, which builders
