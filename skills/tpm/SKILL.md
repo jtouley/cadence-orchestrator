@@ -50,7 +50,8 @@ the remote, default name `orchestration`, one file per workstream (`workstreams/
 - **Ask**: the user's words, verbatim.
 - **Scope**: in, out, target repo and branch, what "done" means, and where to stop (e.g. "PR opened, not
   merged"). Point to the written definition the work is judged against (spec, a section of AGENTS.md or
-  CLAUDE.md, guide).
+  CLAUDE.md, guide). Add a **Deployed when:** line: where this change counts as deployed (npm publish, merged to
+  main, deploy job green), so delivery can be measured later.
 - **Decisions**: the user's decisions verbatim, dated and labeled as theirs, so a paraphrase never becomes the spec.
 - **Status and evidence**: links to PRs, PR comments, commits, and repro commands with their output.
 
@@ -134,7 +135,8 @@ unwatched on a shared message board. These rules prevent each of those:
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the
-   protocol was blinded or deterministic.
+   protocol was blinded or deterministic. For shipped work, give the merge SHA and the deployed version and time
+   (per the doc's "Deployed when:"), or say it isn't deployed yet.
 
 **Never end a turn with promised work outstanding.** If you said a review will run, it runs before you stop.
 When you have nothing else to do, run agents in the foreground and wait; if they're in the background, wait for

@@ -26,6 +26,7 @@
     "bin/cadence-orchestrator.mjs",
     "bin/doctor.mjs",
     "bin/status.mjs",
+    "bin/dora.mjs",
     "skills/tpm/SKILL.md",
     "skills/tpm/references/",
     "skills/tpm/scripts/guard.py",

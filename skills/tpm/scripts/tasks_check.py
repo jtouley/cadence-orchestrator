@@ -14,8 +14,24 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
 
 STATES = {"assigned", "claimed", "blocked", "done"}
+KINDS = {"planned", "fix"}
+TIMES = ("committed_at", "merged_at", "deployed_at")  # optional, in this order
+
+
+def parse_time(value):
+    """An ISO 8601 timestamp with a timezone (Z or +hh:mm), or None if it isn't one."""
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else None
+
+
 SUFFIX = ".tasks.json"
 
 
@@ -43,6 +59,23 @@ def validate(data) -> list[str]:
             errors.append(f"{where}: state must be one of {sorted(STATES)}, not {state!r}")
         if "evidence" in task and not isinstance(task["evidence"], list):
             errors.append(f"{where}: evidence must be a list")
+        times = []
+        for key in TIMES:
+            if key in task and task[key] is not None:
+                parsed = parse_time(task[key])
+                if parsed is None:
+                    errors.append(
+                        f"{where}: {key} must be an ISO 8601 time with a timezone, not {task[key]!r}"
+                    )
+                else:
+                    times.append((key, parsed))
+        for (a, ta), (b, tb) in zip(times, times[1:], strict=False):
+            if tb < ta:
+                errors.append(f"{where}: {b} is before {a}")
+        if "kind" in task and task["kind"] not in KINDS:
+            errors.append(f"{where}: kind must be one of {sorted(KINDS)}, not {task['kind']!r}")
+        if task.get("kind") == "fix" and not (isinstance(task.get("fixes"), str) and task["fixes"]):
+            errors.append(f"{where}: a fix must say what it fixes (fixes: a version or task id)")
         if state == "done":
             if not task.get("evidence"):
                 errors.append(f"{where}: done without evidence")

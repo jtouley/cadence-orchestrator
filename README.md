@@ -164,6 +164,20 @@ catches those. On Claude Code a Stop hook also blocks the orchestrator once per 
 are still running; the next attempt goes through. The exact rules are in
 [`skills/tpm/references/guard.md`](skills/tpm/references/guard.md).
 
+## Measuring Delivery (DORA)
+
+`npx cadence-orchestrator dora` reports [DORA's five delivery metrics](https://dora.dev/guides/dora-metrics/) for a
+repo, read-only, with each metric's definition, source and sample size:
+
+- **Deploys** are release tags `v*` by default, or changes landing on `main` with `--deploys merges`.
+- **Change lead time** runs from each commit to the first deploy that contains it.
+- **Change fail rate, rework and recovery time** come only from explicit records: CHANGELOG
+  `### Fixed (regression from X.Y.Z)` entries and tasks.json tasks with `kind: "fix"`. Without them it prints
+  "not measurable" rather than guess.
+
+`--since 2026-10-01` limits the window and `--json` gives machine-readable output. It warns when there are fewer than
+about 10 deploys, since a handful of releases says little.
+
 ## Threat Model
 
 The guard is not a sandbox. It keeps a cooperative orchestrator from drifting into doing the work, nothing more.

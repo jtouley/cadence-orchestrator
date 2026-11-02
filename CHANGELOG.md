@@ -1,5 +1,19 @@
 # Changelog
 
+A fix for something an earlier release broke goes under `### Fixed (regression from X.Y.Z)` in the release that
+ships it, naming the release that broke it. `npx cadence-orchestrator dora` reads these to measure change fail
+rate, rework and recovery time.
+
+## Unreleased
+
+- Releases are published by CI from a `vX.Y.Z` tag on `main` (`.github/workflows/release.yml`), with npm
+  provenance, so each npm version links back to its commit and tag.
+- `cadence-orchestrator dora [--since] [--deploys tags|merges] [--json]` reports DORA's five delivery metrics from
+  git, and from explicit failure records only; without them it says "not measurable".
+- tasks.json: optional `committed_at`, `merged_at`, `deployed_at` (ISO 8601, ordered) and `kind: planned|fix` with
+  `fixes`; `tasks_check.py` validates them. Workstream docs get a "Deployed when:" line, and the report step gives
+  the merge SHA and deployed version.
+
 ## 0.1.3
 
 - The skill follows the [Agent Skills open standard](https://agentskills.io/specification): it moves from `core/` to
@@ -33,10 +47,13 @@
 - `cadence-orchestrator doctor --target <platform>` checks an install: files, hook config, `python3`, and the
   installed hooks on simulated events. It also prints where `advisory.log` is written and checks that the state
   directory is writable. It changes nothing in the repo.
-- Hooks no longer leave `__pycache__` folders next to the vendored scripts. Re-installing a target removes the
-  ones 0.1.0 left in that target's skill folder; targets you don't reinstall keep theirs.
 - README: arm Codex with `$tpm` (Codex mentions skills with `$`), and a Troubleshooting entry for `npx` cache
   errors (`npm_config_cache=/tmp/npm-cache`).
+
+### Fixed (regression from 0.1.0)
+
+- Hooks no longer leave `__pycache__` folders next to the vendored scripts. Re-installing a target removes the
+  ones 0.1.0 left in that target's skill folder; targets you don't reinstall keep theirs.
 
 ## 0.1.0
 
