@@ -28,15 +28,28 @@ say which version broke it. The release that fixes it lists the fix under `### F
 
 ## Releasing (maintainers)
 
-1. Bump `package.json` (and the skill's `metadata.version`, which a test keeps equal) and move the CHANGELOG's
-   Unreleased entries under the new version, in a pull request.
+1. Bump `package.json` (and the skill's `metadata.version` and `.claude-plugin/plugin.json`'s `version`, which a
+   test keeps equal) and move the CHANGELOG's Unreleased entries under the new version, in a pull request.
 2. After it merges, the owner tags the merge commit on `main` with an annotated tag (its date is the release time
-   `dora` uses) and pushes it:
+   `dora` uses) and pushes it. The snippet tags the last commit on `main`'s first-parent line that changed the
+   `version` line in `package.json` (the release merge, even if other PRs merged after it), takes the version from
+   that commit, and stops if the tag already exists or any step fails:
 
    ```sh
-   git switch main && git pull
-   git tag -a v0.1.4 -m "v0.1.4"
-   git push origin v0.1.4
+   (
+     set -e
+     git switch main
+     git pull --ff-only
+     sha="$(git log -1 --first-parent -G'"version"' --format=%H -- package.json)"
+     v="v$(git show "$sha:package.json" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
+     if git rev-parse -q --verify "refs/tags/$v" >/dev/null ||
+       git ls-remote --exit-code --tags origin "refs/tags/$v" >/dev/null; then
+       echo "$v is already tagged: has the release PR merged?" >&2
+       exit 1
+     fi
+     git tag -a "$v" "$sha" -m "$v"
+     git push origin "$v"
+   )
    ```
 
 3. `.github/workflows/release.yml` runs two jobs:
