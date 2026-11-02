@@ -326,7 +326,7 @@ def test_shipped_catalog_is_labeled_as_an_example_and_documented():
 def test_install_sh_delegates_to_the_node_installer():
     repo = scratch_repo()
     proc = subprocess.run([INSTALL_SH, "--target", "cursor", "--repo", repo], capture_output=True, text=True)
-    assert proc.returncode == 0 and proc.stdout.startswith("cursor: ")
+    assert proc.returncode == 0 and f"Installing into {repo}\ncursor: " in proc.stdout
     assert os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
 
 
@@ -342,8 +342,8 @@ def test_installer_warns_without_python3_and_checks_arguments():
         env={"PATH": bare},
     )
     assert proc.returncode == 0 and "python3 is not on PATH" in proc.stderr
-    for argv in (["--target", "nope"], [], ["--repo"], ["--bogus"]):
-        assert subprocess.run([INSTALL] + argv, capture_output=True).returncode == 2, argv
+    for argv in (["--target", "nope"], [], ["--repo"], ["--bogus"]):  # [] and --repo: nothing detected
+        assert subprocess.run([INSTALL] + argv, capture_output=True, cwd=scratch_repo()).returncode == 2, argv
     helped = subprocess.run([INSTALL, "--help"], capture_output=True, text=True)
     assert helped.returncode == 0 and "--target" in helped.stdout
 
@@ -463,3 +463,161 @@ def test_install_rejects_non_repo():
         [INSTALL, "--target", "claude", "--repo", tempfile.mkdtemp()], capture_output=True, text=True
     )
     assert proc.returncode == 1
+
+
+def _installs_into(repo, argv, cwd):
+    proc = subprocess.run([INSTALL, "--target", "cursor", *argv], capture_output=True, text=True, cwd=cwd)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.splitlines()[0] == f"Installing into {os.path.realpath(repo)}"
+    assert os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
+    assert cwd == repo or not os.path.exists(os.path.join(cwd, ".cursor"))
+
+
+def _repo_with_subfolder():
+    repo = os.path.realpath(scratch_repo())
+    sub = os.path.join(repo, "src", "pkg")
+    os.makedirs(sub)
+    return repo, sub
+
+
+def test_install_from_a_subfolder_uses_the_repo_top_level():
+    repo, sub = _repo_with_subfolder()
+    _installs_into(repo, [], cwd=sub)
+
+
+def test_bare_repo_flag_means_the_current_repo():
+    repo, sub = _repo_with_subfolder()
+    _installs_into(repo, ["--repo"], cwd=sub)  # at the end, as typed in the report
+    proc = subprocess.run([INSTALL, "--repo", "--target", "cursor"], capture_output=True, text=True, cwd=sub)
+    assert proc.returncode == 0 and proc.stdout.startswith(f"Installing into {repo}\n"), proc.stderr
+
+
+def test_repo_flag_pointing_at_a_subfolder_uses_its_repo():
+    repo, sub = _repo_with_subfolder()
+    _installs_into(repo, ["--repo", sub], cwd=tempfile.mkdtemp())
+    _installs_into(repo, ["--repo", "src"], cwd=repo)
+
+
+def test_no_repository_fails_with_one_short_line():
+    outside = os.path.realpath(tempfile.mkdtemp())
+    for argv in ([], ["--repo"], ["--repo", outside]):
+        proc = subprocess.run(
+            [INSTALL, "--target", "cursor", *argv], capture_output=True, text=True, cwd=outside
+        )
+        assert proc.returncode == 1, argv
+        assert proc.stderr == f"cadence-orchestrator: {outside} is not inside a git repository\n", argv
+        assert proc.stdout == "" and not os.path.exists(os.path.join(outside, ".cursor"))
+
+
+def test_doctor_status_and_dora_resolve_the_repo_like_the_installer():
+    repo, sub = _repo_with_subfolder()
+    install(repo, "cursor")
+    subprocess.run(["git", "-C", repo, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+    for argv in (["doctor", "--target", "cursor"], ["status"], ["dora", "--json"]):
+        for extra in ([], ["--repo"], ["--repo", sub]):
+            proc = subprocess.run([INSTALL, *argv, *extra], capture_output=True, text=True, cwd=sub)
+            assert "not inside a git repository" not in proc.stderr, (argv, extra)
+            assert "cursor: not installed" not in proc.stdout, (argv, extra)  # found the top level's install
+            if argv[0] != "dora":
+                assert "cursor: skill files found" in proc.stdout or "ok   cursor:" in proc.stdout, (
+                    proc.stdout
+                )
+            if argv[0] == "dora":
+                assert proc.returncode == 0 and json.loads(proc.stdout), (extra, proc.stderr)
+    outside = tempfile.mkdtemp()
+    for argv in (["doctor", "--target", "cursor"], ["status"], ["dora"]):
+        proc = subprocess.run([INSTALL, *argv], capture_output=True, text=True, cwd=outside)
+        assert proc.returncode == 1 and proc.stderr.count("\n") == 1, argv
+
+
+MARKERS = {
+    "claude": [".claude/"],
+    "codex": [".codex/", "AGENTS.md"],
+    "copilot": [".github/copilot-instructions.md", ".github/hooks/"],
+    "cursor": [".cursor/"],
+    "gemini": [".gemini/"],
+}
+
+
+def _with_markers(*rels):
+    repo = os.path.realpath(scratch_repo())
+    for rel in rels:
+        path = os.path.join(repo, rel)
+        if rel.endswith("/"):
+            os.makedirs(path, exist_ok=True)
+        else:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            open(path, "w").write("# mine\n")
+    return repo
+
+
+def _bare_run(repo):
+    return subprocess.run([INSTALL], capture_output=True, text=True, cwd=repo)
+
+
+def test_bare_run_installs_for_each_detected_editor_only():
+    for target, markers in MARKERS.items():
+        for marker in markers:
+            repo = _with_markers(marker)
+            proc = _bare_run(repo)
+            assert proc.returncode == 0, (marker, proc.stderr)
+            assert proc.stdout.startswith(f"Installing into {repo} for {target} (detected)\n"), marker
+            for rel in EXPECTED[target]:
+                assert os.path.exists(os.path.join(repo, rel)), (marker, rel)
+            others = {p for t, paths in EXPECTED.items() if t != target for p in paths} - set(
+                EXPECTED[target]
+            )
+            assert not [p for p in others if os.path.exists(os.path.join(repo, p))], marker
+    repo = _with_markers(".cursor/", ".claude/")
+    proc = _bare_run(repo)
+    assert proc.stdout.startswith(f"Installing into {repo} for claude, cursor (detected)\n"), proc.stdout
+
+
+def test_bare_run_is_idempotent_and_ends_with_reload_and_verify():
+    repo = _with_markers(".cursor/", "AGENTS.md")
+    first = _bare_run(repo)
+    once = snapshot(repo)
+    second = _bare_run(repo)
+    assert first.returncode == second.returncode == 0 and snapshot(repo) == once
+    assert first.stdout == second.stdout  # installing adds no marker for another editor
+    assert first.stdout.splitlines()[-2:] == [
+        "Reload once: start a new chat or session in this repo, so the hooks load.",
+        "Then start with /tpm ($tpm on Codex) and verify with `npx cadence-orchestrator status`.",
+    ]
+
+
+def test_target_overrides_detection():
+    repo = _with_markers(".cursor/")
+    proc = subprocess.run([INSTALL, "--target", "gemini"], capture_output=True, text=True, cwd=repo)
+    assert proc.returncode == 0 and proc.stdout.startswith(f"Installing into {repo}\ngemini: ")
+    assert not os.path.exists(os.path.join(repo, ".cursor/hooks.json"))
+
+
+def test_nothing_detected_fails_with_one_line_naming_targets():
+    repo = _with_markers(".agents/", ".github/workflows/")  # neither says which editor
+    proc = _bare_run(repo)
+    assert proc.returncode == 2 and proc.stdout == ""
+    assert proc.stderr.count("\n") == 1, proc.stderr
+    assert proc.stderr.startswith(f"cadence-orchestrator: no editor config found in {repo} (")
+    assert "--target <claude|codex|copilot|cursor|gemini|all>" in proc.stderr
+    assert snapshot(repo) == {}
+
+
+def test_cursor_gets_a_tpm_command_that_starts_the_skill():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    text = open(os.path.join(repo, ".cursor/commands/tpm.md")).read()
+    assert "`.agents/skills/tpm/SKILL.md`" in text and "__SKILL__" not in text
+    # If Cursor hands the hook the command's text instead of "/tpm", it still arms the guard.
+    arm = run(
+        os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"),
+        {"conversation_id": "c1", "prompt": text, "workspace_roots": [repo]},
+        tempfile.mkdtemp(),
+    )
+    assert arm.returncode == 0 and "TPM guard armed (session c1" in arm.stderr
+
+
+def test_npm_install_never_runs_scripts():
+    pkg = json.load(open(os.path.join(ROOT, "package.json")))
+    lifecycle = {"preinstall", "install", "postinstall", "prepare", "prepublish", "preprepare", "postprepare"}
+    assert not lifecycle & set(pkg.get("scripts", {}))

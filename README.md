@@ -54,7 +54,7 @@ There are two ways to use it, and only the second enforces anything.
   follow the playbook. Nothing checks it: no hooks run, and the skill tells you "guard not running in this session —
   instructions only" when it doesn't see the guard.
 - **Install and activate the guard.**
-  1. Install it into the repo (below) and commit the result.
+  1. Install it into the repo (`npx cadence-orchestrator`, below) and commit the result.
   2. Start a **new** session in that repo; hooks load when a session starts.
   3. Approve the hooks if the agent asks. On Codex the local CLI asks you to review and trust project hooks in
      `/hooks` (unverified); the observed cloud task never asked.
@@ -72,23 +72,32 @@ There are two ways to use it, and only the second enforces anything.
 
 ### Install in a Repo
 
-From the root of the git repository you want to use it in:
+From anywhere inside the git repository you want to use it in:
 
-```sh
-npx cadence-orchestrator --target claude
-```
+1. `npx cadence-orchestrator`
+2. Reload once: start a new chat or session in the repo, so the hooks load.
+3. Start with `/tpm` (`$tpm` on Codex).
+4. Check it with `npx cadence-orchestrator status`.
 
 ```console
+Installing into /home/you/project for claude, cursor (detected)
 claude: .claude/skills/tpm/, .claude/settings.json
+cursor: .agents/skills/tpm/, .cursor/hooks.json, .cursor/rules/tpm.mdc, .cursor/commands/tpm.md
 Done. Review and commit the changes; see README for per-platform notes.
+Reload once: start a new chat or session in this repo, so the hooks load.
+Then start with /tpm ($tpm on Codex) and verify with `npx cadence-orchestrator status`.
 ```
+
+It installs for each editor the repo already has config for (`.claude/`, `.cursor/`, `.gemini/`, `.codex/` or
+`AGENTS.md`, `.github/copilot-instructions.md` or `.github/hooks/`); if it finds none, it says so and you choose
+with `--target`. On Cursor the guard only warns; it never blocks.
 
 You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
 warns if `python3` is missing. To install from source instead of npm, use
-`npx github:jtouley/cadence-orchestrator --target claude`.
+`npx github:jtouley/cadence-orchestrator`.
 
-`--repo <path>` installs into another repository; it defaults to the current directory. `--target all` installs
-for every platform. Re-running is safe: the installer replaces only its own entries in the files it touches. It
+`--target <name>` chooses the platforms instead (`all` for every one). `--repo <path>` installs into the repository
+containing that path; it defaults to the one you're in, at its top level. Re-running is safe: the installer replaces only its own entries in the files it touches. It
 also adds `.cadence/tpm.off` to `.gitignore`. Commit the result so everyone working in the repo, including cloud
 sessions, gets it. From a clone of this repository, run `./install.sh --repo <path>` with the same options.
 
@@ -109,7 +118,7 @@ it prints where the state dir came from. To test in a real session, follow
 | Claude Code | `claude` | `.claude/skills/tpm/`, hooks in `.claude/settings.json` | **Blocks** |
 | GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Blocks** |
 | Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | CLI: warns (live hooks unverified). Cloud: **instructions only**; hooks didn't run in the one observed task (2026-10-31, kit 0.1.2) |
-| Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc` | Warns |
+| Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc`, `.cursor/commands/tpm.md` | Warns |
 | Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns |
 
 Claude Code and Copilot mark tool calls made by subagents, so the guard can block the orchestrator and let

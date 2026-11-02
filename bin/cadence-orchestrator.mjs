@@ -18,21 +18,36 @@ const ADAPTERS = path.join(ROOT, "adapters");
 const MARK = "skills/tpm/scripts/shim_"; // identifies our hook entries on re-install
 const BLOCK = /<!-- cadence-orchestrator:tpm begin -->[\s\S]*?<!-- cadence-orchestrator:tpm end -->\n?/g;
 
+// `detect`: what in a repo shows it uses that editor, for a run without --target.
 const TARGETS = {
-  claude: { skill: ".claude/skills/tpm", hooks: [["claude/settings.hooks.json", ".claude/settings.json"]] },
+  claude: {
+    skill: ".claude/skills/tpm",
+    hooks: [["claude/settings.hooks.json", ".claude/settings.json"]],
+    detect: [".claude"],
+  },
   codex: {
     skill: ".agents/skills/tpm",
+    detect: [".codex", "AGENTS.md"],
     hooks: [["codex/hooks.json", ".codex/hooks.json"]],
     blocks: [["codex/AGENTS.pointer.md", "AGENTS.md"]],
   },
-  copilot: { skill: ".github/skills/tpm", hooks: [["copilot/hooks.json", ".github/hooks/tpm.json"]] },
+  copilot: {
+    skill: ".github/skills/tpm",
+    hooks: [["copilot/hooks.json", ".github/hooks/tpm.json"]],
+    detect: [".github/copilot-instructions.md", ".github/hooks"],
+  },
   cursor: {
     skill: ".agents/skills/tpm",
     hooks: [["cursor/hooks.json", ".cursor/hooks.json"]],
-    files: [["cursor/tpm.mdc", ".cursor/rules/tpm.mdc"]],
+    files: [
+      ["cursor/tpm.mdc", ".cursor/rules/tpm.mdc"],
+      ["cursor/tpm.command.md", ".cursor/commands/tpm.md"], // makes /tpm a command in Cursor's picker
+    ],
+    detect: [".cursor"],
   },
   gemini: {
     skill: ".agents/skills/tpm",
+    detect: [".gemini"],
     hooks: [["gemini/settings.hooks.json", ".gemini/settings.json"]],
     blocks: [["gemini/GEMINI.pointer.md", "GEMINI.md"]],
   },
@@ -139,23 +154,28 @@ function fail(message, code = 1) {
   process.exit(code);
 }
 
-const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
+const NAMES = Object.keys(TARGETS).sort().join("|");
+const USAGE = `usage: cadence-orchestrator [--target <${NAMES}|all>] [--repo <path>] [--catalog <file.md>]...
        cadence-orchestrator doctor --target <...|all> [--repo <path>]
        cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
        cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges|npm] [--include-prereleases] [--json]
 
-Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
+Vendors the tpm skill and its guard hooks into the git repository you're in (or --repo's), for --target or,
+without it, every editor the repo already has config for. Re-running is safe.
 \`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
 \`dora\` computes DORA's delivery metrics from git (read-only).
 \`status\` reports what's installed and whether hooks have been seen firing in a live session (default: last 24 h).`;
 
 function parseArgs(argv, mode) {
-  const opts = { repo: ".", catalog: [], hours: 24, stateDir: "", since: null, deploys: "tags", json: false };
+  const opts = { repo: "", catalog: [], hours: 24, stateDir: "", since: null, deploys: "tags", json: false };
   for (let i = 0; i < argv.length; i++) {
     const [flag, inline] = argv[i].split(/=(.*)/s, 2);
     const value = () => inline ?? argv[++i] ?? fail(`${flag} needs a value\n${USAGE}`, 2);
     if (flag === "--target") opts.target = value();
-    else if (flag === "--repo") opts.repo = value();
+    else if (flag === "--repo") {
+      // A bare --repo (nothing after it, or another flag next) means "here", like no --repo at all.
+      opts.repo = inline ?? (argv[i + 1]?.startsWith("-") ? "" : (argv[++i] ?? ""));
+    }
     else if (flag === "--catalog" && mode === "install") opts.catalog.push(value());
     else if (flag === "--state-dir" && mode === "status") opts.stateDir = value();
     else if (flag === "--since" && mode === "dora") {
@@ -181,8 +201,8 @@ function parseArgs(argv, mode) {
     if (opts.target) fail(`${mode} doesn't take --target\n${USAGE}`, 2);
     return opts;
   }
-  if (!opts.target) fail(`--target is required\n${USAGE}`, 2);
-  if (opts.target !== "all" && !(opts.target in TARGETS)) fail(`unknown target ${opts.target}\n${USAGE}`, 2);
+  if (!opts.target && mode === "doctor") fail(`--target is required\n${USAGE}`, 2);
+  if (opts.target && opts.target !== "all" && !(opts.target in TARGETS)) fail(`unknown target ${opts.target}\n${USAGE}`, 2);
   return opts;
 }
 
@@ -190,8 +210,15 @@ const argv = process.argv.slice(2);
 const mode = ["doctor", "status", "dora"].includes(argv[0]) ? argv[0] : "install";
 const isDoctor = mode === "doctor";
 const opts = parseArgs(mode === "install" ? argv : argv.slice(1), mode);
-const repo = path.resolve(opts.repo);
-if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
+// The repository containing --repo (default: the current folder): the nearest folder up with a .git.
+function findRepo(start) {
+  if (!exists(start)) fail(`${start} does not exist`);
+  for (let dir = start; ; dir = path.dirname(dir)) {
+    if (exists(path.join(dir, ".git"))) return dir;
+    if (path.dirname(dir) === dir) fail(`${start} is not inside a git repository`);
+  }
+}
+const repo = findRepo(path.resolve(opts.repo || "."));
 if (mode === "dora") {
   const { dora, formatDora } = await import("./dora.mjs");
   const report = dora(repo, { since: opts.since, deploys: opts.deploys, includePrereleases: opts.includePrereleases });
@@ -241,7 +268,20 @@ const py = spawnSync("python3", ["--version"], { stdio: "ignore" });
 if (py.error || py.status !== 0) {
   console.error("warning: python3 is not on PATH. The guard hooks run python3 and will not work until it is installed.");
 }
-const targets = opts.target === "all" ? Object.keys(TARGETS).sort() : [opts.target];
+const detected = () => {
+  const found = Object.keys(TARGETS)
+    .sort()
+    .filter((t) => TARGETS[t].detect.some((m) => exists(path.join(repo, m))));
+  if (!found.length) {
+    const markers = Object.values(TARGETS).flatMap((s) => s.detect).sort().join(", ");
+    fail(`no editor config found in ${repo} (${markers}); choose one with --target <${NAMES}|all>`, 2);
+  }
+  return found;
+};
+const targets = !opts.target ? detected() : opts.target === "all" ? Object.keys(TARGETS).sort() : [opts.target];
+console.log(`Installing into ${repo}${opts.target ? "" : ` for ${targets.join(", ")} (detected)`}`);
 for (const t of targets) console.log(`${t}: ${install(repo, t).join(", ")}`);
 if (opts.catalog.length) console.log(`catalog: ${addCatalogs(repo, opts.catalog).join(", ")}`);
 console.log("Done. Review and commit the changes; see README for per-platform notes.");
+console.log("Reload once: start a new chat or session in this repo, so the hooks load.");
+console.log("Then start with /tpm ($tpm on Codex) and verify with `npx cadence-orchestrator status`.");

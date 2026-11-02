@@ -6,6 +6,16 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+- `npx cadence-orchestrator` with no `--target` installs for each editor the repo has config for (`.claude/`,
+  `.cursor/`, `.gemini/`, `.codex/` or `AGENTS.md`, `.github/copilot-instructions.md` or `.github/hooks/`), or
+  fails with one line if it finds none; it ends by saying to reload once and check with `status`.
+- `--repo` defaults to the git repository you're in, at its top level, also from a subfolder or as a bare
+  `--repo`; `--repo <path>` uses the repository containing that path (also for `doctor`, `status` and `dora`). The
+  installer prints which repository it installs into, and outside a repository fails with one line.
+- Cursor: also installs `.cursor/commands/tpm.md`, so `/tpm` is a command in the picker; after `/tpm` the skill
+  checks `status` and says "guard armed (advisory on Cursor: warns, doesn't block)" or "instructions only" with
+  the fix command.
+
 ## 0.1.6
 
 - Releases publish with npm trusted publishing (OIDC) from `.github/workflows/release.yml`: no npm token, a pinned
