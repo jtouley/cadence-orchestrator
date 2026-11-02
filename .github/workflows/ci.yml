@@ -19,9 +19,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-      - run: pip install --require-hashes -r requirements-dev.txt
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.32"
+      # uv.lock pins every dev dependency by version and hash; --locked fails if it's out of date.
+      - run: uv sync --locked --group dev --python 3.13
       # no-commit-to-branch guards local commits to main; CI isn't committing, so it's skipped here.
-      - run: SKIP=no-commit-to-branch pre-commit run --all-files --show-diff-on-failure
+      - run: SKIP=no-commit-to-branch uv run --locked pre-commit run --all-files --show-diff-on-failure
 
   leaks:
     runs-on: ubuntu-latest
@@ -58,8 +62,11 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
-      - run: pip install --require-hashes -r requirements-dev.txt
-      - run: pytest
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.32"
+      - run: uv sync --locked --group dev --python ${{ matrix.python-version }}
+      - run: uv run --locked pytest
 
   installer:
     runs-on: ubuntu-latest

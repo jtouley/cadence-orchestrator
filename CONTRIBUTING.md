@@ -6,14 +6,16 @@ Issues and pull requests are welcome at
 ## Before you open a pull request
 
 ```sh
-pip install --require-hashes -r requirements-dev.txt
-pre-commit install
-pre-commit run --all-files
-pytest
+uv sync
+uv run pre-commit install
+uv run pre-commit run --all-files
+uv run pytest
 ```
 
-`requirements-dev.txt` pins pytest, pre-commit and their dependencies by hash, as CI installs them; pre-commit
-needs Python 3.11 or later (on 3.10 the file installs pytest only). Regenerate it with the command in its header.
+Development uses [uv](https://docs.astral.sh/uv/); the kit itself only needs `python3` and Node. The `dev`
+dependency group in `pyproject.toml` lists pytest and pre-commit, and `uv.lock` pins them and their dependencies by
+version and hash; CI runs `uv sync --locked`, which fails if the lock is out of date. pre-commit needs Python 3.11
+or later (on 3.10 the group installs pytest only); `.python-version` makes `uv sync` default to 3.13. After changing the group, run `uv lock` and commit `uv.lock`.
 
 `main` changes only through pull requests: the `no-commit-to-branch` hook refuses local commits to it. If you
 change what the guard allows, update `skills/tpm/references/guard.md` in the same change.
