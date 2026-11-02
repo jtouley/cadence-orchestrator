@@ -4,3 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  - package-ecosystem: uv # uv.lock (dev tools)
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: pre-commit # hook revs in .pre-commit-config.yaml
+    directory: /
+    schedule:
+      interval: weekly

@@ -65,11 +65,17 @@ default branch, with:
 The `orchestration` branch used by the skill needs its own pre-commit setup; see
 [`skills/tpm/references/workstream.md`](skills/tpm/references/workstream.md).
 
-## OpenSSF Scorecard
+## OpenSSF Scorecard and code scanning
 
 `.github/workflows/scorecard.yml` runs [OpenSSF Scorecard](https://github.com/ossf/scorecard) on pushes to `main`,
 weekly and when branch protection changes, and uploads its findings to the repository's code scanning (Security
 tab). It isn't a required check: it doesn't run on pull requests. Results aren't published yet
-(`publish_results: false`); publishing them and adding the Scorecard badge is deferred until the repository is
-90 days old (around 2027-01-29). Dependabot (`.github/dependabot.yml`) proposes weekly updates to the pinned
-actions.
+(`publish_results: false`), so the job has only `security-events: write` and `contents: read`. Phase 2, deferred
+until the repository is 90 days old (around 2027-01-29), sets `publish_results: true`, adds the badge, and adds
+back `id-token: write` (to publish) and `actions: read`.
+
+`.github/workflows/codeql.yml` runs CodeQL on Python and JavaScript for pull requests and pushes to `main`.
+
+Dependabot (`.github/dependabot.yml`) proposes weekly updates for the pinned actions, `uv.lock` and the pre-commit
+hook revisions. The gitleaks version that CI's `leaks` job installs (pinned by commit in `ci.yml`) and the Go
+version there aren't covered; update them with the pre-commit gitleaks hook.

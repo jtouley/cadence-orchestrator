@@ -18,9 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write # upload SARIF to code scanning
-      id-token: write # Scorecard's OIDC identity
       contents: read
-      actions: read
+      # Phase 2 (publish_results: true) adds id-token: write; actions: read is only needed for private repos.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

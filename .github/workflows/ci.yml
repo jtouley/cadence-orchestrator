@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
@@ -33,12 +35,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # gitleaks scans the whole history, not just this commit
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: stable
+          go-version: "1.26.10" # exact; GOTOOLCHAIN=local below stops Go switching toolchains
+          cache: false
       - name: gitleaks over the full history (same version as the pre-commit hook)
+        env:
+          GOTOOLCHAIN: local
         run: |
-          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          # v8.30.1 pinned by commit (git ls-remote: lightweight tag -> 83d9cd68); Go checks the module against
+          # sum.golang.org.
+          go install github.com/zricethezav/gitleaks/v8@83d9cd684c87d95d656c1458ef04895a7f1cbd8e
           "$(go env GOPATH)/bin/gitleaks" git --redact --verbose .
       # The leak check on tracked files runs in the pre-commit job (local leak-check hook).
       - name: Workstream task files, if any
@@ -46,6 +54,9 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest
+    env:
+      # Without this, `uv run` follows .python-version (3.13) and rebuilds the venv, so the 3.10 leg ran on 3.13.
+      UV_PYTHON: ${{ matrix.python-version }}
     strategy:
       matrix:
         include:
@@ -56,6 +67,8 @@ jobs:
             node-version: "22"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -65,13 +78,22 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: "0.11.32"
-      - run: uv sync --locked --group dev --python ${{ matrix.python-version }}
+      - run: uv sync --locked --group dev
+      - name: Tests run on the matrix Python
+        env:
+          WANT: ${{ matrix.python-version }}
+        run: |
+          got="$(uv run --locked python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+          echo "uv run python: $got (matrix: $WANT)"
+          [ "$got" = "$WANT" ]
       - run: uv run --locked pytest
 
   installer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "18"
