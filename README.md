@@ -226,8 +226,6 @@ The hook file it merges into, such as `.claude/settings.json`, has `//` comments
 
 ```console
 SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)
-    at JSON.parse (<anonymous>)
-    at mergeHooks (…/bin/cadence-orchestrator.mjs:76:39)
 ```
 
 The skill files were copied but no hooks were added, and the file is unchanged. Remove the comments and run the
@@ -238,26 +236,9 @@ installer again.
 The install finishes, but the guard can't run until `python3` is installed. Meanwhile the hooks allow every call
 (they fail open) instead of blocking; the same applies if the shim script is missing.
 
-## Development
-
-```sh
-uv sync    # dev tools from uv.lock, the versions CI uses (users of the kit never need uv)
-uv run pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
-uv run pytest
-```
-
-The pre-commit hooks also block email addresses, account UUIDs and session logs (`checks/leak_check.py`) and
-direct commits to `main`. The guard and shims use only the Python standard library; pytest, ruff and pre-commit
-are for development, and the installer tests also need Node. CI runs the same checks, gitleaks over the full
-history, an installer smoke test and `npm pack --dry-run`.
-If you change what the guard allows, update `skills/tpm/references/guard.md` in the same change; a test checks its tool
-list against `guard.py`. `evals/` holds behaviour cases written against one app repository
-([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.
-
 ## Contributing
 
-Issues and pull requests are welcome; run `pre-commit run --all-files` and `pytest` before you open one. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

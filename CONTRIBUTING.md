@@ -17,8 +17,16 @@ dependency group in `pyproject.toml` lists pytest and pre-commit, and `uv.lock` 
 version and hash; CI runs `uv sync --locked`, which fails if the lock is out of date. pre-commit needs Python 3.11
 or later (on 3.10 the group installs pytest only); `.python-version` makes `uv sync` default to 3.13. After changing the group, run `uv lock` and commit `uv.lock`.
 
+`uv sync` installs the dev tools from `uv.lock`, the versions CI uses (users of the kit never need uv).
+`uv run pre-commit install` sets up the hooks: ruff, gitleaks, a leak check that blocks email addresses, account
+UUIDs and session logs (`checks/leak_check.py`), JSON/YAML checks and `node --check`. The guard and shims use only
+the Python standard library; pytest, ruff and pre-commit are for development, and the installer tests also need
+Node. CI runs the same checks, gitleaks over the full history, an installer smoke test and `npm pack --dry-run`.
+
 `main` changes only through pull requests: the `no-commit-to-branch` hook refuses local commits to it. If you
-change what the guard allows, update `skills/tpm/references/guard.md` in the same change.
+change what the guard allows, update `skills/tpm/references/guard.md` in the same change; a test checks its tool
+list against `guard.py`. `evals/` holds behaviour cases written against one app repository
+([coffee-data-tracker](https://github.com/jtouley/coffee-data-tracker)), so they don't run on their own.
 
 ## Reporting a regression
 
@@ -55,13 +63,22 @@ say which version broke it. The release that fixes it lists the fix under `### F
 3. `.github/workflows/release.yml` runs two jobs:
    - `verify`, with no publishing rights: the tag matches `package.json` and is on `main`, the version isn't on
      npm yet (so a re-tag fails early), then the tests and the package check.
-   - `publish`, in the `npm-release` environment: `npm publish --provenance --access public`, with prereleases
-     (`1.2.3-rc.1`) going to the `next` dist-tag.
+   - `publish`, in the `npm-release` environment: installs a pinned npm (checked against its sha512 integrity),
+     then `npm publish --access public` with [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
+     (OIDC, `id-token: write`): no npm token is stored or passed, and npm adds provenance automatically.
+     Prereleases (`1.2.3-rc.1`) go to the `next` dist-tag.
 
 Pushing the tag is the approval only if nobody else can push one or publish. Set up once:
 
-- **Environment** `npm-release` (Settings → Environments): add the secret `NPM_TOKEN` there, not as a repository
-  secret, add the owner as a required reviewer, and limit its deployment tags to `v*`.
+- **Trusted publisher** (npmjs.com → the package's Settings → Trusted publishing): GitHub Actions, repository
+  `jtouley/cadence-orchestrator`, workflow `release.yml`, environment `npm-release`. Trusted publishing needs
+  npm 11.5.1 or later (the workflow pins 11.21.1), Node 22.14.0 or later and a GitHub-hosted runner.
+- **Environment** `npm-release` (Settings → Environments): add the owner as a required reviewer and limit its
+  deployment tags to `v*`. It holds no npm token once the first trusted publish has succeeded.
+- **No tokens**, only after the first trusted publish succeeds (until then a token is the only fallback): on
+  npmjs.com, set the package's Publishing access to **Require two-factor authentication and disallow tokens** (the
+  trusted publisher isn't affected), then delete the `NPM_TOKEN` secret from the `npm-release` environment (and
+  keep none in repository secrets).
 - **Tag ruleset** (Settings → Rules → Rulesets, target tags `v*`): restrict creation, update and deletion to the
   owner.
 

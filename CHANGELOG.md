@@ -6,6 +6,11 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+## 0.1.6
+
+- Releases publish with npm trusted publishing (OIDC) from `.github/workflows/release.yml`: no npm token, a pinned
+  npm 11.21.1 checked against its integrity, and provenance added by npm without `--provenance`.
+
 ## 0.1.5
 
 - Also first publishes 0.1.4's changes (below): 0.1.4 was tagged but never reached npm.
