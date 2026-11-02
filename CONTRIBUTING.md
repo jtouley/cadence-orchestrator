@@ -40,7 +40,7 @@ say which version broke it. The release that fixes it lists the fix under `### F
      set -e
      git switch main
      git pull --ff-only
-     sha="$(git log -1 --first-parent --format=%H -- package.json)"
+     sha="$(git log -1 --first-parent -G'"version"' --format=%H -- package.json)"
      v="v$(git show "$sha:package.json" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
      if git rev-parse -q --verify "refs/tags/$v" >/dev/null ||
        git ls-remote --exit-code --tags origin "refs/tags/$v" >/dev/null; then
