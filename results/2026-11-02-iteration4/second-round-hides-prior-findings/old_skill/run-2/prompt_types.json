@@ -1,0 +1,48 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "Do not commit outputs/ to any branch. 2. Local mode (no remote): in /tmp/cr-run.R6WyXe8w/repo create an orphan branch `orchestration` checked out as a git workt"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "other",
+    "leaks": [],
+    "head": "If it can't be done, stop and report why."
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2"
+    ],
+    "head": "Fix-check task `fix-check` in /tmp/cr-run.R6WyXe8w/orchestration/workstreams/search-api-round2.md@48d85b6: clone /tmp/cr-run.R6WyXe8w/repo/repo.bundle into a ne"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "claim-check",
+    "leaks": [],
+    "head": "R6WyXe8w except your own clone. Clone /tmp/cr-run.R6WyXe8w/repo/repo.bundle into a new empty dir /tmp/cr-run.R6WyXe8w/review-r2/clone and run /code-review high "
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "1000 done"
+    ],
+    "head": "2. In /tmp/cr-run.R6WyXe8w/repo/outputs/subagent-prompt-04.md, delete line 3 (the line starting \"Your response above was stopped by a safety classifier\"). It wa"
+  }
+]

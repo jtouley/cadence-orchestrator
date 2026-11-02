@@ -1,0 +1,42 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md"
+  ],
+  "transcript_agent_calls": 3,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/token-bucket' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'clock drifts' in subagent-prompt-03.md: \u2026token_bucket.py, judging only these claims: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt); subagent-prompt-03.md: in (claim check)] | transcript Agent prompts (3): FAIL - 'clock drifts' in agent-call-3: \u2026token_bucket.py, judging only these claims: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (claim check)]"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'across the sleep' in subagent-prompt-03.md: \u2026ce there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\" For eac\u2026; 'lock is held' in subagent-prompt-03.md: \u2026ets bumped once there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every othe\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt); subagent-prompt-03.md: in (claim check)] | transcript Agent prompts (3): FAIL - 'across the sleep' in agent-call-3: \u2026ce there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\" For eac\u2026; 'lock is held' in agent-call-3: \u2026ets bumped once there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every othe\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (claim check)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt); subagent-prompt-03.md: in (claim check)] | transcript Agent prompts (3): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (claim check)]"
+    },
+    {
+      "n": 5,
+      "kind": "judgment"
+    }
+  ]
+}

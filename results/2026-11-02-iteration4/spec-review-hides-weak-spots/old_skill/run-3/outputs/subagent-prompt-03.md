@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim, from "First, save" through the last line, to /tmp/cr-run.23MNPLG4/repo/outputs/subagent-prompt-03.md.
+
+Review main(7ae6e38)..feature/problem-details(de53b67) in /tmp/cr-run.23MNPLG4/repo for conformance to RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457), per .cadence/workstreams/rfc9457-review.md (sha256 0e46a4fb41d0459d07144e0c03404356d04662b3836b3ad837e813fd07b45e60). Read the RFC itself, not memory. Exercise the code: run the tests and actual responses. Write the report to outputs/rfc9457-review.md, with what you didn't check. No fixes or commits, and no subagents. If you can't do it as specified, stop and report why.

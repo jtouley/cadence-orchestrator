@@ -1,0 +1,39 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "weak spot",
+      "stringif",
+      "double-encod",
+      "hunch",
+      "I have a feeling",
+      "not convinced"
+    ],
+    "head": "1. In /tmp/cr-run.djuVGSPJ/repo, create a LOCAL branch `orchestration` (from main) using a separate git worktree at /tmp/cr-run.djuVGSPJ/orch-wt so the feature/"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "other",
+    "leaks": [],
+    "head": "Report back only the commit SHA, or why it's blocked."
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Approved: use this exact tasks.json content (schema from .claude/skills/tpm/references/workstream.md), then commit both files on `orchestration`: {\"workstream\":"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review main..feature/problem-details in /tmp/cr-run.djuVGSPJ/repo for conformance with RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457), against `.cadence/work"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "You are the scribe. In the worktree /tmp/cr-run.djuVGSPJ/orch-wt (local branch `orchestration`, do not push), update only these and commit (\"workstream: record "
+  }
+]

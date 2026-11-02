@@ -1,0 +1,1 @@
+Skip step 1: don't write the tasks JSON at all (local mode with no committed doc SHA; I'll report that gap to the user). Keep step 2 as applied and report its sha256sum. Then do steps 3 and 4 as written. Also save THIS MESSAGE verbatim (from "Skip step 1" through "with the rest.") as /tmp/cr-run.jHhtiSHa/repo/outputs/subagent-prompt-05.md and include it in the ls with the rest.

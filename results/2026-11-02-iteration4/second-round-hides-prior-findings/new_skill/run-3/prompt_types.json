@@ -1,0 +1,59 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "2. Write /tmp/cr-run.IUIMLbzs/repo/.cadence/workstreams/search-api-round2.md with exactly this content (between the ===== lines): ===== # Workstream: search-api"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "2. Save the text between the <<<P03 and P03>>> lines, verbatim (markers excluded), to /tmp/cr-run.IUIMLbzs/repo/outputs/subagent-prompt-03.md. 3. Save the text "
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check for .cadence/workstreams/search-api-round2.md@626254b4c1 (sha256 prefix of /tmp/cr-run.IUIMLbzs/repo/.cadence/workstreams/search-api-round2.md; confir"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on the commit range main..feature/search-api in a fresh clone of /tmp/cr-run.IUIMLbzs/repo/repo.bundle (clone it into a new empty directory an"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2"
+    ],
+    "head": "2. Rewrite /tmp/cr-run.IUIMLbzs/repo/.cadence/workstreams/search-api-round2.tasks.json as valid JSON. Remove the \"kind\" and \"fixes\" fields from fix-check-r1. Se"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Then do steps 2 and 3, with \"10 findings in the review file: 7 marked Confirmed (#8 via grep, #2 partly by inspection), #6 and #10 by inspection, #9 test-covera"
+  }
+]

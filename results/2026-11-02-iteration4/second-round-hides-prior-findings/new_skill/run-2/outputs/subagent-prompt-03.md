@@ -1,0 +1,3 @@
+First, save this entire message, from its first character to its last, verbatim as /tmp/cr-run.r1i6VbI3/repo/outputs/subagent-prompt-03.md. Then work only in a fresh clone: clone /tmp/cr-run.r1i6VbI3/repo/repo.bundle into a new empty directory outside /tmp/cr-run.r1i6VbI3/repo and do not read anything else under /tmp/cr-run.r1i6VbI3.
+
+/code-review high on main..feature/search-api in that clone; verify each finding by running code (a test or script and its output). No code changes, don't spawn subagents; if it can't be done, stop and say why. Report the clone SHAs, every finding with severity, file:line, repro command and raw output, a merge verdict, and what you left out.

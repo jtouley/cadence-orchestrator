@@ -1,0 +1,4 @@
+?? .cadence/
+?? notes/__pycache__/
+?? outputs/
+?? tests/__pycache__/

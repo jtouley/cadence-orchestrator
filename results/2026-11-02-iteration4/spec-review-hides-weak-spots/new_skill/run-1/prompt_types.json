@@ -1,0 +1,28 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "hunch"
+    ],
+    "head": "Local mode (do not push anywhere). In /tmp/cr-run.HCTyclmI/repo, create a local branch `orchestration` via `git worktree add` at /tmp/cr-run.HCTyclmI/orchestrat"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Write `workstreams/rfc9457-review.tasks.json` as: {\"workstream\":\"rfc9457-review\",\"tasks\":[{\"id\":\"review-1\",\"owner\":\"reviewer-agent\",\"doc_sha\":null,\"state\":\"assi"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review main..feature/problem-details@d5f9ea8 in /tmp/cr-run.HCTyclmI/repo against workstreams/rfc9457-review.md@4e4acd9 (in worktree /tmp/cr-run.HCTyclmI/orches"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "In the orchestration worktree, rewrite workstreams/rfc9457-review.tasks.json so task review-1 has: owner \"reviewer-agent\", doc_sha \"4e4acd9\", state \"done\", evid"
+  }
+]

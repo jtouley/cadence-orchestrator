@@ -1,0 +1,7 @@
+aa7e564 (orchestration) rfc9457-review: mark review-1 done, record evidence and status
+bc55d2e rfc9457-review: findings for main..feature/problem-details@d5f9ea8
+4e4acd9 Add rfc9457-review workstream doc and task file
+d5f9ea8 (HEAD -> feature/problem-details) eval setup
+5efb782 (origin/feature/problem-details, origin/HEAD) Route error_response through problem(); tests
+b954349 Add problem() and validation_problem() helpers
+7ae6e38 (origin/main, main) Basic JSON error responses

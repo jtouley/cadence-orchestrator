@@ -1,0 +1,1 @@
+Regrade of iteration-2 runs with det_grade_clean_review.py @35d9f8191cbace07166afab856d5e8465ce383f2 (grader-reviewer-reach). Deterministic verdicts recomputed; judgment verdicts reused from iteration-2 (judgment grader texts unchanged). Original iteration-2 grading.json left in place.

@@ -1,0 +1,28 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "priya"
+    ],
+    "head": "Then: `git clone /tmp/cr-run.iO8QNVRM/repo/repo.bundle /tmp/cr-run.iO8QNVRM/review-clone`, make local branches main and feature/token-bucket track the bundle's "
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "json as {\"tasks\":[{\"id\":\"review\",\"owner\":\"reviewer-agent\",\"state\":\"assigned\",\"evidence\":[],\"tokens\":null}]} (if tokens:null is also rejected, use 0), then do th"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then review f7f6429..3050047 (main..feature/token-bucket) in /tmp/cr-run.iO8QNVRM/review-clone against .cadence/workstreams/token-bucket-review.md@fe4ae01 (on b"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then, in /tmp/cr-run.iO8QNVRM/review-clone on branch orchestration, set task \"review\" in .cadence/workstreams/token-bucket-review.tasks.json to state \"done\", ow"
+  }
+]

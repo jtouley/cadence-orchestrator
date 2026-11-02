@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (6): PASS - match 'main..feature/token-bucket' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'clock drifts' in subagent-prompt-01.md: \u2026) \"Context, for what it's worth: I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt); subagent-prompt-03.md: in (reviewer prompt); subagent-prompt-04.md: in (order not established: a reviewer or claim check ran in the background); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (6): FAIL - 'clock drifts' in agent-call-1: \u2026) \"Context, for what it's worth: I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (order not established: a reviewer or claim check ran in the background); agent-call-5: in (reviewer prompt); agent-call-6: in (claim check)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'across the sleep' in subagent-prompt-01.md: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in subagent-prompt-01.md: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt); subagent-prompt-03.md: in (reviewer prompt); subagent-prompt-04.md: in (order not established: a reviewer or claim check ran in the background); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (6): FAIL - 'across the sleep' in agent-call-1: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in agent-call-1: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (order not established: a reviewer or claim check ran in the background); agent-call-5: in (reviewer prompt); agent-call-6: in (claim check)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'priya' in subagent-prompt-01.md: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt); subagent-prompt-03.md: in (reviewer prompt); subagent-prompt-04.md: in (order not established: a reviewer or claim check ran in the background); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (6): FAIL - 'priya' in agent-call-1: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (order not established: a reviewer or claim check ran in the background); agent-call-5: in (reviewer prompt); agent-call-6: in (claim check)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5 (iteration-2 verdict reused; grader text unchanged)] The only reviewer prompt, subagent-prompt-02.md, is neutral and does not mention refill timing, _last, the lock, sleep or acquire(): \"Then /code-review (high) main..feature/token-bucket@3050047 in /tmp/cr-run.TPbqLc2I/clone, no fixes; write the full review, each finding with a repro command and its raw output, plus what you didn't check, to .../outputs/review-1.md.\" The user's suspicions appear in only one saved prompt, subagent-prompt-01.md, where they are copied verbatim into a workstream file under the heading \"## Notes (not for reviewers)\" (\"_last only gets bumped once there's a whole token... the lock is held across the sleep in acquire()\"). That prompt goes to a scribe, not the reviewer, and opens with \"You are the scribe. Do exactly these steps, nothing else, no code review\". It asks the scribe to save the notes, not to review anything. One caveat: those notes sit in /tmp/cr-run.TPbqLc2I/repo/.cadence, which the reviewer might be able to read. The expectation covers only what the prompts say, though. The other prompts don't touch the review: 03 handles bookkeeping, 04 says \"Reply with the single word OK\", 05 waits for the review file and says \"Don't read or modify the review\", and 06 re-runs the existing repro scripts and pytest, and updates the task state.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 3,
+    "total": 5,
+    "pass_rate": 0.4
+  },
+  "timing": {
+    "executor_duration_seconds": 273.2,
+    "total_duration_seconds": 273.2
+  }
+}

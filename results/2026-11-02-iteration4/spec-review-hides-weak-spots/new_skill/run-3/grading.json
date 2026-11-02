@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'RFC 9457' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/problem-details' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'hunch' in subagent-prompt-01.md: \u2026am: problem-details-review  ## Ask (user's words, verbatim; hunches withheld) \"We're switching our API errors over to Problem\u2026 | transcript Agent prompts (3): FAIL - 'hunch' in agent-call-1: \u2026am: problem-details-review  ## Ask (user's words, verbatim; hunches withheld) \"We're switching our API errors over to Problem\u2026",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] None of the three saved prompts names status, detail, or type URI resolution. subagent-prompt-01.md replaces the user's hunches with placeholders: \"[hunch held back] [hunch held back] [hunch held back] But I'd like an independent read\". Its scope is even across the RFC: \"Standard: RFC 9457 ... (the whole RFC, including normative MUST/SHOULD and the JSON member definitions and media type)\" and \"Done: a written list of every non-conformance with RFC 9457\". subagent-prompt-02.md, the reviewer prompt, only says \"Review main..feature/problem-details ... against https://www.rfc-editor.org/rfc/rfc9457 per .cadence/workstreams/problem-details-review.md@d588956\" and asks for \"findings report, with repro commands and their real output and a list of what you didn't check\". It points at no specific member. subagent-prompt-03.md is a scribe prompt written after the review. It records results (\"8 findings (2 MUST-violations F1/F5, 1 SHOULD F4, rest notes)\", \"Orchestrator checked findings against api/problems.py@5efb782 lines 18-28\") and also names no member or type URI resolution.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.833
+  },
+  "timing": {
+    "executor_duration_seconds": 209.8,
+    "total_duration_seconds": 209.8
+  }
+}

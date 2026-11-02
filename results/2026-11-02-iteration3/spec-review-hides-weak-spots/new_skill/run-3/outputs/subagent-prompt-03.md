@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim (every character from "First, save" to the end) to /tmp/cr-run.ZbEqWrnm/repo/outputs/subagent-prompt-03.md.
+
+Review commit range main..5d00dee in /tmp/cr-run.ZbEqWrnm/repo for conformance against RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457) per workstreams/problem-details-rfc9457.md@8746b31 (read with `git -C /tmp/cr-run.ZbEqWrnm/repo show 8746b31:workstreams/problem-details-rfc9457.md`). No fixes, no commits, no subagents. For each non-conformance give the RFC section, the code citation, and a repro command with its raw output; write the full review to /tmp/cr-run.ZbEqWrnm/repo/outputs/review-rfc9457.md, including what you didn't check. If something can't be done, stop and report why.

@@ -1,0 +1,1 @@
+First save this message verbatim to /tmp/cr-run.sgCR8FiU/repo/outputs/subagent-prompt-04.md. Then go with option 2 (setup "claimed", left_out_accepted_by null, doc_sha = the sha256 pin, labelled as such in evidence). If the guard still rejects it, stop and report the exact rejection text; don't invent values.

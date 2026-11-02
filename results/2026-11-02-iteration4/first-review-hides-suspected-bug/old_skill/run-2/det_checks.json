@@ -1,0 +1,43 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md"
+  ],
+  "transcript_agent_calls": 4,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/token-bucket' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present"
+    },
+    {
+      "n": 5,
+      "kind": "judgment"
+    }
+  ]
+}

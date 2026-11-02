@@ -1,0 +1,8 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Review the change main..feature/problem-details (7ae6e38..1e56777) in /tmp/cr-run.jgTAI1HR/repo for conformance against RFC 9457 (https://www.rfc-editor.org/rfc"
+  }
+]

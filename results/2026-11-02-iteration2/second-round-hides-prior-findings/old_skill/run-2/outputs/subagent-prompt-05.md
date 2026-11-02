@@ -1,0 +1,1 @@
+Follow-up: write the tasks file as {"tasks": [ ...same three entries as given... ]}, then validate it with python -m json.tool. Also save this message verbatim, from "Follow-up:" to the end, as outputs/subagent-prompt-05.md. Report ls -l of outputs and .cadence/workstreams. If the hook still blocks the write, report the exact message.

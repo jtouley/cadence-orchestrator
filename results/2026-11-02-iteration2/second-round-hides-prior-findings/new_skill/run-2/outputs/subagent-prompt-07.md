@@ -1,0 +1,5 @@
+You are a scribe. Record only; don't review code.
+
+Step 0: Save this entire prompt, verbatim from "You are a scribe" to the end, to /tmp/cr-run.0xfme1Ia/repo/outputs/subagent-prompt-07.md.
+Step 1: In the worktree /tmp/cr-run.0xfme1Ia/orch (branch `orchestration`), create workstreams/search-api-round2.review.md. Extract it mechanically from workstreams/search-api-round2.md with a line-range command, for example `sed -n '/^## Ask/,/^## Status and evidence/p' | sed '$d'`. Do not print or read the Notes section yourself or quote it anywhere. Give the file the title line "# Workstream: search-api-round2 (reviewer view: Ask, Scope, Decisions only)". Use grep to confirm the new file contains no "Notes" heading and none of the strings "R1-", "escape_like", "keyset" or "page_size". Report only the grep counts.
+Step 2: Commit the new file and don't push. In the main doc's "## Status and evidence" section, append: "2026-11-02: blind-review attempt 1 stopped unblinded (reviewer printed Notes); reviewer-view file added for attempt 2." Commit that too. Report both commit SHAs. If you can't do this as specified, stop and report why.

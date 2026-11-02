@@ -1,0 +1,1 @@
+Approved: write tasks.json as {"tasks":[...]} with the same single entry, then do step 4 (commit both files on orchestration). First, save this message verbatim (from "Approved:" through the last line) to /tmp/cr-run.IX6cKBq7/repo/outputs/subagent-prompt-02.md. Report the orchestration commit SHA and anything skipped.

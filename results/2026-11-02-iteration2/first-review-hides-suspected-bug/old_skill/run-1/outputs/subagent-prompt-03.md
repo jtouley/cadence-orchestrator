@@ -1,0 +1,1 @@
+First save this message verbatim to /tmp/cr-run.sgCR8FiU/repo/outputs/subagent-prompt-03.md. Then write the tasks file as {"tasks": [...]} with the same three tasks, set blind-review to "claimed", setup tokens to 19014, validate with python3 -I -m json.tool, and report the output.

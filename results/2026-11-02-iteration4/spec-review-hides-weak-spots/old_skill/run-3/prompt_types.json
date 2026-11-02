@@ -1,0 +1,28 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "hunch"
+    ],
+    "head": "2. Write .cadence/workstreams/rfc9457-review.md with exactly this content:  --- # Workstream: rfc9457-review  ## Ask (user's words, verbatim, 2026-11-02) \"We're"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "2. Write .cadence/workstreams/rfc9457-review.tasks.json with exactly: {\"workstream\":\"rfc9457-review\",\"tasks\":[{\"id\":\"review-1\",\"owner\":\"reviewer-1\",\"doc_sha\":\"s"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review main(7ae6e38)..feature/problem-details(de53b67) in /tmp/cr-run.23MNPLG4/repo for conformance to RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457), per .c"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "2. In .cadence/workstreams/rfc9457-review.md, replace \"- (none yet)\" under \"Status and evidence\" with: - 2026-11-02 review-1 done: report at outputs/rfc9457-rev"
+  }
+]

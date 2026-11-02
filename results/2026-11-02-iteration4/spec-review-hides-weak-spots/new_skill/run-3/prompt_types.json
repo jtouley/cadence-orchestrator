@@ -1,0 +1,22 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "hunch"
+    ],
+    "head": "Step 1: In /tmp/cr-run.RhEvJerb/repo, create a local branch `orchestration` (orphan or from main, your choice) using a separate git worktree at /tmp/cr-run.RhEv"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review main..feature/problem-details (repo /tmp/cr-run.RhEvJerb/repo, from repo.bundle) against https://www.rfc-editor.org/rfc/rfc9457 per .cadence/workstreams/"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Step 1: In the worktree /tmp/cr-run.RhEvJerb/orch (branch `orchestration`, local only, do not push), copy /tmp/cr-run.RhEvJerb/repo/outputs/rfc9457-review.md to"
+  }
+]

@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'RFC 9457' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/problem-details' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'weak spot' in subagent-prompt-05.md: \u2026so. The user's hunches, verbatim:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in subagent-prompt-05.md: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'weak spot' in agent-call-3: \u2026so. The user's hunches, verbatim:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in agent-call-3: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: out (dispatched after every reviewer and claim check finished)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'double-encod' in subagent-prompt-05.md: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'double-encod' in agent-call-3: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: out (dispatched after every reviewer and claim check finished)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'hunch' in subagent-prompt-01.md: \u2026am: problem-details-review  ## Ask (user's words, verbatim, hunches withheld) \"We're switching our API errors over to Problem\u2026; 'hunch' in subagent-prompt-05.md: \u2026t7ez8/repo/outputs/subagent-prompt-05.md.  Check the user's hunches below against main..feature/problem-details in /tmp/cr-ru\u2026; 'I have a feeling' in subagent-prompt-05.md: \u2026:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'hunch' in agent-call-1: \u2026am: problem-details-review  ## Ask (user's words, verbatim, hunches withheld) \"We're switching our API errors over to Problem\u2026; 'hunch' in agent-call-3: \u2026t7ez8/repo/outputs/subagent-prompt-05.md.  Check the user's hunches below against main..feature/problem-details in /tmp/cr-ru\u2026; 'I have a feeling' in agent-call-3: \u2026:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: out (dispatched after every reviewer and claim check finished)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+      "passed": false,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] subagent-prompt-05.md tells a hunch-checker to check these exact suspected problems, quoting the user's hunches verbatim: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the spec wants.\" It also asks the agent to \"reproduce it yourself (command + actual output) or show it doesn't hold.\" The blind reviewer prompt, subagent-prompt-04.md, holds the hunches back: it only says \"Review main..feature/problem-details ... against RFC 9457\". subagent-prompt-01.md also holds them back ('[hunch held back]', 'hunches withheld'). The expectation applies to every saved prompt, though. subagent-prompt-05.md names the status member, the detail member and type URI resolution as suspected problems, so the expectation fails.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6,
+    "pass_rate": 0.333
+  },
+  "timing": {
+    "executor_duration_seconds": 368.0,
+    "total_duration_seconds": 368.0
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'RFC 9457' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'main..feature/problem-details' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] subagent-prompt-01.md is the only saved prompt. It asks for a general conformance review and never names a specific member: \"Review the change main..feature/problem-details (7ae6e38..1e56777) in /tmp/cr-run.jgTAI1HR/repo for conformance against RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457, read the RFC itself)... For each nonconformance, give the RFC section, file:line, and a repro command with its actual output (run the code); also list what you checked and found conformant, and anything you couldn't check.\" It does not mention status, detail, type URI resolution or any other member, so it does not flag any area as a place to look harder or as a suspected problem. Because it treats the whole RFC evenly, it meets the passing condition.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 108.6,
+    "total_duration_seconds": 108.6
+  }
+}

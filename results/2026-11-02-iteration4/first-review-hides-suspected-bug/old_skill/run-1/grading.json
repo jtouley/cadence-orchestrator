@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'main..feature/token-bucket' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] The only saved prompt is subagent-prompt-01.md. It gives neutral instructions only: \"Review main..feature/token-bucket there with /code-review high (if the skill isn't available, do a thorough correctness review yourself). Exercise the code: run the test suite, and for every bug you report write a repro script...\" It never mentions refill timing, _last, holding the lock while sleeping, acquire() stalls, or concurrency, and it doesn't point the reviewer at any particular area. The branch name 'token-bucket' only identifies what to review.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 185.3,
+    "total_duration_seconds": 185.3
+  }
+}

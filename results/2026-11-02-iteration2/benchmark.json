@@ -1,0 +1,1108 @@
+{
+  "metadata": {
+    "skill_name": "tpm",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-11-02T17:21:41Z",
+    "evals_run": [
+      "first-review-hides-suspected-bug",
+      "second-round-hides-prior-findings",
+      "spec-review-hides-weak-spots"
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": "first-review-hides-suspected-bug",
+      "eval_name": "first-review-hides-suspected-bug",
+      "configuration": "new_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.4,
+        "passed": 2,
+        "failed": 3,
+        "total": 5,
+        "time_seconds": 273.2,
+        "tokens": 1246691,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (6): PASS - match 'main..feature/token-bucket' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'clock drifts' in subagent-prompt-01.md: \u2026) \"Context, for what it's worth: I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 | transcript Agent prompts (6): FAIL - 'clock drifts' in agent-call-1: \u2026) \"Context, for what it's worth: I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'across the sleep' in subagent-prompt-01.md: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in subagent-prompt-01.md: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026 | transcript Agent prompts (6): FAIL - 'across the sleep' in agent-call-1: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in agent-call-1: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'priya' in subagent-prompt-01.md: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 | transcript Agent prompts (6): FAIL - 'priya' in agent-call-1: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The only reviewer prompt, subagent-prompt-02.md, is neutral and does not mention refill timing, _last, the lock, sleep or acquire(): \"Then /code-review (high) main..feature/token-bucket@3050047 in /tmp/cr-run.TPbqLc2I/clone, no fixes; write the full review, each finding with a repro command and its raw output, plus what you didn't check, to .../outputs/review-1.md.\" The user's suspicions appear in only one saved prompt, subagent-prompt-01.md, where they are copied verbatim into a workstream file under the heading \"## Notes (not for reviewers)\" (\"_last only gets bumped once there's a whole token... the lock is held across the sleep in acquire()\"). That prompt goes to a scribe, not the reviewer, and opens with \"You are the scribe. Do exactly these steps, nothing else, no code review\". It asks the scribe to save the notes, not to review anything. One caveat: those notes sit in /tmp/cr-run.TPbqLc2I/repo/.cadence, which the reviewer might be able to read. The expectation covers only what the prompts say, though. The other prompts don't touch the review: 03 handles bookkeeping, 04 says \"Reply with the single word OK\", 05 waits for the review file and says \"Don't read or modify the review\", and 06 re-runs the existing repro scripts and pytest, and updates the task state.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "first-review-hides-suspected-bug",
+      "eval_name": "first-review-hides-suspected-bug",
+      "configuration": "new_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.4,
+        "passed": 2,
+        "failed": 3,
+        "total": 5,
+        "time_seconds": 289.3,
+        "tokens": 1603203,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/token-bucket' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'clock drifts' in subagent-prompt-01.md: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 | transcript Agent prompts (5): FAIL - 'clock drifts' in agent-call-1: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'across the sleep' in subagent-prompt-01.md: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in subagent-prompt-01.md: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026 | transcript Agent prompts (5): FAIL - 'across the sleep' in agent-call-1: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in agent-call-1: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'priya' in subagent-prompt-01.md: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 | transcript Agent prompts (5): FAIL - 'priya' in agent-call-1: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The two reviewer prompts give only neutral, whole-change instructions. Neither paraphrases or points to refill timing, _last, the lock held during sleep, or stalls. subagent-prompt-04.md says: \"do a /code-review of main..feature/token-bucket (f7f6429..3050047) ... against .cadence/workstreams/token-bucket-review.md@b6d6875 ... (read only its Ask, Scope and Decisions sections, not Notes). This is a review only: no fixes. Back every behavioural finding with a repro command and its raw output\". subagent-prompt-05.md says: \"review commits f7f6429..3050047 ... for correctness as a thread-safe token-bucket rate limiter, working only from `git diff`/`git show` ... don't open anything under .cadence/\". The verifier prompt, subagent-prompt-06.md, only asks the agent to rerun the scripts that already exist and add no new review. The suspicions appear only in non-reviewer prompts. subagent-prompt-01.md is a scribe prompt that writes the user's quote into the doc's \"Notes (not for reviewers)\" section, including \"the way _last only gets bumped once there's a whole token looks wrong ... the lock is held across the sleep in acquire()\". subagent-prompt-07.md is a post-review bookkeeping prompt that lists \"acquire(block=False)/timeout stall not scripted\" as left-out work. One caveat: prompt 04 sends the reviewer to a doc that contains the Notes. Prompt 07 records that the reviewer \"read Notes, disclosed\", so that review was exposed to the suspicions indirectly through the doc, though not through steering wording in its prompt. This expectation does not check for that exposure.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "first-review-hides-suspected-bug",
+      "eval_name": "first-review-hides-suspected-bug",
+      "configuration": "new_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.4,
+        "passed": 2,
+        "failed": 3,
+        "total": 5,
+        "time_seconds": 336.6,
+        "tokens": 2131470,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/token-bucket' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'clock drifts' in subagent-prompt-01.md: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026; 'clock drifts' in subagent-prompt-05.md: \u2026epro/). The claims, verbatim from the user: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 | transcript Agent prompts (3): FAIL - 'clock drifts' in agent-call-1: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026; 'clock drifts' in agent-call-3: \u2026epro/). The claims, verbatim from the user: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'across the sleep' in subagent-prompt-01.md: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in subagent-prompt-01.md: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026; 'across the sleep' in subagent-prompt-05.md: \u2026e's a whole token looks wrong to me.\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread.\" For ea\u2026 | transcript Agent prompts (3): FAIL - 'across the sleep' in agent-call-1: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in agent-call-1: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026; 'across the sleep' in agent-call-3: \u2026e's a whole token looks wrong to me.\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread.\" For ea\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'priya' in subagent-prompt-01.md: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 | transcript Agent prompts (3): FAIL - 'priya' in agent-call-1: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The only prompt sent to the reviewer is subagent-prompt-04.md. It names no suspected problem: \"Code-review main..feature/token-bucket (f7f6429..3050047) ... against the Ask, Scope and Decisions of .cadence/workstreams/token-bucket-review.md@262862b (read it with `git show ...`; do not read its Notes section).\" Its only other guidance is general: \"Back every finding with a repro command and its raw output, or mark it UNPROVEN. Also list what you didn't check.\" The Scope it points to sets a neutral standard for the whole change (subagent-prompt-01.md): \"Standard: correctness, thread-safety and test adequacy of the change; no written spec exists in the repo.\" The user's hunches about _last and the lock held across the sleep appear only under \"## Notes (not for reviewers)\" in subagent-prompt-01.md, and that prompt goes to a scribe who is told \"Do not read or analyse the code itself.\" The prompt that does spell out the hunches, subagent-prompt-05.md (\"Verify or refute two claims ... (1) 'the refill clock drifts...' (2) 'the lock is held across the sleep in acquire()...'\"), goes to a separate verifier (verifier-1, task hunch-check), not to the reviewer (reviewer-1, blind-review). subagent-prompt-02.md, 03.md and 06.md are about bookkeeping only (the tasks file, commits, recording results), and 06.md was sent after the review finished. Caveat: the reviewer is pointed at a file that contains the Notes and is only told not to read them. So whether the review stayed blind depends on the reviewer obeying, but the prompt text itself does not steer.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "second-round-hides-prior-findings",
+      "eval_name": "second-round-hides-prior-findings",
+      "configuration": "new_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 274.1,
+        "tokens": 1266236,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one independent-review prompt was saved, and an independent-review prompt names the change to review either as the whole branch, with main (or origin/main, or 6a70bbd) as the base and feature/search-api (or round-2, or 6746708) as the head, or as the new commits round-1..round-2 (or 87fe0d8..6746708). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: file exists plus substring/regex search of the independent-review prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/search-api' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "At least one fix-check prompt was saved, and each prior finding is given to a fix check verbatim with its repro command: some fix-check prompt contains \"R1-1\", \"skips a row on every page boundary\" and \"r1_1_cursor_gap.py\", and some fix-check prompt (the same one or another) contains \"R1-2\", \"LIKE wildcards in the search term\" and \"r1_2_like_wildcard.py\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the fix-check prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): each group found | transcript Agent prompts (5): PASS - each group found",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No independent-review prompt contains \"R1-1\" or \"R1-2\". How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'R1-1' in subagent-prompt-01.md: \u2026f feature/search-api at tag round-1 and came back with:   - R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026 (prints REPRODUCES and exits 1 while the bug is there)   - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in subagent-prompt-05.md: \u2026nd evidence with: - fix-check-r1 (verifier-1, doc 449655c): R1-1 FIXED, R1-2 FIXED. Both repros print REPRODUCES and exit 1 \u2026 | transcript Agent prompts (5): FAIL - 'R1-1' in agent-call-1: \u2026f feature/search-api at tag round-1 and came back with:   - R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026 (prints REPRODUCES and exits 1 while the bug is there)   - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in agent-call-5: \u2026nd evidence with: - fix-check-r1 (verifier-1, doc 449655c): R1-1 FIXED, R1-2 FIXED. Both repros print REPRODUCES and exit 1 \u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No independent-review prompt contains \"page boundary\", \"skips a row\" or \"1000 done\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'page boundary' in subagent-prompt-01.md: \u2026th:   - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.     Repr\u2026; 'skips a row' in subagent-prompt-01.md: \u2026nd-1 and came back with:   - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\".     Repro: `python repro/r1_2_like_wildcard.py <path to \u2026 | transcript Agent prompts (5): FAIL - 'page boundary' in agent-call-1: \u2026th:   - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.     Repr\u2026; 'skips a row' in agent-call-1: \u2026nd-1 and came back with:   - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\".     Repro: `python repro/r1_2_like_wildcard.py <path to \u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt, independent review or fix check, contains \"keyset\", \"tie-breaker\" or \"escape_like\" (case-insensitive): a fix check gets the findings, not how they were fixed. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of all saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'keyset' in subagent-prompt-01.md: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on bo\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on both queries. Tests for both\u2026 | transcript Agent prompts (5): FAIL - 'keyset' in agent-call-1: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on bo\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on both queries. Tests for both\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no independent-review prompt says this is a re-review or second round, says that earlier issues existed or were fixed, or asks the reviewer to confirm that particular problems (pagination correctness, wildcard escaping) are resolved; asking for a full review of the change on its own terms passes. And no fix-check prompt asks for more than running each given repro and reporting whether it still reproduces: one that also asks for a general review of the change, or describes how the fixes work, fails. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] Fails on both checks. subagent-prompt-01.md names both repro scripts and also contains the commit range main..feature/search-api and \"a fresh, independent code review of main..6746708\", so the rule counts it as an independent review. It says this is a second round and that issues were fixed: \"# Search API, round 2 review\", \"Round two on the search API\", \"reviewed again by a fresh reviewer agent\", and \"The first review was of feature/search-api at tag round-1 and came back with: R1-1 (high): the offset cursor skips a row... R1-2 (medium): LIKE wildcards in the search term aren't escaped\", followed by \"I pushed fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id)... added an escape_like() helper\". Read as a fix check instead, it would still fail, because it describes how the fixes work and asks for a review. subagent-prompt-05.md has no repro name, so it is also an independent review, and it says \"R1-1 FIXED, R1-2 FIXED. Both repros print REPRODUCES and exit 1 at round-1\" and \"a regression from round-1\". subagent-prompt-02.md is the fix check. It does not describe the fixes, but beyond running each repro it asks for \"plus the branch's own test suite at round-2\". subagent-prompt-03.md, the /code-review of main..6746708, mentions \"tag round-2\" and \"search-api-round2.md\" only as file and tag names. It tells the reviewer \"don't read its Notes\", which keeps it neutral. Prompt 01 alone is enough to fail the expectation.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "second-round-hides-prior-findings",
+      "eval_name": "second-round-hides-prior-findings",
+      "configuration": "new_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 405.1,
+        "tokens": 2008563,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one independent-review prompt was saved, and an independent-review prompt names the change to review either as the whole branch, with main (or origin/main, or 6a70bbd) as the base and feature/search-api (or round-2, or 6746708) as the head, or as the new commits round-1..round-2 (or 87fe0d8..6746708). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: file exists plus substring/regex search of the independent-review prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (9: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md, subagent-prompt-08.md, subagent-prompt-09.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (7): PASS - match 'main..feature/search-api' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "At least one fix-check prompt was saved, and each prior finding is given to a fix check verbatim with its repro command: some fix-check prompt contains \"R1-1\", \"skips a row on every page boundary\" and \"r1_1_cursor_gap.py\", and some fix-check prompt (the same one or another) contains \"R1-2\", \"LIKE wildcards in the search term\" and \"r1_2_like_wildcard.py\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the fix-check prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (9: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md, subagent-prompt-08.md, subagent-prompt-09.md): each group found | transcript Agent prompts (7): PASS - each group found",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No independent-review prompt contains \"R1-1\" or \"R1-2\". How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (9: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md, subagent-prompt-08.md, subagent-prompt-09.md): 'R1-1' in subagent-prompt-01.md: \u2026 of feature/search-api at tag round-1 and came back with: - R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026>` (prints REPRODUCES and exits 1 while the bug is there) - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in subagent-prompt-06.md: \u2026 these round-1 blockers no longer reproduces at round-2:  - R1-1 (high): the offset cursor skips a row on every page boundar\u2026 | transcript Agent prompts (7): FAIL - 'R1-1' in agent-call-1: \u2026 of feature/search-api at tag round-1 and came back with: - R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026>` (prints REPRODUCES and exits 1 while the bug is there) - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in agent-call-4: \u2026 these round-1 blockers no longer reproduces at round-2:  - R1-1 (high): the offset cursor skips a row on every page boundar\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No independent-review prompt contains \"page boundary\", \"skips a row\" or \"1000 done\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (9: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md, subagent-prompt-08.md, subagent-prompt-09.md): 'page boundary' in subagent-prompt-01.md: \u2026with: - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in subagent-prompt-01.md: \u2026ound-1 and came back with: - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026 | transcript Agent prompts (7): FAIL - 'page boundary' in agent-call-1: \u2026with: - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in agent-call-1: \u2026ound-1 and came back with: - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt, independent review or fix check, contains \"keyset\", \"tie-breaker\" or \"escape_like\" (case-insensitive): a fix check gets the findings, not how they were fixed. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of all saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (9: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md, subagent-prompt-08.md, subagent-prompt-09.md): 'keyset' in subagent-prompt-01.md: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026 | transcript Agent prompts (7): FAIL - 'keyset' in agent-call-1: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no independent-review prompt says this is a re-review or second round, says that earlier issues existed or were fixed, or asks the reviewer to confirm that particular problems (pagination correctness, wildcard escaping) are resolved; asking for a full review of the change on its own terms passes. And no fix-check prompt asks for more than running each given repro and reporting whether it still reproduces: one that also asks for a general review of the change, or describes how the fixes work, fails. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The actual reviewer prompts are clean. subagent-prompt-05.md and subagent-prompt-08.md ask for \"/code-review on the commit range 6a70bbd..6746708 (main..feature/search-api)\" with no mention of rounds or earlier findings, and subagent-prompt-04.md is a clean fix check that only runs the two repros. However, subagent-prompt-01.md fails under either classification. It names both repro scripts (\"python repro/r1_1_cursor_gap.py\", \"python repro/r1_2_like_wildcard.py\") and also contains the commit range (\"review of the full commit range main..feature/search-api\"), so by the stated rule it counts as an independent review. That prompt says \"Round two on the search API\", \"reviewed again by a fresh reviewer agent\", \"Verification that the two round-1 findings no longer reproduce\", and lists the earlier issues R1-1 and R1-2. If it were counted as a fix check instead, it would still fail because it explains how the fixes work: \"replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries.\" subagent-prompt-06.md also fails the rule mechanically. It contains both repro names and the dictated \"/code-review on the commit range ... (main..feature/search-api)\", so it counts as an independent review, and it says \"confirm each of these round-1 blockers no longer reproduces at round-2\". Both 01 and 06 are scribe prompts, but the rule classifies prompts by their text, not their purpose.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "second-round-hides-prior-findings",
+      "eval_name": "second-round-hides-prior-findings",
+      "configuration": "new_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 458.4,
+        "tokens": 2133957,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one independent-review prompt was saved, and an independent-review prompt names the change to review either as the whole branch, with main (or origin/main, or 6a70bbd) as the base and feature/search-api (or round-2, or 6746708) as the head, or as the new commits round-1..round-2 (or 87fe0d8..6746708). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: file exists plus substring/regex search of the independent-review prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (6): PASS - match 'main..feature/search-api' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "At least one fix-check prompt was saved, and each prior finding is given to a fix check verbatim with its repro command: some fix-check prompt contains \"R1-1\", \"skips a row on every page boundary\" and \"r1_1_cursor_gap.py\", and some fix-check prompt (the same one or another) contains \"R1-2\", \"LIKE wildcards in the search term\" and \"r1_2_like_wildcard.py\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the fix-check prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): each group found | transcript Agent prompts (6): PASS - each group found",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No independent-review prompt contains \"R1-1\" or \"R1-2\". How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'R1-1' in subagent-prompt-01.md: \u2026t for reviewers) - From the ask, user, round-1 findings: \"- R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026>` (prints REPRODUCES and exits 1 while the bug is there) - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026 | transcript Agent prompts (6): FAIL - 'R1-1' in agent-call-1: \u2026t for reviewers) - From the ask, user, round-1 findings: \"- R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026>` (prints REPRODUCES and exits 1 while the bug is there) - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No independent-review prompt contains \"page boundary\", \"skips a row\" or \"1000 done\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'page boundary' in subagent-prompt-01.md: \u2026ngs: \"- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in subagent-prompt-01.md: \u2026, user, round-1 findings: \"- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026 | transcript Agent prompts (6): FAIL - 'page boundary' in agent-call-1: \u2026ngs: \"- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in agent-call-1: \u2026, user, round-1 findings: \"- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt, independent review or fix check, contains \"keyset\", \"tie-breaker\" or \"escape_like\" (case-insensitive): a fix check gets the findings, not how they were fixed. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of all saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'keyset' in subagent-prompt-01.md: \u2026From the ask, user, fixes: \"replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries.\"  File workstrea\u2026 | transcript Agent prompts (6): FAIL - 'keyset' in agent-call-1: \u2026From the ask, user, fixes: \"replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries.\"  File workstrea\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no independent-review prompt says this is a re-review or second round, says that earlier issues existed or were fixed, or asks the reviewer to confirm that particular problems (pagination correctness, wildcard escaping) are resolved; asking for a full review of the change on its own terms passes. And no fix-check prompt asks for more than running each given repro and reporting whether it still reproduces: one that also asks for a general review of the change, or describes how the fixes work, fails. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] Under the expectation's rule, subagent-prompt-01.md is an independent review because it contains the commit range \"main..feature/search-api\". It also names a repro script, \"python repro/r1_1_cursor_gap.py\", but the rule still counts it as a review. This prompt clearly fails the review check. It says \"# Search API: round-2 review\" and \"Round two on the search API. The first review was of feature/search-api at tag round-1 and came back with:\", lists the earlier findings R1-1 and R1-2, says \"I pushed fixes (now tagged round-2)\", and describes how the fixes work: \"replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries.\" subagent-prompt-05.md names both repro scripts (\"r1_1_cursor_gap.py \u2192 does not reproduce, exit 0\", \"r1_2_like_wildcard.py \u2192 does not reproduce, exit 0\") and has no commit range or review request, so it counts as a fix check. It asks for much more than running repros (editing the task JSON, committing, and appending the review findings F1\u2013F6), so it also fails. subagent-prompt-02.md (a fix check) goes beyond running the repros as well: \"including any variant of the same defect the repro might miss\". subagent-prompt-03.md (the /code-review on main..feature/search-api) only signals a second round through file names such as \"search-api-round-2.md\" and \"review-round-2.md\".",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "spec-review-hides-weak-spots",
+      "eval_name": "spec-review-hides-weak-spots",
+      "configuration": "new_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 237.6,
+        "tokens": 1523467,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'rfc9457' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/problem-details' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'weak spot' in subagent-prompt-01.md: \u2026viewers) User's hunches, verbatim: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in subagent-prompt-01.md: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 | transcript Agent prompts (5): FAIL - 'weak spot' in agent-call-1: \u2026viewers) User's hunches, verbatim: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in agent-call-1: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'double-encod' in subagent-prompt-01.md: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 | transcript Agent prompts (5): FAIL - 'double-encod' in agent-call-1: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'hunch' in subagent-prompt-01.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Scope - In: every change in the commit range main..\u2026; 'I have a feeling' in subagent-prompt-01.md: \u2026m: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026; 'not convinced' in subagent-prompt-01.md: \u2026. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the\u2026 | transcript Agent prompts (5): FAIL - 'hunch' in agent-call-1: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Scope - In: every change in the commit range main..\u2026; 'I have a feeling' in agent-call-1: \u2026m: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026; 'not convinced' in agent-call-1: \u2026. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The only reviewer prompt is subagent-prompt-02.md, which asks for an even check: \"Review main..feature/problem-details ... for conformance with RFC 9457 ... against the Ask/Scope/Decisions of workstreams/rfc9457-review.md@8800a8c ... (read it with `git ... show 8800a8c:workstreams/rfc9457-review.md | sed '/^## Notes/,$d'`; read nothing past that)\". It names no member, and the sed command removes the Notes section before the reviewer sees the doc. subagent-prompt-03.md and subagent-prompt-04.md only copy that same text. The user's hunches appear in one place, subagent-prompt-01.md. That is a scribe prompt that tells the scribe \"do not review or read the application code\" and asks it to record the user's words in a section headed \"## Notes (not for reviewers)\": \"User's hunches, verbatim: 'Between us, I think the weak spot is the status member... The detail field also looks double-encoded... type URI resolution...'\". It stores the hunches without pointing any reviewer at them. subagent-prompt-05.md mentions status, detail and type only when recording findings after the review finished (\"Findings F1-F7: status sent as string (\u00a73.1.2)... detail double JSON-encoded (\u00a73.1.4)...\"). That is a status update, not a steer. subagent-prompt-06.md has only bookkeeping fields. This is a borderline call: read literally, prompt 01 does put the suspected problems into a saved subagent prompt. I passed it because the expectation is about steering the reviewer, and no reviewer-facing prompt does that.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "spec-review-hides-weak-spots",
+      "eval_name": "spec-review-hides-weak-spots",
+      "configuration": "new_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 234.2,
+        "tokens": 1469278,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'rfc9457' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'main..feature/problem-details' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'weak spot' in subagent-prompt-01.md: \u2026's hunches, verbatim (2026-11-02): \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in subagent-prompt-01.md: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 | transcript Agent prompts (2): FAIL - 'weak spot' in agent-call-1: \u2026's hunches, verbatim (2026-11-02): \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in agent-call-1: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'double-encod' in subagent-prompt-01.md: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 | transcript Agent prompts (2): FAIL - 'double-encod' in agent-call-1: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'hunch' in subagent-prompt-01.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Status and evidence - T1 (independent RFC 9457 conf\u2026; 'I have a feeling' in subagent-prompt-01.md: \u2026): \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026; 'not convinced' in subagent-prompt-01.md: \u2026. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the\u2026 | transcript Agent prompts (2): FAIL - 'hunch' in agent-call-1: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Status and evidence - T1 (independent RFC 9457 conf\u2026; 'I have a feeling' in agent-call-1: \u2026): \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026; 'not convinced' in agent-call-1: \u2026. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The only reviewer prompt, subagent-prompt-03.md, names no member or area to focus on: \"Review main..feature/problem-details ... for conformance to RFC 9457 ... per the Ask, Scope and Decisions in .cadence/workstreams/rfc9457-review.md ... do not open any other file under .cadence/.\" The workstream doc it points to (content in subagent-prompt-01.md, STEP 1) is also neutral. It records the user's decision \"I'd like an independent read, not just a confirmation of my hunches\" and says \"Notes ... are kept in a separate file, rfc9457-review.notes.md, which reviewers must not read.\" The user's hunches (\"the weak spot is the status member ... detail field also looks double-encoded ... type URI resolution against the request URL\") appear only in subagent-prompt-01.md. That prompt goes to a scribe, who is told \"Do not investigate or review any code\" and to file the hunches in a notes file marked \"## Notes (not for reviewers)\". So the hunches are stored away from the reviewer, not given to anyone as places to look harder. subagent-prompt-02.md and subagent-prompt-04.md only write the tasks JSON and do not mention status, detail or type resolution. One caveat: a strictly literal reading could count the stored hunch text in subagent-prompt-01.md as 'singling out'. It still passes because that text is walled off from the reviewer, and no prompt directs any agent to look harder at those areas.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "spec-review-hides-weak-spots",
+      "eval_name": "spec-review-hides-weak-spots",
+      "configuration": "new_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 222.9,
+        "tokens": 1317710,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'rfc9457' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/problem-details' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'weak spot' in subagent-prompt-01.md: \u2026viewers) User's hunches, verbatim: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in subagent-prompt-01.md: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 | transcript Agent prompts (3): FAIL - 'weak spot' in agent-call-1: \u2026viewers) User's hunches, verbatim: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in agent-call-1: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'double-encod' in subagent-prompt-01.md: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 | transcript Agent prompts (3): FAIL - 'double-encod' in agent-call-1: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'hunch' in subagent-prompt-01.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\" (Also note: user asked that a verbatim copy of every su\u2026; 'I have a feeling' in subagent-prompt-01.md: \u2026m: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026; 'not convinced' in subagent-prompt-01.md: \u2026. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the\u2026 | transcript Agent prompts (3): FAIL - 'hunch' in agent-call-1: \u2026I'd like an independent read, not just a confirmation of my hunches.\" (Also note: user asked that a verbatim copy of every su\u2026; 'I have a feeling' in agent-call-1: \u2026m: \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026; 'not convinced' in agent-call-1: \u2026. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The reviewer prompt itself is clean. subagent-prompt-04.md only says \"Review main..feature/problem-details ... for conformance with RFC 9457\" and tells the reviewer to \"read only its Ask, Scope and Decisions sections, never Notes\". It does not name status, detail or type URI resolution. But the expectation covers every saved subagent prompt, and subagent-prompt-01.md (the scribe prompt) names all three as suspected problems. It has the scribe write them into the workstream file under a Notes section: \"User's hunches, verbatim: 'Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the spec wants.'\" That file is committed at c0849c9, and subagent-prompt-04.md points the reviewer to that same file (`git show c0849c9:.cadence/workstreams/rfc9457-conformance.md`). So the reviewer can reach the hunches, and keeping them out depends only on the 'never Notes' instruction. subagent-prompt-02.md, -03.md and -05.md do not mention them. Because a saved subagent prompt clearly singles out these items as suspected problems, the expectation fails.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "first-review-hides-suspected-bug",
+      "eval_name": "first-review-hides-suspected-bug",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 207.5,
+        "tokens": 1411562,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/token-bucket' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'clock drifts' in subagent-prompt-05.md: \u2026ing only these two, no fixes, no subagents: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 | transcript Agent prompts (4): FAIL - 'clock drifts' in agent-call-3: \u2026ing only these two, no fixes, no subagents: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'across the sleep' in subagent-prompt-05.md: \u2026ce there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\". Write \u2026; 'lock is held' in subagent-prompt-05.md: \u2026ets bumped once there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every othe\u2026 | transcript Agent prompts (4): FAIL - 'across the sleep' in agent-call-3: \u2026ce there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\". Write \u2026; 'lock is held' in agent-call-3: \u2026ets bumped once there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every othe\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] The reviewer's prompt, subagent-prompt-02.md, is neutral. It says only: \"run /code-review (high) on f7f6429..3050047 (main..feature/token-bucket) ... no fixes, no subagents. Write the full review to .../review.md with a repro command and its actual output for every finding, plus what you didn't check\". It does not mention refill, _last, the lock, sleep or acquire(). It points the reviewer at the workstream doc, and that doc was written by the setup agent from subagent-prompt-01.md. The doc's only standard is a general one: \"Standard: correctness of the change as a thread-safe rate limiter, per its own docstrings/tests.\" It refers to the suspicions without giving their content: \"the user also shared unconfirmed suspicions; the orchestrator holds these back from the blind reviewer and checks them separately after the blind review.\" The suspicions appear in only one file, subagent-prompt-05.md, which is addressed to a separate verifier, not the reviewer: \"confirm or refute each of these two unverified claims ... (1) 'the refill clock drifts ... _last only gets bumped once there's a whole token' (2) 'the lock is held across the sleep in acquire()'\". That prompt went to the 'verifier' owner of the separate suspicion-check task (subagent-prompt-07.md: 'suspicion-check owner \"verifier\"'), and it writes to suspicion-check.md, not review.md. Prompts 03, 04, 06 and 07 only handle tasks-file bookkeeping and waiting, and contain no review guidance.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "first-review-hides-suspected-bug",
+      "eval_name": "first-review-hides-suspected-bug",
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 223.7,
+        "tokens": 735089,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/token-bucket' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] I read all three saved prompts, and none of them mentions refill timing, _last, holding the lock while sleeping, acquire() or stalls. subagent-prompt-01.md (the scribe) gives only a general standard for the whole change: \"Standard: correctness and thread-safety of the changed code, judged against its own docstrings/tests\". It also says outright: \"Do NOT add any hypotheses about bugs, causes, or file/line pointers.\" subagent-prompt-02.md (the reviewer) asks only: \"Code-review f7f6429..3050047 (main..feature/token-bucket) ... each finding with severity, file:line, a repro command you actually ran and its raw output ... plus what you didn't check.\" subagent-prompt-03.md (the verifier) says only: \"Verify each finding in .../review.md ... per-finding verdict CONFIRMED / NOT REPRODUCED / REPRO FLAWED\", which points at whatever the review found and names no specific problem. The reviewer prompt also points to the workstream doc, which reached it only by path, and the scribe prompt that defines that doc contains no hints.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "first-review-hides-suspected-bug",
+      "eval_name": "first-review-hides-suspected-bug",
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 175.4,
+        "tokens": 476744,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'main..feature/token-bucket' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): none of the phrases present | transcript Agent prompts (2): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): none of the phrases present | transcript Agent prompts (2): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): none of the phrases present | transcript Agent prompts (2): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] Only two prompts were saved. subagent-prompt-02.md (the reviewer prompt) contains only generic instructions: \"/code-review high on main..feature/token-bucket (f7f6429..3050047) ... Review only; no fixes, no merge, no further subagents. Back every behavioural finding with a repro command you actually ran and its raw output; mark anything you couldn't reproduce as UNPROVEN... Report findings ranked by severity, plus what you checked and what you left out.\" It says nothing about refill timing, _last, the lock, sleeping, stalls or acquire(). subagent-prompt-01.md is a setup/scribe agent told to do \"no code review\". Its workstream doc mentions suspicions only to say they are withheld: \"The user also shared unconfirmed suspicions; the TPM holds them back from reviewers so the review stays blind.\" That line does not say what the suspicions are. The reviewer is pointed at that doc (token-bucket-review.md@486bc2b), so it could learn that suspicions exist, but not which areas to examine. Neither file has any wording that steers the reviewer toward a specific problem area. Eval note: the doc does tell the reviewer that hidden suspicions exist, which a stricter version of this check might want to catch.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "second-round-hides-prior-findings",
+      "eval_name": "second-round-hides-prior-findings",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 320.7,
+        "tokens": 1976675,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one independent-review prompt was saved, and an independent-review prompt names the change to review either as the whole branch, with main (or origin/main, or 6a70bbd) as the base and feature/search-api (or round-2, or 6746708) as the head, or as the new commits round-1..round-2 (or 87fe0d8..6746708). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: file exists plus substring/regex search of the independent-review prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/search-api' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "At least one fix-check prompt was saved, and each prior finding is given to a fix check verbatim with its repro command: some fix-check prompt contains \"R1-1\", \"skips a row on every page boundary\" and \"r1_1_cursor_gap.py\", and some fix-check prompt (the same one or another) contains \"R1-2\", \"LIKE wildcards in the search term\" and \"r1_2_like_wildcard.py\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the fix-check prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): each group found | transcript Agent prompts (4): PASS - each group found",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No independent-review prompt contains \"R1-1\" or \"R1-2\". How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'R1-1' in subagent-prompt-01.md: \u2026OzJ/repo/repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of \u2026; 'R1-2' in subagent-prompt-01.md: \u2026repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of the whole\u2026; 'R1-1' in subagent-prompt-04.md: \u2026 T2: state \"done\", evidence \"outputs/fix-check-round-2.md \u2014 R1-1 FIXED (round-1 exit 1 REPRODUCES, round-2 exit 0 'does not \u2026 | transcript Agent prompts (4): FAIL - 'R1-1' in agent-call-1: \u2026OzJ/repo/repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of \u2026; 'R1-2' in agent-call-1: \u2026repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of the whole\u2026; 'R1-1' in agent-call-4: \u2026 T2: state \"done\", evidence \"outputs/fix-check-round-2.md \u2014 R1-1 FIXED (round-1 exit 1 REPRODUCES, round-2 exit 0 'does not \u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No independent-review prompt contains \"page boundary\", \"skips a row\" or \"1000 done\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'page boundary' in subagent-prompt-01.md: \u2026ith:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in subagent-prompt-01.md: \u2026und-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026 | transcript Agent prompts (4): FAIL - 'page boundary' in agent-call-1: \u2026ith:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in agent-call-1: \u2026und-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt, independent review or fix check, contains \"keyset\", \"tie-breaker\" or \"escape_like\" (case-insensitive): a fix check gets the findings, not how they were fixed. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of all saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'keyset' in subagent-prompt-01.md: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026 | transcript Agent prompts (4): FAIL - 'keyset' in agent-call-1: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no independent-review prompt says this is a re-review or second round, says that earlier issues existed or were fixed, or asks the reviewer to confirm that particular problems (pagination correctness, wildcard escaping) are resolved; asking for a full review of the change on its own terms passes. And no fix-check prompt asks for more than running each given repro and reporting whether it still reproduces: one that also asks for a general review of the change, or describes how the fixes work, fails. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] Under the stated rules, subagent-prompt-01.md counts as an independent review: it names both repro scripts, but it also contains the commit range and review asks ('round-2 review of the whole branch main..feature/search-api', 'blind code review of main..feature/search-api', '/code-review the whole range main..feature/search-api'). That prompt says this is a second round and that earlier issues were fixed: 'Round two on the search API. The first review was of feature/search-api at tag round-1 and came back with: - R1-1 (high): the offset cursor skips a row...' and 'I pushed fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id)... and added an escape_like() helper plus ESCAPE '\\\\' on both queries.' subagent-prompt-04.md names no repro script, so it also counts as an independent review, and it says 'R1-1 FIXED ... R1-2 FIXED' and 'Fix check (T2): R1-1 and R1-2 both FIXED at round-2'. subagent-prompt-03.md alone would pass, since it asks only to '/code-review the whole range main..feature/search-api' with no history. The fix check, subagent-prompt-02.md, asks for more than running the repros: 'also run the clone's test suite at round-2'. It does not describe how the fixes work.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "second-round-hides-prior-findings",
+      "eval_name": "second-round-hides-prior-findings",
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 260.1,
+        "tokens": 1810144,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one independent-review prompt was saved, and an independent-review prompt names the change to review either as the whole branch, with main (or origin/main, or 6a70bbd) as the base and feature/search-api (or round-2, or 6746708) as the head, or as the new commits round-1..round-2 (or 87fe0d8..6746708). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: file exists plus substring/regex search of the independent-review prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/search-api' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "At least one fix-check prompt was saved, and each prior finding is given to a fix check verbatim with its repro command: some fix-check prompt contains \"R1-1\", \"skips a row on every page boundary\" and \"r1_1_cursor_gap.py\", and some fix-check prompt (the same one or another) contains \"R1-2\", \"LIKE wildcards in the search term\" and \"r1_2_like_wildcard.py\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the fix-check prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): each group found | transcript Agent prompts (4): PASS - each group found",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No independent-review prompt contains \"R1-1\" or \"R1-2\". How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'R1-1' in subagent-prompt-01.md: \u2026 feature/search-api at tag round-1 and came back with:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026` (prints REPRODUCES and exits 1 while the bug is there)\\n- R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in subagent-prompt-04.md: \u2026 feature/search-api at tag round-1 and came back with:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundar\u2026 | transcript Agent prompts (4): FAIL - 'R1-1' in agent-call-1: \u2026 feature/search-api at tag round-1 and came back with:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026` (prints REPRODUCES and exits 1 while the bug is there)\\n- R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in agent-call-4: \u2026 feature/search-api at tag round-1 and came back with:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundar\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No independent-review prompt contains \"page boundary\", \"skips a row\" or \"1000 done\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'page boundary' in subagent-prompt-01.md: \u2026h:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.\\n  Repro\u2026; 'skips a row' in subagent-prompt-01.md: \u2026d-1 and came back with:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\".\\n  Repro: `python repro/r1_2_like_wildcard.py <path to t\u2026 | transcript Agent prompts (4): FAIL - 'page boundary' in agent-call-1: \u2026h:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.\\n  Repro\u2026; 'skips a row' in agent-call-1: \u2026d-1 and came back with:\\n\\n- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\".\\n  Repro: `python repro/r1_2_like_wildcard.py <path to t\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt, independent review or fix check, contains \"keyset\", \"tie-breaker\" or \"escape_like\" (case-insensitive): a fix check gets the findings, not how they were fixed. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of all saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'keyset' in subagent-prompt-01.md: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on bo\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on both queries. Tests for both\u2026 | transcript Agent prompts (4): FAIL - 'keyset' in agent-call-1: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on bo\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\\\\\' on both queries. Tests for both\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no independent-review prompt says this is a re-review or second round, says that earlier issues existed or were fixed, or asks the reviewer to confirm that particular problems (pagination correctness, wildcard escaping) are resolved; asking for a full review of the change on its own terms passes. And no fix-check prompt asks for more than running each given repro and reporting whether it still reproduces: one that also asks for a general review of the change, or describes how the fixes work, fails. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] By the stated rule, subagent-prompt-01.md is an independent review. It names both repro scripts, but it also asks for a review using a commit range: \"a blind review of main..feature/search-api\" and the embedded \"/code-review high on main..feature/search-api\". That same prompt says this is a second round and that earlier issues were fixed: \"Round two on the search API. The first review was of feature/search-api at tag round-1 and came back with: - R1-1 (high): the offset cursor skips a row on every page boundary... - R1-2 (medium): LIKE wildcards in the search term aren't escaped...\" It also says \"I pushed fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries\" and \"reviewed again by a fresh reviewer agent\". subagent-prompt-04.md is also an independent review because it contains the same text and commit range, plus \"R1-1 FIXED, R1-2 FIXED\" and \"Fixes tagged round-2\". subagent-prompt-03.md, a bare \"/code-review high on main..feature/search-api\", would pass on its own, but 01 and 04 violate the independent-review condition. The fix check, subagent-prompt-02.md, also asks for more than running the repros: \"run the project's test suite at round-2 and at the tip\" and \"report whether round-2 and the feature/search-api tip differ (and the diff if so)\".",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "second-round-hides-prior-findings",
+      "eval_name": "second-round-hides-prior-findings",
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 184.9,
+        "tokens": 1282417,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one independent-review prompt was saved, and an independent-review prompt names the change to review either as the whole branch, with main (or origin/main, or 6a70bbd) as the base and feature/search-api (or round-2, or 6746708) as the head, or as the new commits round-1..round-2 (or 87fe0d8..6746708). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: file exists plus substring/regex search of the independent-review prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/search-api' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "At least one fix-check prompt was saved, and each prior finding is given to a fix check verbatim with its repro command: some fix-check prompt contains \"R1-1\", \"skips a row on every page boundary\" and \"r1_1_cursor_gap.py\", and some fix-check prompt (the same one or another) contains \"R1-2\", \"LIKE wildcards in the search term\" and \"r1_2_like_wildcard.py\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the fix-check prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): each group found | transcript Agent prompts (5): PASS - each group found",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No independent-review prompt contains \"R1-1\" or \"R1-2\". How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'R1-1' in subagent-prompt-01.md: \u2026ge.\"    - Round-1 findings (user's words, verbatim):       \"R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026rints REPRODUCES and exits 1 while the bug is there)\"      \"R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in subagent-prompt-04.md: \u2026. If it can't be done as specified, stop and report why.  - R1-1 (high): the offset cursor skips a row on every page boundar\u2026 | transcript Agent prompts (5): FAIL - 'R1-1' in agent-call-1: \u2026ge.\"    - Round-1 findings (user's words, verbatim):       \"R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026rints REPRODUCES and exits 1 while the bug is there)\"      \"R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in agent-call-4: \u2026. If it can't be done as specified, stop and report why.  - R1-1 (high): the offset cursor skips a row on every page boundar\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No independent-review prompt contains \"page boundary\", \"skips a row\" or \"1000 done\" (case-insensitive). How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of the independent-review prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'page boundary' in subagent-prompt-01.md: \u2026       \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `\u2026; 'skips a row' in subagent-prompt-01.md: \u2026r's words, verbatim):       \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\". Repro: `python repro/r1_2_like_wildcard.py <path to the \u2026 | transcript Agent prompts (5): FAIL - 'page boundary' in agent-call-1: \u2026       \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `\u2026; 'skips a row' in agent-call-1: \u2026r's words, verbatim):       \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\". Repro: `python repro/r1_2_like_wildcard.py <path to the \u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "No saved subagent prompt, independent review or fix check, contains \"keyset\", \"tie-breaker\" or \"escape_like\" (case-insensitive): a fix check gets the findings, not how they were fixed. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails. Deterministic: substring search of all saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): none of the phrases present | transcript Agent prompts (5): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "Judgment: no independent-review prompt says this is a re-review or second round, says that earlier issues existed or were fixed, or asks the reviewer to confirm that particular problems (pagination correctness, wildcard escaping) are resolved; asking for a full review of the change on its own terms passes. And no fix-check prompt asks for more than running each given repro and reporting whether it still reproduces: one that also asks for a general review of the change, or describes how the fixes work, fails. How the two kinds are told apart, from the saved prompt text alone: a saved subagent prompt that contains either repro script name, \"r1_1_cursor_gap.py\" or \"r1_2_like_wildcard.py\", and does not ask for a review of the change (the review skill, \"review the/this/of ...\", or a commit range such as main..feature/search-api; a negated ask such as \"don't review the branch\" doesn't count) is a fix check; every other saved subagent prompt, including one that combines a fix check with a review, is an independent review. A check over no prompts of its kind fails.",
+          "passed": false,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] Under the expectation's rules, subagent-prompt-02.md is the only fix check, and it passes: it only asks to run the two repros and report whether they still reproduce (\"Judge only these two findings\"). Every other saved prompt counts as an independent review, and three of them break the rule. (1) subagent-prompt-04.md contains both repro names and also the review skill and a commit range (\"/code-review high on main..feature/search-api (6a70bbd..6746708)\"), so the rules make it an independent review. Its text says there were earlier issues and calls this a second round: \"R1-1 (high): the offset cursor skips a row on every page boundary...\", \"R1-2 (medium): LIKE wildcards in the search term aren't escaped...\", \"confirm whether each finding below still reproduces\", \"review-round2.md\". (2) subagent-prompt-05.md has no repro name, so it is an independent review. It says \"both repros exit 1 at round-1 87fe0d8, exit 0 'does not reproduce' at 6746708\", which describes earlier issues as fixed. (3) subagent-prompt-01.md contains both repro names and the commit range \"main..feature/search-api\", so it is an independent review. It says \"scribe/setup agent for a review round\", \"reviewed again by a fresh reviewer agent\" and \"Round-1 findings\". The actual reviewer prompt, subagent-prompt-03.md, is clean (\"/code-review high on main..feature/search-api ... Write the full review\"). But the scribe prompts that store prompt text verbatim, 01, 04 and 05, still count as independent reviews and contain round, prior-issue and fixed language, so the expectation fails.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "spec-review-hides-weak-spots",
+      "eval_name": "spec-review-hides-weak-spots",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.833,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 201.8,
+        "tokens": 623815,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'rfc9457' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/problem-details' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'hunch' in subagent-prompt-01.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\" **Scope:** in: commits main..feature/problem-details (t\u2026; 'hunch' in subagent-prompt-02.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\" **Scope:** in: commits main..feature/problem-details (t\u2026 | transcript Agent prompts (3): FAIL - 'hunch' in agent-call-1: \u2026I'd like an independent read, not just a confirmation of my hunches.\" **Scope:** in: commits main..feature/problem-details (t\u2026; 'hunch' in agent-call-2: \u2026I'd like an independent read, not just a confirmation of my hunches.\" **Scope:** in: commits main..feature/problem-details (t\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] None of the three saved prompts mentions status, detail, or type URI resolution. subagent-prompt-03.md (the reviewer prompt, also embedded word for word in subagent-prompt-01.md and subagent-prompt-02.md) asks only for an even, general check: \"Review the commits main..feature/problem-details (tip 7001a7e) ... against RFC 9457 ... and list every place the implementation does not conform ... For each finding give the RFC section and requirement level (MUST/SHOULD/etc.), file:line, and a repro command with its actual output\". subagent-prompt-01.md and subagent-prompt-02.md are scribe instructions. They contain the user's ask, which also names no members, and the decision \"I'd like an independent read, not just a confirmation of my hunches.\" No prompt names any suspected problem area.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "spec-review-hides-weak-spots",
+      "eval_name": "spec-review-hides-weak-spots",
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 153.5,
+        "tokens": 555369,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (1: subagent-prompt-01.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'RFC 9457' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (1: subagent-prompt-01.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'main..feature/problem-details' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] subagent-prompt-01.md is the only saved prompt. It asks for a general check: 'Review main..feature/problem-details ... for conformance to RFC 9457 Problem Details ... For each nonconformance give: RFC section and the MUST/SHOULD wording, file:line, a repro command with its raw output, and severity. Also list what you checked and found conformant, and anything you couldn't check.' It never mentions the status member, the detail member, or type URI resolution, and it does not point to any member as a suspected problem. It also doesn't list the members one by one, but because it asks evenly for conformance to the whole RFC, it fits the intent of the expectation.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "spec-review-hides-weak-spots",
+      "eval_name": "spec-review-hides-weak-spots",
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.833,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 215.7,
+        "tokens": 1013494,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'RFC 9457' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/problem-details' in agent-call-1",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": true,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present",
+          "kind": "deterministic",
+          "passed_transcript_scan": true
+        },
+        {
+          "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+          "passed": false,
+          "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'hunch' in subagent-prompt-02.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\" (note: user's suspected issues withheld from this doc o\u2026 | transcript Agent prompts (3): FAIL - 'hunch' in agent-call-2: \u2026I'd like an independent read, not just a confirmation of my hunches.\" (note: user's suspected issues withheld from this doc o\u2026",
+          "kind": "deterministic",
+          "passed_transcript_scan": false
+        },
+        {
+          "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+          "passed": true,
+          "evidence": "[judgment; blinded grader claude-opus-5-5] None of the three saved prompts mentions status, detail, or type URI resolution. subagent-prompt-01.md, the reviewer prompt, asks for a general review: \"Review main..feature/problem-details ... against RFC 9457 ...; no fixes, don't spawn subagents. Write every nonconformance (RFC section, file:line, a repro command with its raw output, MUST vs SHOULD) plus what you didn't check\". subagent-prompt-02.md (scribe) says outright that the user's suspected issues were kept out on purpose: \"note: user's suspected issues withheld from this doc on purpose so reviewers stay blind\", and quotes the user as \"I'd like an independent read, not just a confirmation of my hunches.\" subagent-prompt-03.md (scribe) only records completion (\"10 findings ... findings 1-5 checked against api/problems.py\") and names no RFC members. The reviewer prompt doesn't list the members one by one, but it covers the whole RFC evenly and singles nothing out.",
+          "kind": "judgment"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "new_skill": {
+      "pass_rate": {
+        "mean": 0.3924,
+        "stddev": 0.0684,
+        "min": 0.333,
+        "max": 0.5
+      },
+      "time_seconds": {
+        "mean": 303.4889,
+        "stddev": 81.4232,
+        "min": 222.9,
+        "max": 458.4
+      },
+      "tokens": {
+        "mean": 1633397.2222,
+        "stddev": 364575.9344,
+        "min": 1246691,
+        "max": 2133957
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.7147,
+        "stddev": 0.279,
+        "min": 0.333,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 215.9222,
+        "stddev": 49.7015,
+        "min": 153.5,
+        "max": 320.7
+      },
+      "tokens": {
+        "mean": 1098367.6667,
+        "stddev": 554036.6488,
+        "min": 476744,
+        "max": 1976675
+      }
+    },
+    "delta": {
+      "pass_rate": "-0.32",
+      "time_seconds": "+87.6",
+      "tokens": "+535030"
+    }
+  },
+  "notes": [
+    "Deterministic (det_grade_clean_review.py @012d107): new_skill 15/42 = 36% (23-51%), old_skill 30/42 = 71% (56-83%). Judgment (one blinded Claude grader per run): new 5/9, old 6/9.",
+    "new_skill's leak failures come almost entirely from the scribe prompt that writes the user's hunches into the workstream doc's Notes section (the change under test); its reviewer prompts carry no planted phrase. The graders count every saved subagent prompt, so this design fails them by construction.",
+    "second-round: in both arms #3/#4 fail 0/3 because scribe prompts count as 'independent review' under the grader's two-kind rule (every prompt that is not a fix check).",
+    "No invalid runs; no timeouts; isolation check passed for all 18 clones."
+  ]
+}

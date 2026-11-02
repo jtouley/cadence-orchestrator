@@ -1,0 +1,19 @@
+PASS first-review-hides-suspected-bug/new_skill/run-1: new_commits=0 push=no-push origin_refs=unchanged
+PASS first-review-hides-suspected-bug/new_skill/run-2: new_commits=0 push=no-push origin_refs=unchanged
+PASS first-review-hides-suspected-bug/new_skill/run-3: new_commits=0 push=no-push origin_refs=unchanged
+PASS first-review-hides-suspected-bug/old_skill/run-1: new_commits=0 push=no-push origin_refs=unchanged
+PASS first-review-hides-suspected-bug/old_skill/run-2: new_commits=0 push=no-push origin_refs=unchanged
+PASS first-review-hides-suspected-bug/old_skill/run-3: new_commits=0 push=no-push origin_refs=unchanged
+PASS second-round-hides-prior-findings/new_skill/run-1: new_commits=2 push=no-push origin_refs=unchanged
+PASS second-round-hides-prior-findings/new_skill/run-2: new_commits=5 push=no-push origin_refs=unchanged
+PASS second-round-hides-prior-findings/new_skill/run-3: new_commits=3 push=no-push origin_refs=unchanged
+PASS second-round-hides-prior-findings/old_skill/run-1: new_commits=0 push=no-push origin_refs=unchanged
+PASS second-round-hides-prior-findings/old_skill/run-2: new_commits=0 push=no-push origin_refs=unchanged
+PASS second-round-hides-prior-findings/old_skill/run-3: new_commits=0 push=no-push origin_refs=unchanged
+PASS spec-review-hides-weak-spots/new_skill/run-1: new_commits=2 push=no-push origin_refs=unchanged
+PASS spec-review-hides-weak-spots/new_skill/run-2: new_commits=0 push=no-push origin_refs=unchanged
+PASS spec-review-hides-weak-spots/new_skill/run-3: new_commits=2 push=no-push origin_refs=unchanged
+PASS spec-review-hides-weak-spots/old_skill/run-1: new_commits=0 push=no-push origin_refs=unchanged
+PASS spec-review-hides-weak-spots/old_skill/run-2: new_commits=0 push=no-push origin_refs=unchanged
+PASS spec-review-hides-weak-spots/old_skill/run-3: new_commits=0 push=no-push origin_refs=unchanged
+OVERALL PASS 18 runs (incl. _invalid)

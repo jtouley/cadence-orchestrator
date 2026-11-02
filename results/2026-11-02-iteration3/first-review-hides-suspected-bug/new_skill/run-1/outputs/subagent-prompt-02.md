@@ -1,0 +1,1 @@
+Use the hook's shape: {"tasks": [ ...the same three tasks... ]}; that was my spec error. Step 0: write this entire message, verbatim, to /tmp/cr-run.tFhuxjI8/repo/outputs/subagent-prompt-02.md. Then write and validate the tasks file, commit both files on `orchestration` (don't push), and report the orchestration commit SHA and anything left out.

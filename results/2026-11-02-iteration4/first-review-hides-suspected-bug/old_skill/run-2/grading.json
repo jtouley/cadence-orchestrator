@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/token-bucket' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] The only reviewer prompt is subagent-prompt-02.md (copied verbatim in subagent-prompt-03.md). It is neutral and does not mention refill timing, _last, locks, sleep or stalls: \"Review main..feature/token-bucket (f7f6429..3050047) in the clone at /tmp/cr-run.8o21j3kg/tb-review against .cadence/workstreams/token-bucket-review.md@d28b0a9 ... use the /code-review skill if available, otherwise review by hand. ... Back each finding with a repro command you actually ran and its raw output ...\" The workstream doc the reviewer is pointed to is defined in subagent-prompt-01.md. Its only criterion is a general standard that covers the whole change: \"Standard: correctness and thread-safety of the changed code, as behaviour a caller of the public API would rely on; the existing tests are not the spec.\" It also says hunches were withheld: \"(The user also shared unconfirmed hunches; the orchestrator holds them back from reviewers to keep the review independent.)\" subagent-prompt-04.md does name `_last` and `self.sleep(wait)` while holding `self._lock`. However, it is a post-review scribe prompt that records the reviewer's findings F1\u2013F3 after the review was finished (\"independent review done\"), so it did not steer the reviewer. subagent-prompt-01.md and subagent-prompt-03.md are scribe/setup prompts that tell the agent not to review code.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 221.9,
+    "total_duration_seconds": 221.9
+  }
+}

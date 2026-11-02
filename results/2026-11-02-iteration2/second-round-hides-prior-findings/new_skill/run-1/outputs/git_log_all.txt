@@ -1,0 +1,7 @@
+272e898 (orchestration) Record round-2 results
+449655c Add search-api-round2 workstream
+5ec1bcf (HEAD -> feature/search-api) eval setup
+6746708 (tag: round-2, origin/feature/search-api, origin/HEAD) Tests for pagination and LIKE escaping
+6a9d4f0 Search: keyset pagination, escape LIKE input
+87fe0d8 (tag: round-1) Add paginated title search
+6a70bbd (origin/main, main) Notes store

@@ -1,0 +1,40 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "You are the scribe for a review workstream. Do exactly these steps, nothing else, and report what you did with command outputs. If a step can't be done, stop an"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on main..feature/token-bucket (f7f6429..3050047) in /tmp/cr-run.jHhtiSHa/review-clone against /tmp/cr-run.jHhtiSHa/repo/.cadence/workstreams/t"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "claim-check",
+    "leaks": [
+      "clock drifts",
+      "across the sleep",
+      "lock is held"
+    ],
+    "head": "Verify, no fixes, against /tmp/cr-run.jHhtiSHa/review-clone at 3050047: (a) re-run each repro command in /tmp/cr-run.jHhtiSHa/repo/.cadence/workstreams/token-bu"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [
+      "clock drifts",
+      "across the sleep",
+      "lock is held"
+    ],
+    "head": "You are the scribe. Do only these steps; report each with command output. If a step can't be done, stop and report why. Don't spawn agents, don't touch /tmp/cr-"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "other",
+    "leaks": [],
+    "head": ""
+  }
+]

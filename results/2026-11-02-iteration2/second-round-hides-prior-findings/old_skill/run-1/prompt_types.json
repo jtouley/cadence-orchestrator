@@ -1,0 +1,56 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "2. Save the text between the markers <<<P02 and P02>>> (exclusive, verbatim) as /tmp/cr-run.PhW2XOzJ/repo/outputs/subagent-prompt-02.md, and between <<<P03 and "
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check, no fixes and no other review. Clone /tmp/cr-run.PhW2XOzJ/repo/repo.bundle into a new empty directory of your own. For each finding below (verbatim fr"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review the whole range main..feature/search-api of a fresh clone of /tmp/cr-run.PhW2XOzJ/repo/repo.bundle (clone it into a new empty directory of your own"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2"
+    ],
+    "head": "2. In /tmp/cr-run.PhW2XOzJ/repo/.cadence/workstreams/search-api-round-2.tasks.json set: - T2: state \"done\", evidence \"outputs/fix-check-round-2.md \u2014 R1-1 FIXED "
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "other",
+    "leaks": [],
+    "head": "Reply with what you changed and anything you could not do."
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "All tasks: doc_sha \"a744c226eb25ebb9be7e73a3dc6da2d767e10c332139ca505f0737ce660c25a6\" (sha256 of the doc version the prompts were dispatched against; local mode"
+  }
+]

@@ -1,0 +1,4 @@
+2803c11 (HEAD -> feature/problem-details) eval setup
+5efb782 (origin/feature/problem-details, origin/HEAD) Route error_response through problem(); tests
+b954349 Add problem() and validation_problem() helpers
+7ae6e38 (origin/main, main) Basic JSON error responses

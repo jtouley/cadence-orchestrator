@@ -1,0 +1,8 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review the change main..184d27c in /tmp/cr-run.3gPzEfIN/repo (the branch also exists in repo.bundle there) for conformance against RFC 9457, https://www.rfc-edi"
+  }
+]

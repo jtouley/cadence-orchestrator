@@ -1,0 +1,56 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "1. `git clone /tmp/cr-run.cKXdBVLd/repo/repo.bundle /tmp/cr-run.cKXdBVLd/clone`, fetch all heads and tags from the bundle into it (`git fetch /tmp/cr-run.cKXdBV"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check, no code changes: in /tmp/cr-run.cKXdBVLd/clone at 6746708 (tag round-2), confirm whether each finding below still reproduces, judging only these two."
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review (high) of main..feature/search-api (6a70bbd..6746708) in /tmp/cr-run.cKXdBVLd/clone, no code changes; run the code to back each finding with a comm"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Then wait (poll every 15s, up to 25 minutes) until both /tmp/cr-run.cKXdBVLd/repo/outputs/fix-check.md and /tmp/cr-run.cKXdBVLd/repo/outputs/review-round2.md ex"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2"
+    ],
+    "head": "Then, in the worktree /tmp/cr-run.cKXdBVLd/orchestration (branch orchestration, don't push), update workstreams/search-api-round2.md \"Status and evidence\" to: \""
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "doc_sha 9046dd0038677c609314fc38f89104096aefd819 for both. fix-check: evidence [\"outputs/fix-check.md: both repros 'does not reproduce' exit=0; pytest 3 passed\""
+  }
+]

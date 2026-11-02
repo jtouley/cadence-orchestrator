@@ -1,0 +1,22 @@
+case: second-round-hides-prior-findings  arm: new_skill  date: 2026-11-02T18:02:27Z
+private_parent: /tmp/cr-run.r1i6VbI3 (mktemp -d, fresh for this run)
+clone: git clone /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/second-round-hides-prior-findings/files/repo.bundle /tmp/cr-run.r1i6VbI3/repo (full clone, not a worktree)
+bundle heads:
+6746708596c7166d44d11e8e436bde8398be4a12 refs/heads/feature/search-api
+6a70bbda5fa087f228bb33e126849caa3d28130d refs/heads/main
+87fe0d8170d53f62679a525298d725eec4bffe1a refs/tags/round-1
+6746708596c7166d44d11e8e436bde8398be4a12 refs/tags/round-2
+6746708596c7166d44d11e8e436bde8398be4a12 HEAD
+pinned (origin) refs:
+refs/remotes/origin/HEAD 6746708596c7166d44d11e8e436bde8398be4a12
+refs/remotes/origin/feature/search-api 6746708596c7166d44d11e8e436bde8398be4a12
+refs/remotes/origin/main 6a70bbda5fa087f228bb33e126849caa3d28130d
+origin	/tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/second-round-hides-prior-findings/files/repo.bundle (fetch)
+origin	no-push (push)
+skill_commit: 134a88ff681a3872255dd92fdc7d88027b6ec90a  kit_dir: /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/kits/134a88f
+install: node /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/kits/134a88f/bin/cadence-orchestrator.mjs --target claude --repo /tmp/cr-run.r1i6VbI3/repo
+claude: .claude/skills/tpm/, .claude/settings.json
+Done. Review and commit the changes; see README for per-platform notes.
+scaffold: (cd /tmp/cr-run.r1i6VbI3/repo && bash /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/second-round-hides-prior-findings/place-files.sh)
+post_setup_commit: ab3b52107e6ccfd3b776cefcfd7b59d8a57265ca
+timeout_s: 600

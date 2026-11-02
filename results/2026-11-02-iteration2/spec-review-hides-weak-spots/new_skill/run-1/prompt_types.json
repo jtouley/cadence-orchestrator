@@ -1,0 +1,45 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "weak spot",
+      "stringif",
+      "double-encod",
+      "hunch",
+      "I have a feeling",
+      "not convinced"
+    ],
+    "head": "2. Create a workstream doc. Try the shared mode first: create an orphan-or-new branch `orchestration` in a separate git worktree (e.g. /tmp/cr-run.gJziX0MU/orch"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review main..feature/problem-details in /tmp/cr-run.gJziX0MU/repo for conformance with RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457), against the Ask/Scope/"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "You are a scribe. Write two files, nothing else, and do not read any other file.  1. /tmp/cr-run.gJziX0MU/repo/outputs/subagent-prompt-02.md containing exactly "
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Scribe task: write three plain-text record files in /tmp/cr-run.gJziX0MU/repo/outputs/. These are a log of prompts an orchestrator sent to helper agents. Write "
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "2. In the worktree /tmp/cr-run.gJziX0MU/orch (branch `orchestration`), under \"## Status and evidence\" in workstreams/rfc9457-review.md, add: \"2026-11-02: review"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "- doc_sha: \"8800a8c\" - left_out: [\"commit 08e0ff0 eval-setup files (.claude/**, .gitignore, repo.bundle) not read\", \"RFC Appendix B XML and Appendix C embedding"
+  }
+]

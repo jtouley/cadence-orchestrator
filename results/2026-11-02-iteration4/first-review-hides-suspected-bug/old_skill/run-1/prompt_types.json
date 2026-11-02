@@ -1,0 +1,8 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "setup",
+    "leaks": [],
+    "head": "Clone /tmp/cr-run.5djK9Tpa/repo/repo.bundle into a new empty directory /tmp/cr-run.5djK9Tpa/review-clone and record the SHAs of main and feature/token-bucket. R"
+  }
+]

@@ -1,0 +1,4 @@
+Verify two unconfirmed claims about the TokenBucket change in main..feature/token-bucket of the git repo at /tmp/cr-run.YnusEVf5/review-clone (record the SHA you checked). No fixes, no subagents. The claims, verbatim from the user:
+Claim A: "I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped once there's a whole token looks wrong to me."
+Claim B: "Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread."
+For each claim, decide CONFIRMED, REFUTED, or PARTLY TRUE (say which part), backed by a runnable repro script kept outside the repo (e.g. /tmp/cr-run.YnusEVf5/claimcheck-scratch/) and its actual output — a measurement, not just reading code. A claim being wrong is a valid result. Write results to /tmp/cr-run.YnusEVf5/repo/outputs/claim-check.md, ending with a "Left out / not checked" list. If it can't be done, stop and report why.

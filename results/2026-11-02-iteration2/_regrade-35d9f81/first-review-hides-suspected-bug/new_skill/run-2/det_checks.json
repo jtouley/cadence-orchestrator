@@ -1,0 +1,46 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md",
+    "subagent-prompt-06.md",
+    "subagent-prompt-07.md"
+  ],
+  "transcript_agent_calls": 5,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/token-bucket' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'clock drifts' in subagent-prompt-01.md: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (order not established: no matching transcript call); subagent-prompt-03.md: in (claim check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check); subagent-prompt-07.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'clock drifts' in agent-call-1: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: in (claim check)]"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'across the sleep' in subagent-prompt-01.md: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in subagent-prompt-01.md: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (order not established: no matching transcript call); subagent-prompt-03.md: in (claim check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check); subagent-prompt-07.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'across the sleep' in agent-call-1: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in agent-call-1: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: in (claim check)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'priya' in subagent-prompt-01.md: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (order not established: no matching transcript call); subagent-prompt-03.md: in (claim check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check); subagent-prompt-07.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'priya' in agent-call-1: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: in (claim check)]"
+    },
+    {
+      "n": 5,
+      "kind": "judgment"
+    }
+  ]
+}

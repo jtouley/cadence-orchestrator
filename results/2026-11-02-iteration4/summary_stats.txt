@@ -1,0 +1,18 @@
+iteration-4, grader det_grade_clean_review.py @13a9a21 (main)
+new_skill
+  deterministic (saved prompts)   30/42 = 71% (56%-83%)
+  deterministic (transcript scan) 30/42 = 71% (56%-83%)
+  judgment (blinded)              6/9 = 67% (35%-88%)
+  all assertions                  36/51 = 71% (57%-81%)
+old_skill
+  deterministic (saved prompts)   28/42 = 67% (52%-79%)
+  deterministic (transcript scan) 28/42 = 67% (52%-79%)
+  judgment (blinded)              6/9 = 67% (35%-88%)
+  all assertions                  34/51 = 67% (53%-78%)
+per case:
+  first-review new_skill #1:3 #2:3 #3:3 #4:2 #5:3 | det 11/12 = 92% (65%-99%) | judg 3/3
+  first-review old_skill #1:3 #2:2 #3:2 #4:3 #5:3 | det 10/12 = 83% (55%-95%) | judg 3/3
+  second-round new_skill #1:3 #2:3 #3:0 #4:0 #5:1 #6:0 | det 7/15 = 47% (25%-70%) | judg 0/3
+  second-round old_skill #1:3 #2:2 #3:0 #4:0 #5:0 #6:0 | det 5/15 = 33% (15%-58%) | judg 0/3
+  spec-review- new_skill #1:3 #2:3 #3:3 #4:3 #5:0 #6:3 | det 12/15 = 80% (55%-93%) | judg 3/3
+  spec-review- old_skill #1:3 #2:2 #3:3 #4:3 #5:2 #6:3 | det 13/15 = 87% (62%-96%) | judg 3/3

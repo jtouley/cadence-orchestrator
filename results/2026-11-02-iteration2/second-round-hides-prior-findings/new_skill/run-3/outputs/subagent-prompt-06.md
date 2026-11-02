@@ -1,0 +1,1 @@
+Use these for wait-review: left_out [], left_out_accepted_by "tpm", doc_sha "1c2d206518b79a0a1b3e607866f8db64ebf5b85a". Re-apply everything else as specified, run tasks_check.py, commit, reply with the new HEAD SHA. First save this message verbatim to /tmp/cr-run.VICTq7he/repo/outputs/subagent-prompt-06.md.

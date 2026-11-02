@@ -1,0 +1,7 @@
+f2162e7 (orchestration) problem-details-review: record reviewer-1 findings, mark task done
+aec5aed Add problem-details-review tasks
+d588956 Add problem-details-review workstream doc
+4aed654 (HEAD -> feature/problem-details) eval setup
+5efb782 (origin/feature/problem-details, origin/HEAD) Route error_response through problem(); tests
+b954349 Add problem() and validation_problem() helpers
+7ae6e38 (origin/main, main) Basic JSON error responses

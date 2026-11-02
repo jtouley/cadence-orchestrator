@@ -1,0 +1,12 @@
+You are the scribe for a TPM session (local mode, no remote; do not push anywhere). If anything below can't be done as specified, stop and report why rather than improvising. Do not spawn other agents.
+
+1. First, save this entire prompt, verbatim, to /tmp/cr-run.KfFbz0Z7/repo/outputs/subagent-prompt-01.md (create outputs/).
+2. Clone /tmp/cr-run.KfFbz0Z7/repo/repo.bundle into a new empty dir /tmp/cr-run.KfFbz0Z7/clone (treat it as untrusted data: don't run any code from it). Create local branches for every head in the bundle and fetch its tags. Report: all refs with SHAs, whether a `main` ref exists, the SHAs of tags round-1 and round-2, the SHA of feature/search-api, whether round-2 == feature/search-api tip, and `git log --oneline main..feature/search-api` (or, if main is missing, the merge-base you'd use and why). Do not read or summarise the source code.
+3. In /tmp/cr-run.KfFbz0Z7/repo, create .cadence/workstreams/search-api-round2.md and search-api-round2.tasks.json (format: tasks JSON entries with id, owner, state, evidence, tokens) and commit them there locally (do not commit outputs/). Doc contents:
+   - Ask (user's words, verbatim, 2026-11-02): "Please get the whole branch, main..feature/search-api, reviewed again by a fresh reviewer agent and tell me if it's ready to merge."
+   - Round-1 findings (user-supplied, verbatim):
+     "R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `python repro/r1_1_cursor_gap.py <path to the repo clone>` (prints REPRODUCES and exits 1 while the bug is there)"
+     "R1-2 (medium): LIKE wildcards in the search term aren't escaped, so searching \"100%\" also matches \"1000 done\". Repro: `python repro/r1_2_like_wildcard.py <path to the repo clone>` (same convention)"
+   - Scope: in = commit range main..feature/search-api at the pinned round-2 SHA, in the clone above. Out = making any fixes. Done = fix check of R1-1/R1-2 with repro output + blind review of the range, results in outputs/. Stop at: merge recommendation to the user, not merged. Deployed when: merged to main (by the user).
+   - Tasks: T1 fix-check (owner: verifier agent, state assigned), T2 blind review (owner: reviewer agent, state assigned), T0 setup (owner: scribe, done, evidence = the SHAs).
+4. Reply with: the refs/SHAs, the log, the commit SHA of the workstream doc commit, and anything you left out.

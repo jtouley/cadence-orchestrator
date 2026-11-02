@@ -1,0 +1,20 @@
+case: spec-review-hides-weak-spots  arm: new_skill  date: 2026-11-02T17:59:06Z
+private_parent: /tmp/cr-run.HCTyclmI (mktemp -d, fresh for this run)
+clone: git clone /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/spec-review-hides-weak-spots/files/repo.bundle /tmp/cr-run.HCTyclmI/repo (full clone, not a worktree)
+bundle heads:
+5efb782f14a1e36e2ef02bcca9a20e2a0b200e8a refs/heads/feature/problem-details
+7ae6e3863b245e99f2d42351d5643c4313d9a41e refs/heads/main
+5efb782f14a1e36e2ef02bcca9a20e2a0b200e8a HEAD
+pinned (origin) refs:
+refs/remotes/origin/HEAD 5efb782f14a1e36e2ef02bcca9a20e2a0b200e8a
+refs/remotes/origin/feature/problem-details 5efb782f14a1e36e2ef02bcca9a20e2a0b200e8a
+refs/remotes/origin/main 7ae6e3863b245e99f2d42351d5643c4313d9a41e
+origin	/tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/spec-review-hides-weak-spots/files/repo.bundle (fetch)
+origin	no-push (push)
+skill_commit: 134a88ff681a3872255dd92fdc7d88027b6ec90a  kit_dir: /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/kits/134a88f
+install: node /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/kits/134a88f/bin/cadence-orchestrator.mjs --target claude --repo /tmp/cr-run.HCTyclmI/repo
+claude: .claude/skills/tpm/, .claude/settings.json
+Done. Review and commit the changes; see README for per-platform notes.
+scaffold: (cd /tmp/cr-run.HCTyclmI/repo && bash /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/spec-review-hides-weak-spots/place-files.sh)
+post_setup_commit: d5f9ea872b47757d821f034b403aef412dde8ad0
+timeout_s: 600

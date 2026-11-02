@@ -1,0 +1,52 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md",
+    "subagent-prompt-06.md"
+  ],
+  "transcript_agent_calls": 4,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/search-api' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): each group found | transcript Agent prompts (4): PASS - each group found"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'R1-1' in subagent-prompt-01.md: \u2026OzJ/repo/repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of \u2026; 'R1-2' in subagent-prompt-01.md: \u2026repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of the whole\u2026; 'R1-1' in subagent-prompt-04.md: \u2026 T2: state \"done\", evidence \"outputs/fix-check-round-2.md \u2014 R1-1 FIXED (round-1 exit 1 REPRODUCES, round-2 exit 0 'does not \u2026 | transcript Agent prompts (4): FAIL - 'R1-1' in agent-call-1: \u2026OzJ/repo/repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of \u2026; 'R1-2' in agent-call-1: \u2026repo.bundle (fixes tagged round-2); a fix check of R1-1 and R1-2 using the user's repro scripts; a blind review of the whole\u2026; 'R1-1' in agent-call-4: \u2026 T2: state \"done\", evidence \"outputs/fix-check-round-2.md \u2014 R1-1 FIXED (round-1 exit 1 REPRODUCES, round-2 exit 0 'does not \u2026"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'page boundary' in subagent-prompt-01.md: \u2026ith:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in subagent-prompt-01.md: \u2026und-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026 | transcript Agent prompts (4): FAIL - 'page boundary' in agent-call-1: \u2026ith:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in agent-call-1: \u2026und-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'keyset' in subagent-prompt-01.md: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026 | transcript Agent prompts (4): FAIL - 'keyset' in agent-call-1: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

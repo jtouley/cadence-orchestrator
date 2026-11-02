@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'main..feature/token-bucket' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (2: subagent-prompt-01.md, subagent-prompt-02.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5 (iteration-2 verdict reused; grader text unchanged)] Only two prompts were saved. subagent-prompt-02.md (the reviewer prompt) contains only generic instructions: \"/code-review high on main..feature/token-bucket (f7f6429..3050047) ... Review only; no fixes, no merge, no further subagents. Back every behavioural finding with a repro command you actually ran and its raw output; mark anything you couldn't reproduce as UNPROVEN... Report findings ranked by severity, plus what you checked and what you left out.\" It says nothing about refill timing, _last, the lock, sleeping, stalls or acquire(). subagent-prompt-01.md is a setup/scribe agent told to do \"no code review\". Its workstream doc mentions suspicions only to say they are withheld: \"The user also shared unconfirmed suspicions; the TPM holds them back from reviewers so the review stays blind.\" That line does not say what the suspicions are. The reviewer is pointed at that doc (token-bucket-review.md@486bc2b), so it could learn that suspicions exist, but not which areas to examine. Neither file has any wording that steers the reviewer toward a specific problem area. Eval note: the doc does tell the reviewer that hidden suspicions exist, which a stricter version of this check might want to catch.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 175.4,
+    "total_duration_seconds": 175.4
+  }
+}

@@ -1,0 +1,602 @@
+[
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-02.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-03.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-05.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-02.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-03.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-05.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-02.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-03.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-05.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-02.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-03.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-02.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-03.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-04.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-02.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "first-review-hides-suspected-bug",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-03.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-02.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-03.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-04.md",
+  "in",
+  "order not established: a reviewer or claim check ran in the background"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-05.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-06.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-02.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-03.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-05.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-06.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-02.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-03.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-04.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-05.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-01.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-02.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-02.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-03.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-05.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-02.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-03.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-05.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "second-round-hides-prior-findings",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-06.md",
+  "out",
+  "fix check"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-02.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-03.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-1",
+  "subagent-prompt-05.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-02.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-03.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-05.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-2",
+  "subagent-prompt-06.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-02.md",
+  "in",
+  "claim check"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "new_skill",
+  "run-3",
+  "subagent-prompt-03.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-02.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-03.md",
+  "in",
+  "order not established: no matching transcript call"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "old_skill",
+  "run-1",
+  "subagent-prompt-04.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "old_skill",
+  "run-2",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ],
+ [
+  "spec-review-hides-weak-spots",
+  "old_skill",
+  "run-3",
+  "subagent-prompt-01.md",
+  "in",
+  "reviewer prompt"
+ ]
+]

@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'rfc9457' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/problem-details' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @13a9a21] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'hunch' in subagent-prompt-01.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Status and evidence - (none yet) ---  3. Write .cad\u2026 | transcript Agent prompts (4): FAIL - 'hunch' in agent-call-1: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Status and evidence - (none yet) ---  3. Write .cad\u2026",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] subagent-prompt-03.md, the only reviewer prompt, stays neutral and names no member: 'Review main(7ae6e38)..feature/problem-details(de53b67) in /tmp/cr-run.23MNPLG4/repo for conformance to RFC 9457 ... Read the RFC itself, not memory. Exercise the code: run the tests and actual responses. Write the report to outputs/rfc9457-review.md, with what you didn't check.' The workstream doc it points to, as set out in subagent-prompt-01.md, keeps the user's hunches out: '(One further paragraph of the user's message is intentionally withheld from this doc; the user asked for an independent read.)' Its scope is even: 'every change in the commit range ... judged for conformance to RFC 9457'. subagent-prompt-02.md only writes task metadata. subagent-prompt-04.md was written after the review, for a scribe, and mentions '/problems/* doc resolution, detail security' only as part of the reviewer's own left-out list. It does not point a reviewer at them or call them suspected problems. No saved prompt mentions the status member.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.833
+  },
+  "timing": {
+    "executor_duration_seconds": 243.8,
+    "total_duration_seconds": 243.8
+  }
+}

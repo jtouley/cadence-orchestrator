@@ -1,0 +1,47 @@
+{
+  "saved": [
+    "subagent-prompt-01.md"
+  ],
+  "transcript_agent_calls": 1,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'RFC 9457' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): no accepted form found | transcript Agent prompts (1): FAIL - no accepted form found"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt)] | transcript Agent prompts (1): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt)] | transcript Agent prompts (1): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt)]"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt)] | transcript Agent prompts (1): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt)]"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

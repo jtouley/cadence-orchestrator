@@ -1,0 +1,3 @@
+First, save this entire prompt, verbatim, to /tmp/cr-run.jgTAI1HR/repo/outputs/subagent-prompt-01.md.
+
+Review the change main..feature/problem-details (7ae6e38..1e56777) in /tmp/cr-run.jgTAI1HR/repo for conformance against RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457, read the RFC itself). Ignore .claude/ tooling. No fixes. For each nonconformance, give the RFC section, file:line, and a repro command with its actual output (run the code); also list what you checked and found conformant, and anything you couldn't check. Write the report to /tmp/cr-run.jgTAI1HR/repo/outputs/rfc9457-review.md. If something can't be determined, say so rather than guessing. Don't spawn further agents.

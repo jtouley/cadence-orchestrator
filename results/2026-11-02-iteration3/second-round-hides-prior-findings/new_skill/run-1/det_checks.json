@@ -1,0 +1,52 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md",
+    "subagent-prompt-06.md"
+  ],
+  "transcript_agent_calls": 5,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/search-api' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): each group found | transcript Agent prompts (5): PASS - each group found"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: out (fix check); subagent-prompt-03.md: in (reviewer prompt); subagent-prompt-04.md: in (order not established: a reviewer or claim check ran in the background); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (reviewer prompt)] | transcript Agent prompts (5): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: out (fix check); agent-call-3: in (reviewer prompt); agent-call-4: in (order not established: a reviewer or claim check ran in the background); agent-call-5: in (claim check)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'page boundary' in subagent-prompt-06.md: \u2026ted_by \"tpm\". - fix-check left_out: [\"equal created_at at a page boundary not in the repros (covered by test_pages_cover_all_rows_onc\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: out (fix check); subagent-prompt-03.md: in (reviewer prompt); subagent-prompt-04.md: in (order not established: a reviewer or claim check ran in the background); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (reviewer prompt)] | transcript Agent prompts (5): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: out (fix check); agent-call-3: in (reviewer prompt); agent-call-4: in (order not established: a reviewer or claim check ran in the background); agent-call-5: in (claim check)]"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'keyset' in subagent-prompt-05.md: \u2026: state done, owner tpm, evidence \"user's fix descriptions (keyset on (created_at,id) with id tie-breaker; escape_like + ESCAP\u2026; 'tie-breaker' in subagent-prompt-05.md: \u2026\"user's fix descriptions (keyset on (created_at,id) with id tie-breaker; escape_like + ESCAPE on both queries; tests present) were \u2026; 'escape_like' in subagent-prompt-05.md: \u2026escriptions (keyset on (created_at,id) with id tie-breaker; escape_like + ESCAPE on both queries; tests present) were covered by fi\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: out (fix check); subagent-prompt-03.md: in (reviewer prompt); subagent-prompt-04.md: in (order not established: a reviewer or claim check ran in the background); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (reviewer prompt)] | transcript Agent prompts (5): FAIL - 'keyset' in agent-call-5: \u2026: state done, owner tpm, evidence \"user's fix descriptions (keyset on (created_at,id) with id tie-breaker; escape_like + ESCAP\u2026; 'tie-breaker' in agent-call-5: \u2026\"user's fix descriptions (keyset on (created_at,id) with id tie-breaker; escape_like + ESCAPE on both queries; tests present) were \u2026; 'escape_like' in agent-call-5: \u2026escriptions (keyset on (created_at,id) with id tie-breaker; escape_like + ESCAPE on both queries; tests present) were covered by fi\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: out (fix check); agent-call-3: in (reviewer prompt); agent-call-4: in (order not established: a reviewer or claim check ran in the background); agent-call-5: in (claim check)]"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

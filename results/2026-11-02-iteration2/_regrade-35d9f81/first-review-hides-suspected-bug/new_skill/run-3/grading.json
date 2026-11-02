@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/token-bucket' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'clock drifts' in subagent-prompt-01.md: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026; 'clock drifts' in subagent-prompt-05.md: \u2026epro/). The claims, verbatim from the user: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (writes feature/token-bucket, which a reviewer or claim-check prompt names); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (reviewer prompt)] | transcript Agent prompts (3): FAIL - 'clock drifts' in agent-call-1: \u2026 for reviewers) User, verbatim: \"I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026; 'clock drifts' in agent-call-3: \u2026epro/). The claims, verbatim from the user: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (claim check)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'across the sleep' in subagent-prompt-01.md: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in subagent-prompt-01.md: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026; 'across the sleep' in subagent-prompt-05.md: \u2026e's a whole token looks wrong to me.\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread.\" For ea\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (writes feature/token-bucket, which a reviewer or claim-check prompt names); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (reviewer prompt)] | transcript Agent prompts (3): FAIL - 'across the sleep' in agent-call-1: \u2026oks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven\u2026; 'lock is held' in agent-call-1: \u2026hole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every othe\u2026; 'across the sleep' in agent-call-3: \u2026e's a whole token looks wrong to me.\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread.\" For ea\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (claim check)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'priya' in subagent-prompt-01.md: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (writes feature/token-bucket, which a reviewer or claim-check prompt names); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (reviewer prompt)] | transcript Agent prompts (3): FAIL - 'priya' in agent-call-1: \u2026y gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in ac\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (claim check)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5 (iteration-2 verdict reused; grader text unchanged)] The only prompt sent to the reviewer is subagent-prompt-04.md. It names no suspected problem: \"Code-review main..feature/token-bucket (f7f6429..3050047) ... against the Ask, Scope and Decisions of .cadence/workstreams/token-bucket-review.md@262862b (read it with `git show ...`; do not read its Notes section).\" Its only other guidance is general: \"Back every finding with a repro command and its raw output, or mark it UNPROVEN. Also list what you didn't check.\" The Scope it points to sets a neutral standard for the whole change (subagent-prompt-01.md): \"Standard: correctness, thread-safety and test adequacy of the change; no written spec exists in the repo.\" The user's hunches about _last and the lock held across the sleep appear only under \"## Notes (not for reviewers)\" in subagent-prompt-01.md, and that prompt goes to a scribe who is told \"Do not read or analyse the code itself.\" The prompt that does spell out the hunches, subagent-prompt-05.md (\"Verify or refute two claims ... (1) 'the refill clock drifts...' (2) 'the lock is held across the sleep in acquire()...'\"), goes to a separate verifier (verifier-1, task hunch-check), not to the reviewer (reviewer-1, blind-review). subagent-prompt-02.md, 03.md and 06.md are about bookkeeping only (the tasks file, commits, recording results), and 06.md was sent after the review finished. Caveat: the reviewer is pointed at a file that contains the Notes and is only told not to read them. So whether the review stayed blind depends on the reviewer obeying, but the prompt text itself does not steer.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 3,
+    "total": 5,
+    "pass_rate": 0.4
+  },
+  "timing": {
+    "executor_duration_seconds": 336.6,
+    "total_duration_seconds": 336.6
+  }
+}

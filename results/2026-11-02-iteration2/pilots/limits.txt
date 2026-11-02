@@ -1,0 +1,4 @@
+first-review-hides-suspected-bug {'new_skill': 301.6, 'old_skill': 178.9} limit_s 1200
+second-round-hides-prior-findings {'new_skill': 242.6, 'old_skill': 220.7} limit_s 600
+spec-review-hides-weak-spots {'new_skill': 286.7, 'old_skill': 138.2} limit_s 600
+rule: 2x longest pilot wall time, rounded up to next 10 min, same for both arms; pilot ceiling 1800 s. spec/new_skill pilot ended at the case's max_turns (20) after 286.7 s; its wall time is used.

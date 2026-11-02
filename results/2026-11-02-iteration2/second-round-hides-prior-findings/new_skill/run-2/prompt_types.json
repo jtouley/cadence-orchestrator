@@ -1,0 +1,84 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "Step 1 (local mode, no push): in /tmp/cr-run.0xfme1Ia/repo create a local orphan branch `orchestration` via a git worktree at /tmp/cr-run.0xfme1Ia/orch (do NOT "
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Step 1: Write workstreams/search-api-round2.tasks.json as {\"tasks\": [ ...same two tasks as before... ]}. Check that it is valid with `python3 -m json.tool`. Ste"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Step 1: Commit workstreams/search-api-round2.md alone on `orchestration` and note its SHA as DOCSHA. Step 2: Write workstreams/search-api-round2.tasks.json as {"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check for workstreams/search-api-round2.md@ff7e1e168902469290c11a45de971fef5db2d5a0 (task \"fix-check\"). It's on the local `orchestration` branch, worktree /"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review on the commit range 6a70bbda5fa087f228bb33e126849caa3d28130d..6746708596c7166d44d11e8e436bde8398be4a12 (main..feature/search-api), cloned from /tmp"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "2. /tmp/cr-run.0xfme1Ia/repo/outputs/subagent-prompt-04.md gets exactly the text between the BEGIN-04/END-04 marker lines (markers excluded): BEGIN-04 Fix check"
+  },
+  {
+    "file": "subagent-prompt-07.md",
+    "type": "scribe",
+    "leaks": [
+      "keyset",
+      "escape_like"
+    ],
+    "head": "Step 1: In the worktree /tmp/cr-run.0xfme1Ia/orch (branch `orchestration`), create workstreams/search-api-round2.review.md. Extract it mechanically from workstr"
+  },
+  {
+    "file": "subagent-prompt-08.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then: /code-review on the commit range 6a70bbda5fa087f228bb33e126849caa3d28130d..6746708596c7166d44d11e8e436bde8398be4a12 (main..feature/search-api), cloned fro"
+  },
+  {
+    "file": "subagent-prompt-09.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "tie-breaker"
+    ],
+    "head": "Step 1: In /tmp/cr-run.0xfme1Ia/orch (branch `orchestration`), update workstreams/search-api-round2.tasks.json: - fix-check: state \"done\", evidence [\"outputs/fi"
+  }
+]

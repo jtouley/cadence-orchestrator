@@ -1,0 +1,20 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "1. Clone /tmp/cr-run.gpvxdOEJ/repo/repo.bundle into a new directory /tmp/cr-run.gpvxdOEJ/review-clone (git clone the bundle; then make sure local branches `main"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Code-review f7f6429..3050047 (main..feature/token-bucket) in /tmp/cr-run.gpvxdOEJ/review-clone against /tmp/cr-run.gpvxdOEJ/repo/.cadence/workstreams/token-buck"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "claim-check",
+    "leaks": [],
+    "head": "Verify each finding in /tmp/cr-run.gpvxdOEJ/repo/outputs/review.md against the code at 3050047 in /tmp/cr-run.gpvxdOEJ/review-clone: read each repro script in /"
+  }
+]

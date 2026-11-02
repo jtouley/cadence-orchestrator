@@ -1,0 +1,47 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "clock drifts",
+      "across the sleep",
+      "lock is held",
+      "priya"
+    ],
+    "head": "1. Clone /tmp/cr-run.zEkso1gj/repo/repo.bundle into a new directory /tmp/cr-run.zEkso1gj/review-clone (`git clone repo.bundle ...`). Make sure local branches `m"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then write the tasks file, do step 4 (commit both files on orchestration, check feature/token-bucket back out), and report the orchestration commit SHA. Same ru"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "other",
+    "leaks": [],
+    "head": "Then commit both files on orchestration, check out feature/token-bucket, and report the orchestration commit SHA. Stop and report if blocked; don't spawn agents"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Code-review main..feature/token-bucket (f7f6429..3050047) in /tmp/cr-run.zEkso1gj/review-clone against the Ask, Scope and Decisions of .cadence/workstreams/toke"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "claim-check",
+    "leaks": [
+      "clock drifts",
+      "across the sleep",
+      "lock is held"
+    ],
+    "head": "Verify or refute two claims about ratelimit/token_bucket.py at feature/token-bucket (3050047) in /tmp/cr-run.zEkso1gj/review-clone, writing your own repro scrip"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "claim-check",
+    "leaks": [],
+    "head": "Then: (a) copy .cadence/reviews/token-bucket-review-1.md and .cadence/reviews/hunch-check.md onto orchestration and commit them; (b) in token-bucket-review.md \""
+  }
+]

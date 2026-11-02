@@ -1,0 +1,51 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "Then, in local mode (no remote push): in the git repo /tmp/cr-run.hszGdFxu/repo, create a local orphan branch `orchestration` checked out as a git worktree at /"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check for workstreams/search-api-round2.md@449655c (task fix-check-r1; doc is on the local `orchestration` branch, worktree /tmp/cr-run.hszGdFxu/orchestrati"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review at high effort of main..6746708 (feature/search-api, tag round-2) in a fresh clone of /tmp/cr-run.hszGdFxu/repo/repo.bundle made in a new empty dir"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Wait (polling every ~15s, up to 25 minutes) until both /tmp/cr-run.hszGdFxu/repo/outputs/fix-check-round2.md and /tmp/cr-run.hszGdFxu/repo/outputs/review-round2"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "1000 done"
+    ],
+    "head": "You are the scribe. In the worktree /tmp/cr-run.hszGdFxu/orchestration (local branch `orchestration`, no push), make one commit \"Record round-2 results\" that: 1"
+  }
+]

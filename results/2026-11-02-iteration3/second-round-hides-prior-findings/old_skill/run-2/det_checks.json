@@ -1,0 +1,51 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md"
+  ],
+  "transcript_agent_calls": 4,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/search-api' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): missing: 'R1-1' + 'skips a row on every page boundary' + 'r1_1_cursor_gap.py'; 'R1-2' + 'LIKE wildcards in the search term' + 'r1_2_like_wildcard.py' | transcript Agent prompts (4): FAIL - missing: 'R1-1' + 'skips a row on every page boundary' + 'r1_1_cursor_gap.py'; 'R1-2' + 'LIKE wildcards in the search term' + 'r1_2_like_wildcard.py'"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'R1-1' in subagent-prompt-01.md: \u2026ge.\"    - Round-1 findings (user-supplied, verbatim):      \"R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026rints REPRODUCES and exits 1 while the bug is there)\"      \"R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in subagent-prompt-03.md: \u20268, plus the branch's own test suite, and judge only whether R1-1 and R1-2 are fixed. No fixes, no wider review, no subagents\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (claim check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: out (fix check)] | transcript Agent prompts (4): FAIL - 'R1-1' in agent-call-1: \u2026ge.\"    - Round-1 findings (user-supplied, verbatim):      \"R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026rints REPRODUCES and exits 1 while the bug is there)\"      \"R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in agent-call-2: \u20268, plus the branch's own test suite, and judge only whether R1-1 and R1-2 are fixed. No fixes, no wider review, no subagents\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (claim check); agent-call-3: in (reviewer prompt); agent-call-4: out (fix check)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'page boundary' in subagent-prompt-01.md: \u2026:      \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `\u2026; 'skips a row' in subagent-prompt-01.md: \u2026r-supplied, verbatim):      \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\". Repro: `python repro/r1_2_like_wildcard.py <path to the \u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (claim check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: out (fix check)] | transcript Agent prompts (4): FAIL - 'page boundary' in agent-call-1: \u2026:      \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `\u2026; 'skips a row' in agent-call-1: \u2026r-supplied, verbatim):      \"R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026h term aren't escaped, so searching \\\"100%\\\" also matches \\\"1000 done\\\". Repro: `python repro/r1_2_like_wildcard.py <path to the \u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (claim check); agent-call-3: in (reviewer prompt); agent-call-4: out (fix check)]"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (claim check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: out (fix check)] | transcript Agent prompts (4): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (claim check); agent-call-3: in (reviewer prompt); agent-call-4: out (fix check)]"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "Then, in local mode (no push, no commit), write /tmp/cr-run.tARSGHsD/repo/.cadence/workstreams/search-api-round2.md and search-api-round2.tasks.json with: Ask ("
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Then fix-check the two findings below: clone /tmp/cr-run.tARSGHsD/repo/repo.bundle into a new empty dir, run each repro (from /tmp/cr-run.tARSGHsD/repo/repro/) "
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Then clone /tmp/cr-run.tARSGHsD/repo/repo.bundle into a new empty dir and run /code-review high on main..feature/search-api (6a70bbd..6746708) there; no fixes. "
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "1000 done"
+    ],
+    "head": "Then update /tmp/cr-run.tARSGHsD/repo/.cadence/workstreams/search-api-round2.md and .tasks.json (local mode, no commit/push) with what's below; touch nothing el"
+  }
+]

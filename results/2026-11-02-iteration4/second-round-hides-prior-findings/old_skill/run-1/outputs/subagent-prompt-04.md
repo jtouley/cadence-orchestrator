@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim, from its first line to its last, as /tmp/cr-run.OAMYHrAZ/repo/outputs/subagent-prompt-04.md.
+
+/code-review high on main..feature/search-api (6a70bbda5fa087f228bb33e126849caa3d28130d..6746708596c7166d44d11e8e436bde8398be4a12) in /tmp/cr-run.OAMYHrAZ/clone, and run the test suite; for each finding include a command and its output that demonstrates it. If the code-review skill isn't available to you, do a thorough correctness review yourself. Don't modify the clone (copy it to experiment). Write the full review to /tmp/cr-run.OAMYHrAZ/repo/outputs/review-r2.md. If it can't be done, stop and report why. Report what you left out. Don't spawn other agents.

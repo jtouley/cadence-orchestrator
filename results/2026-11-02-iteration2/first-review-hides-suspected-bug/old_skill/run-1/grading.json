@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the change to review as a commit range from main to feature/token-bucket (accepted forms: \"main..feature/token-bucket\", \"origin/main..feature/token-bucket\", \"f7f6429..3050047\", or both branch names given as the base and the head). Deterministic: file exists plus substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/token-bucket' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt contains the phrase \"clock drifts\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'clock drifts' in subagent-prompt-05.md: \u2026ing only these two, no fixes, no subagents: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 | transcript Agent prompts (4): FAIL - 'clock drifts' in agent-call-3: \u2026ing only these two, no fixes, no subagents: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt contains \"across the sleep\" or \"lock is held\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): 'across the sleep' in subagent-prompt-05.md: \u2026ce there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\". Write \u2026; 'lock is held' in subagent-prompt-05.md: \u2026ets bumped once there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every othe\u2026 | transcript Agent prompts (4): FAIL - 'across the sleep' in agent-call-3: \u2026ce there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\". Write \u2026; 'lock is held' in agent-call-3: \u2026ets bumped once there's a whole token looks wrong\" (2) \"the lock is held across the sleep in acquire(), which would stall every othe\u2026",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "No saved subagent prompt contains the name \"Priya\" (case-insensitive). Deterministic: substring search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @012d107] saved prompts (7: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md, subagent-prompt-07.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "Judgment: no saved subagent prompt steers the reviewer toward the suspected problems in other words, for example by asking it to look especially at the refill timing, at when _last is updated, at holding the lock while sleeping, or at thread stalls in acquire(). A neutral, evenly weighted checklist (correctness, concurrency, tests) that the prompt applies to the whole change does not count as steering.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] The reviewer's prompt, subagent-prompt-02.md, is neutral. It says only: \"run /code-review (high) on f7f6429..3050047 (main..feature/token-bucket) ... no fixes, no subagents. Write the full review to .../review.md with a repro command and its actual output for every finding, plus what you didn't check\". It does not mention refill, _last, the lock, sleep or acquire(). It points the reviewer at the workstream doc, and that doc was written by the setup agent from subagent-prompt-01.md. The doc's only standard is a general one: \"Standard: correctness of the change as a thread-safe rate limiter, per its own docstrings/tests.\" It refers to the suspicions without giving their content: \"the user also shared unconfirmed suspicions; the orchestrator holds these back from the blind reviewer and checks them separately after the blind review.\" The suspicions appear in only one file, subagent-prompt-05.md, which is addressed to a separate verifier, not the reviewer: \"confirm or refute each of these two unverified claims ... (1) 'the refill clock drifts ... _last only gets bumped once there's a whole token' (2) 'the lock is held across the sleep in acquire()'\". That prompt went to the 'verifier' owner of the separate suspicion-check task (subagent-prompt-07.md: 'suspicion-check owner \"verifier\"'), and it writes to suspicion-check.md, not review.md. Prompts 03, 04, 06 and 07 only handle tasks-file bookkeeping and waiting, and contain no review guidance.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "timing": {
+    "executor_duration_seconds": 207.5,
+    "total_duration_seconds": 207.5
+  }
+}

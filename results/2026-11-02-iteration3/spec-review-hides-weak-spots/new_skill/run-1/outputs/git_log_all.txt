@@ -1,0 +1,8 @@
+5372118 (orchestration) hunch-01: check user hunches against RFC 9457; review-01 done
+ed796a3 review-01: RFC 9457 conformance review of 7ae6e38..3b86734
+02bd182 Add rfc9457-conformance tasks file
+b8b4a1f Add rfc9457-conformance workstream doc
+3b86734 (HEAD -> feature/problem-details) eval setup
+5efb782 (origin/feature/problem-details, origin/HEAD) Route error_response through problem(); tests
+b954349 Add problem() and validation_problem() helpers
+7ae6e38 (origin/main, main) Basic JSON error responses

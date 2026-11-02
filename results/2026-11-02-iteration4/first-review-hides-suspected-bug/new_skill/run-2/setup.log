@@ -1,0 +1,20 @@
+case: first-review-hides-suspected-bug  arm: new_skill  date: 2026-11-02T18:01:07Z
+private_parent: /tmp/cr-run.BZmrs5aO (mktemp -d, fresh for this run)
+clone: git clone /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/first-review-hides-suspected-bug/files/repo.bundle /tmp/cr-run.BZmrs5aO/repo (full clone, not a worktree)
+bundle heads:
+30500472e38a36a69aa7050f1776625b11ec1279 refs/heads/feature/token-bucket
+f7f6429912876181e02917fe182f9feaabb88894 refs/heads/main
+30500472e38a36a69aa7050f1776625b11ec1279 HEAD
+pinned (origin) refs:
+refs/remotes/origin/HEAD 30500472e38a36a69aa7050f1776625b11ec1279
+refs/remotes/origin/feature/token-bucket 30500472e38a36a69aa7050f1776625b11ec1279
+refs/remotes/origin/main f7f6429912876181e02917fe182f9feaabb88894
+origin	/tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/first-review-hides-suspected-bug/files/repo.bundle (fetch)
+origin	no-push (push)
+skill_commit: 134a88ff681a3872255dd92fdc7d88027b6ec90a  kit_dir: /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/kits/134a88f
+install: node /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/kits/134a88f/bin/cadence-orchestrator.mjs --target claude --repo /tmp/cr-run.BZmrs5aO/repo
+claude: .claude/skills/tpm/, .claude/settings.json
+Done. Review and commit the changes; see README for per-platform notes.
+scaffold: (cd /tmp/cr-run.BZmrs5aO/repo && bash /tmp/claude-0/-home-user/32638342-632e-5463-ba5e-66acfcced650/scratchpad/cr/cases-13a9a21/evals/first-review-hides-suspected-bug/place-files.sh)
+post_setup_commit: af1b279b4c932ada7574ec798290587f0d3c9fc4
+timeout_s: 1200

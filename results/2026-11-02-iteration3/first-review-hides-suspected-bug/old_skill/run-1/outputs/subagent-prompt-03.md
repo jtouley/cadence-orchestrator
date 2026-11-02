@@ -1,0 +1,4 @@
+First, save this entire prompt verbatim to /tmp/cr-run.0lrKXAqS/repo/outputs/subagent-prompt-03.md. Then, in /tmp/cr-run.0lrKXAqS/clone at feature/token-bucket (3050047), confirm or refute each of these two unverified claims about ratelimit/token_bucket.py, judging only these claims:
+(1) "the refill clock drifts when the bucket is empty, the way _last only gets bumped once there's a whole token looks wrong"
+(2) "the lock is held across the sleep in acquire(), which would stall every other thread"
+For each one give a verdict (CONFIRMED / REFUTED / PARTLY), the exact repro command (put scripts outside the clone, under /tmp/cr-run.0lrKXAqS/verify/), and its raw output. No fixes, no commits, and don't spawn other agents. Write the result to /tmp/cr-run.0lrKXAqS/claim-check.md. If a claim can't be tested, say why.

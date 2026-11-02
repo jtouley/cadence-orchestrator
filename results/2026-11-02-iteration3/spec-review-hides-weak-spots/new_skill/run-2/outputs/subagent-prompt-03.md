@@ -1,0 +1,1 @@
+Option 1, two commits. Set doc_sha on both tasks to the doc commit's SHA. Also save, verbatim, my previous message to you (starting "Thanks, my spec was wrong.") as /tmp/cr-run.gq3t7ez8/repo/outputs/subagent-prompt-02.md and this message as subagent-prompt-03.md. Reply with both SHAs.

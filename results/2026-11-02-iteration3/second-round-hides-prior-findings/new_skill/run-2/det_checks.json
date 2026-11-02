@@ -1,0 +1,52 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md",
+    "subagent-prompt-06.md"
+  ],
+  "transcript_agent_calls": 4,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/search-api' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): each group found | transcript Agent prompts (4): PASS - each group found"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'R1-1' in subagent-prompt-06.md: \u2026/evidence/T1-fix-check.md\", \"bundle tip 6746708 == round-2; R1-1 and R1-2 repros exit 1 at round-1, exit 0 at round-2; pytes\u2026; 'R1-2' in subagent-prompt-06.md: \u2026/T1-fix-check.md\", \"bundle tip 6746708 == round-2; R1-1 and R1-2 repros exit 1 at round-1, exit 0 at round-2; pytest 3 passe\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: out (fix check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (4): FAIL - 'R1-1' in agent-call-4: \u2026/evidence/T1-fix-check.md\", \"bundle tip 6746708 == round-2; R1-1 and R1-2 repros exit 1 at round-1, exit 0 at round-2; pytes\u2026; 'R1-2' in agent-call-4: \u2026/T1-fix-check.md\", \"bundle tip 6746708 == round-2; R1-1 and R1-2 repros exit 1 at round-1, exit 0 at round-2; pytest 3 passe\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: out (fix check); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: out (fix check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (4): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: out (fix check); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check)]"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'keyset' in subagent-prompt-06.md: \u2026t round-1, exit 0 at round-2; pytest 3 passed\"], left_out [\"keyset under concurrent inserts\", \"_ and \\\\ escaping only read, no\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: out (fix check); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (claim check); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (4): FAIL - 'keyset' in agent-call-4: \u2026t round-1, exit 0 at round-2; pytest 3 passed\"], left_out [\"keyset under concurrent inserts\", \"_ and \\\\ escaping only read, no\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: out (fix check); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check)]"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

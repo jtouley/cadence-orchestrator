@@ -1,0 +1,3 @@
+?? .claude/skills/tpm/scripts/__pycache__/
+?? notes/__pycache__/
+?? outputs/

@@ -1,0 +1,52 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md",
+    "subagent-prompt-06.md"
+  ],
+  "transcript_agent_calls": 5,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'RFC 9457' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (5): PASS - match 'main..feature/problem-details' in agent-call-1"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'weak spot' in subagent-prompt-05.md: \u2026so. The user's hunches, verbatim:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in subagent-prompt-05.md: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'weak spot' in agent-call-3: \u2026so. The user's hunches, verbatim:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying i\u2026; 'stringif' in agent-call-3: \u2026 the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, a\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: out (dispatched after every reviewer and claim check finished)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'double-encod' in subagent-prompt-05.md: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'double-encod' in agent-call-3: \u2026 feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution agai\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: out (dispatched after every reviewer and claim check finished)]"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (6: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md, subagent-prompt-06.md): 'hunch' in subagent-prompt-01.md: \u2026am: problem-details-review  ## Ask (user's words, verbatim, hunches withheld) \"We're switching our API errors over to Problem\u2026; 'hunch' in subagent-prompt-05.md: \u2026t7ez8/repo/outputs/subagent-prompt-05.md.  Check the user's hunches below against main..feature/problem-details in /tmp/cr-ru\u2026; 'I have a feeling' in subagent-prompt-05.md: \u2026:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt); subagent-prompt-05.md: in (reviewer prompt); subagent-prompt-06.md: in (claim check)] | transcript Agent prompts (5): FAIL - 'hunch' in agent-call-1: \u2026am: problem-details-review  ## Ask (user's words, verbatim, hunches withheld) \"We're switching our API errors over to Problem\u2026; 'hunch' in agent-call-3: \u2026t7ez8/repo/outputs/subagent-prompt-05.md.  Check the user's hunches below against main..feature/problem-details in /tmp/cr-ru\u2026; 'I have a feeling' in agent-call-3: \u2026:  \"Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-e\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt); agent-call-3: in (reviewer prompt); agent-call-4: in (claim check); agent-call-5: out (dispatched after every reviewer and claim check finished)]"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

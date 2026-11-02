@@ -1,0 +1,49 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md"
+  ],
+  "transcript_agent_calls": 3,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'RFC 9457' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/problem-details' in agent-call-1"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'hunch' in subagent-prompt-01.md: \u2026am: problem-details-review  ## Ask (user's words, verbatim; hunches withheld) \"We're switching our API errors over to Problem\u2026 | transcript Agent prompts (3): FAIL - 'hunch' in agent-call-1: \u2026am: problem-details-review  ## Ask (user's words, verbatim; hunches withheld) \"We're switching our API errors over to Problem\u2026"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

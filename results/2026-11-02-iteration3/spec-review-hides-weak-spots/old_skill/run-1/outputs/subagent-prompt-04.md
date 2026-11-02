@@ -1,0 +1,3 @@
+First, save the full text of THIS message, verbatim, to /tmp/cr-run.8fYtjgXe/repo/outputs/subagent-prompt-04.md.
+
+Review main..feature/problem-details (tip 5f801f2) in /tmp/cr-run.8fYtjgXe/repo for conformance with RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457), per .cadence/workstreams/rfc9457-review.md on branch orchestration@71dd49b. Read-only on the code: no fixes, no commits, don't spawn other agents. Write the full review to /tmp/cr-run.8fYtjgXe/repo/outputs/review.md. For each non-conformance include the RFC section, file:line, and a repro command with its actual output. Also list conforming points you checked and what you did not check. If it can't be done as specified, stop and report why.

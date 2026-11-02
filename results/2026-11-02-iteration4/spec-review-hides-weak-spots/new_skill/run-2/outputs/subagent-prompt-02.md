@@ -1,0 +1,1 @@
+Yes: write the tasks file in the wrapped {"workstream": "rfc9457-conformance", "tasks": [...]} form, keep the .md without the --- lines, and commit both on `orchestration` (pre-commit absent is fine; note it). First, save this entire message verbatim to /tmp/cr-run.XgnD7cNy/repo/outputs/subagent-prompt-02.md. Report the commit SHA.

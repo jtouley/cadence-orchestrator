@@ -1,0 +1,6 @@
+First, save this entire prompt verbatim as /tmp/cr-run.Fe3eErID/repo/outputs/subagent-prompt-02.md.
+
+Fix check, no code changes, no subagents: in /tmp/cr-run.Fe3eErID/clone at feature/search-api@6746708596c7166d44d11e8e436bde8398be4a12 (workstreams/search-api.md@4dfac79 in /tmp/cr-run.Fe3eErID/orchestration), confirm whether each of these round-1 findings (verbatim) still reproduces, by running its repro (`python3 -I <script> /tmp/cr-run.Fe3eErID/clone`, scripts in /tmp/cr-run.Fe3eErID/repo/repro/) and judging the fix only against the finding:
+- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `python repro/r1_1_cursor_gap.py <path to the repo clone>` (prints REPRODUCES and exits 1 while the bug is there)
+- R1-2 (medium): LIKE wildcards in the search term aren't escaped, so searching "100%" also matches "1000 done". Repro: `python repro/r1_2_like_wildcard.py <path to the repo clone>` (same convention)
+Also run the repo's test suite. Write results (exact commands, raw output, exit codes, verdict per finding, and anything you couldn't check) to /tmp/cr-run.Fe3eErID/repo/outputs/fix-check.md. If it can't be done as specified, stop and report why.

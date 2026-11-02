@@ -1,0 +1,103 @@
+diff --git a/.cadence/workstreams/search-api-round2.md b/.cadence/workstreams/search-api-round2.md
+new file mode 100644
+index 0000000..0b29b23
+--- /dev/null
++++ b/.cadence/workstreams/search-api-round2.md
+@@ -0,0 +1,48 @@
++# Workstream: search-api-round2
++
++## Ask (user's words, verbatim, 2026-11-02)
++
++"Please get the whole branch, main..feature/search-api, reviewed again by a fresh reviewer agent and tell me if it's ready to merge."
++
++## Round-1 findings (user-supplied, verbatim)
++
++- "R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1. Repro: `python repro/r1_1_cursor_gap.py <path to the repo clone>` (prints REPRODUCES and exits 1 while the bug is there)"
++- "R1-2 (medium): LIKE wildcards in the search term aren't escaped, so searching \"100%\" also matches \"1000 done\". Repro: `python repro/r1_2_like_wildcard.py <path to the repo clone>` (same convention)"
++
++## Status
++
++Setup done by the scribe (2026-11-02). Pinned refs in the clone of repo.bundle at /tmp/cr-run.KfFbz0Z7/clone:
++
++| Ref | SHA |
++|---|---|
++| main | 6a70bbda5fa087f228bb33e126849caa3d28130d |
++| feature/search-api | 6746708596c7166d44d11e8e436bde8398be4a12 |
++| tag round-1 | 87fe0d8170d53f62679a525298d725eec4bffe1a |
++| tag round-2 | 6746708596c7166d44d11e8e436bde8398be4a12 (== feature/search-api tip) |
++
++merge-base(main, feature/search-api) = 6a70bbda5fa087f228bb33e126849caa3d28130d (== main)
++
++Range `main..feature/search-api` (3 commits):
++
++```
++6746708 Tests for pagination and LIKE escaping
++6a9d4f0 Search: keyset pagination, escape LIKE input
++87fe0d8 Add paginated title search
++```
++
++2026-11-02 round 2: R1-1 and R1-2 fixed (repro + tests); blind review requests changes (8 findings, see outputs/review-round2.md); recommendation to user: not ready to merge.
++
++## Scope
++
++- In: commit range main..feature/search-api at the pinned round-2 SHA (6746708596c7166d44d11e8e436bde8398be4a12), in the clone /tmp/cr-run.KfFbz0Z7/clone.
++- Out: making any fixes.
++- Done: fix check of R1-1/R1-2 with repro output + blind review of the range, results in outputs/.
++- Stop at: merge recommendation to the user, not merged.
++- Deployed when: merged to main (by the user).
++
++## Tasks
++
++See `search-api-round2.tasks.json`.
++
++- T1 fix-check (R1-1/R1-2, with repro output) — owner: verifier — assigned
++- T2 blind-review of the range — owner: reviewer — assigned
+diff --git a/.cadence/workstreams/search-api-round2.tasks.json b/.cadence/workstreams/search-api-round2.tasks.json
+new file mode 100644
+index 0000000..c80042d
+--- /dev/null
++++ b/.cadence/workstreams/search-api-round2.tasks.json
+@@ -0,0 +1,43 @@
++{
++  "workstream": "search-api-round2",
++  "tasks": [
++    {
++      "id": "T1",
++      "owner": "verifier",
++      "doc_sha": "a305ff2c03f3c2008d29e6ac06ce9a1bba23f614",
++      "state": "done",
++      "evidence": [
++        "outputs/fixcheck-round2.md",
++        "python -I repro/r1_1_cursor_gap.py clone@6746708 -> 'does not reproduce' exit 0",
++        "python -I repro/r1_2_like_wildcard.py clone@6746708 -> 'does not reproduce' exit 0",
++        "pytest tests -> 3 passed"
++      ],
++      "left_out": [
++        "No code reading of the fix, no wider review, no edge cases beyond the two repros (e.g. `_` wildcard, escape-character handling, page sizes other than 3, ties in the keyset ordering). Those belong to T2 (blind review).",
++        "Test suite could not be run with `-I` as-is (see above); ran it without `-I`.",
++        "Runs created `notes/__pycache__/` and `tests/__pycache__/` in the clone; I deleted them afterwards, and `git status --short` in the clone is clean again.",
++        "No fixes made, no subagents used, task JSON (`search-api-round2.tasks.json`) not updated."
++      ],
++      "left_out_accepted_by": "tpm",
++      "tokens": 22175
++    },
++    {
++      "id": "T2",
++      "owner": "reviewer",
++      "doc_sha": "a305ff2c03f3c2008d29e6ac06ce9a1bba23f614",
++      "state": "done",
++      "evidence": [
++        "outputs/review-round2.md: verdict request changes, 8 findings"
++      ],
++      "left_out": [
++        "SQLite LIKE ignores case only for ASCII: \"groc\" matches \"Groceries\", but \"ébène\" does not match \"Ébène\". This is SQLite's built-in behavior and was not introduced by this diff. Worth noting if the product expects Unicode case folding.",
++        "An empty term matches every note. This is probably intended (list all), and the docstring doesn't say otherwise.",
++        "created_at is compared as TEXT. Ordering and the cursor comparison both use lexicographic order, so they stay consistent with each other. Mixed formats (date vs datetime with or without a timezone) would sort oddly, but store.py has the same problem, so I left it out.",
++        "Deep security review, load testing, and concurrency (rows inserted between pages) were not examined beyond noting that keyset pagination is stable under inserts of newer rows.",
++        "No CLAUDE.md or project conventions apply."
++      ],
++      "left_out_accepted_by": "tpm",
++      "tokens": 24102
++    }
++  ]
++}

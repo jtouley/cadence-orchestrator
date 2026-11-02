@@ -1,0 +1,50 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "2. Clone /tmp/cr-run.UrOA8FEV/repo/repo.bundle into a new directory /tmp/cr-run.UrOA8FEV/clone (fetch all branches and tags from the bundle). Report: every ref "
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check, per /tmp/cr-run.UrOA8FEV/repo/.cadence/workstreams/search-api-round2.md: confirm whether each finding below still reproduces at 6746708 (feature/sear"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on main..feature/search-api (6a70bbd..6746708) in /tmp/cr-run.UrOA8FEV/clone; run the tests too. No code changes, no other agents. Write the f"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "md, and this whole message you are reading as subagent-prompt-04.md. Then in /tmp/cr-run.UrOA8FEV/repo/.cadence/workstreams/search-api-round2.tasks.json set T1 "
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then in /tmp/cr-run.UrOA8FEV/repo/.cadence/workstreams/search-api-round2.tasks.json set T1 state \"done\", evidence [\"outputs/fix-check-round2.md: both repros exi"
+  }
+]

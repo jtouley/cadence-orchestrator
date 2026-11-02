@@ -1,0 +1,5 @@
+You are the scribe. Write exactly what is dictated; no analysis.
+Step 0: Save this entire prompt verbatim to /tmp/cr-run.RhEvJerb/repo/outputs/subagent-prompt-03.md.
+Step 1: In the worktree /tmp/cr-run.RhEvJerb/orch (branch `orchestration`, local only, do not push), copy /tmp/cr-run.RhEvJerb/repo/outputs/rfc9457-review.md to .cadence/workstreams/problem-details-review.findings.md. In .cadence/workstreams/problem-details-review.md, replace "- (pending)" under "Status and evidence" with:
+- 2026-11-02 reviewer-1 done: 8 findings (2 MUST-violations F1/F5, 1 SHOULD F4, rest notes) in problem-details-review.findings.md; reviewed main..5efb782 (bundle head; local 4aed654 adds only harness files). Orchestrator checked findings against api/problems.py@5efb782 lines 18-28.
+In problem-details-review.tasks.json set the rfc9457-review task to state "done", evidence "problem-details-review.findings.md; repro commands with output inside", tokens 34950. Commit (pre-commit isn't installed; skip it). If anything can't be done, stop and report why. Reply with the new HEAD SHA.

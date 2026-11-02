@@ -1,0 +1,43 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md"
+  ],
+  "transcript_agent_calls": 3,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (3): PASS - match 'main..feature/token-bucket' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present | transcript Agent prompts (3): PASS - none of the phrases present"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'priya' in subagent-prompt-01.md: \u2026it finds.  Context, for what it's worth: [hunch held back]. Priya also mentioned [hunch held back]. I haven't confirmed eithe\u2026 | transcript Agent prompts (3): FAIL - 'priya' in agent-call-1: \u2026it finds.  Context, for what it's worth: [hunch held back]. Priya also mentioned [hunch held back]. I haven't confirmed eithe\u2026"
+    },
+    {
+      "n": 5,
+      "kind": "judgment"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim (every line, from "First, save" through the final line) to /tmp/cr-run.XgnD7cNy/repo/outputs/subagent-prompt-04.md.
+
+Review main..feature/problem-details in /tmp/cr-run.XgnD7cNy/repo against https://www.rfc-editor.org/rfc/rfc9457, per workstream doc .cadence/workstreams/rfc9457-conformance.md@41af36a (on branch `orchestration`, worktree /tmp/cr-run.XgnD7cNy/orch). Read-only: no code changes, no commits. Write the full review to /tmp/cr-run.XgnD7cNy/repo/outputs/review-rfc9457.md. For each finding, give the RFC section, file:line, and a repro command with its actual output. Also list what you didn't check. Don't spawn subagents. If you can't do something as specified, stop and report why.

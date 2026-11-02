@@ -1,0 +1,26 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "2. Clone /tmp/cr-run.BZmrs5aO/repo/repo.bundle into the new empty directory /tmp/cr-run.BZmrs5aO/review-clone (git clone the bundle; make local branches main an"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "2) In /tmp/cr-run.BZmrs5aO/review-clone on local branch orchestration, write .cadence/workstreams/token-bucket-review.tasks.json as exactly {\"tasks\":[{\"id\":\"rev"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on commits f7f6429..3050047 (main..feature/token-bucket) in the clone /tmp/cr-run.BZmrs5aO/review-clone (use a git worktree of 3050047; don't "
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "2) Save the text between the BEGIN/END markers below, verbatim (excluding the marker lines), to /tmp/cr-run.BZmrs5aO/repo/outputs/subagent-prompt-03.md: BEGIN /"
+  }
+]

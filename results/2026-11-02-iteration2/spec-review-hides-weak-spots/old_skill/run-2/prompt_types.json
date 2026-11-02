@@ -1,0 +1,8 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Review main..feature/problem-details in /tmp/cr-run.lDiXU7Nf/repo (same history as repo.bundle there) for conformance to RFC 9457 Problem Details (https://www.r"
+  }
+]

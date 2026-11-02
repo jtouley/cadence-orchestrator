@@ -1,0 +1,50 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md"
+  ],
+  "transcript_agent_calls": 4,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/search-api' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/search-api' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): each group found | transcript Agent prompts (4): PASS - each group found"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'R1-1' in subagent-prompt-01.md: \u2026of feature/search-api at tag round-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in subagent-prompt-01.md: \u2026>` (prints REPRODUCES and exits 1 while the bug is there) - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in subagent-prompt-04.md: \u2026 tests` at round-2 -> \"3 passed in 0.01s\" exit 0. Verdicts: R1-1 FIXED (note: round-1 symptom was a duplicated row per bound\u2026 | transcript Agent prompts (4): FAIL - 'R1-1' in agent-call-1: \u2026of feature/search-api at tag round-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundar\u2026; 'R1-2' in agent-call-1: \u2026>` (prints REPRODUCES and exits 1 while the bug is there) - R1-2 (medium): LIKE wildcards in the search term aren't escaped,\u2026; 'R1-1' in agent-call-4: \u2026 tests` at round-2 -> \"3 passed in 0.01s\" exit 0. Verdicts: R1-1 FIXED (note: round-1 symptom was a duplicated row per bound\u2026"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'page boundary' in subagent-prompt-01.md: \u2026ith:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in subagent-prompt-01.md: \u2026und-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in subagent-prompt-01.md: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026 | transcript Agent prompts (4): FAIL - 'page boundary' in agent-call-1: \u2026ith:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.   Repro:\u2026; 'skips a row' in agent-call-1: \u2026und-1 and came back with:  - R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by \u2026; '1000 done' in agent-call-1: \u2026arch term aren't escaped, so searching \"100%\" also matches \"1000 done\".   Repro: `python repro/r1_2_like_wildcard.py <path to the\u2026"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'keyset' in subagent-prompt-01.md: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in subagent-prompt-01.md: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in subagent-prompt-01.md: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026 | transcript Agent prompts (4): FAIL - 'keyset' in agent-call-1: \u2026fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and \u2026; 'tie-breaker' in agent-call-1: \u2026ursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both\u2026; 'escape_like' in agent-call-1: \u2026on on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\\\' on both queries. Tests for both a\u2026"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

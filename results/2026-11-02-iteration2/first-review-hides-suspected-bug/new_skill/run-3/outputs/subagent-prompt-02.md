@@ -1,0 +1,1 @@
+Approved: wrap the tasks as {"tasks":[...]} with the same two entries. First save this message verbatim to /tmp/cr-run.zEkso1gj/repo/outputs/subagent-prompt-02.md. Then write the tasks file, do step 4 (commit both files on orchestration, check feature/token-bucket back out), and report the orchestration commit SHA. Same rules: stop and report if blocked; don't spawn agents.

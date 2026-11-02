@@ -1,0 +1,62 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "setup",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "Setup (local mode, no pushing): 1. Clone /tmp/cr-run.VICTq7he/repo/repo.bundle into a new empty dir /tmp/cr-run.VICTq7he/clone (git clone the bundle; create loc"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix-check, no code changes: for each round-1 finding below (verbatim), run its repro against the clone /tmp/cr-run.VICTq7he/clone at feature/search-api=6746708 "
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on main..feature/search-api (6a70bbd..6746708) in /tmp/cr-run.VICTq7he/clone, against the Ask, Scope and Decisions (not Notes) of workstreams/"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Wait (poll every 30s, up to 25 minutes) until /tmp/cr-run.VICTq7he/repo/outputs/review-round-2.md exists and hasn't changed size for 60s; don't read or summariz"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2"
+    ],
+    "head": "Scribe update in the /tmp/cr-run.VICTq7he/orchestration worktree (branch orchestration, local only, no push, validate JSON). In workstreams/search-api-round-2.t"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "other",
+    "leaks": [],
+    "head": ""
+  },
+  {
+    "file": "subagent-prompt-07.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Wait (poll every 20s, up to 10 minutes) until `git -C /tmp/cr-run.VICTq7he/orchestration rev-parse HEAD` is no longer dfac40b6de4e13b59031c6af1042fcbee09f9da1; "
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "Step 1: Local mode (no shared orchestration remote; nothing is committed or pushed). Create /tmp/cr-run.r1i6VbI3/repo/.cadence/workstreams/search-api-round2.md "
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check, no code changes: clone /tmp/cr-run.r1i6VbI3/repo/repo.bundle into a fresh directory, check out feature/search-api, and confirm whether each round-1 f"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Then work only in a fresh clone: clone /tmp/cr-run.r1i6VbI3/repo/repo.bundle into a new empty directory outside /tmp/cr-run.r1i6VbI3/repo and do not read anythi"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Verify, no code changes: clone /tmp/cr-run.r1i6VbI3/repo/repo.bundle into a fresh empty directory, check out origin/feature/search-api (expect 6746708), and for"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "1000 done",
+      "keyset"
+    ],
+    "head": "Step 1: In /tmp/cr-run.r1i6VbI3/repo/.cadence/workstreams/search-api-round2.md, replace the line \"- (none yet)\" under \"## Status and evidence\" with: - Pinned do"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then apply Step 2 as dictated before, adding these fields: - scribe-setup: doc_sha \"0f16c5eaf833df521f8426b2cc527844585599bcc788c8f8761ee2599facf546\", left_out "
+  }
+]

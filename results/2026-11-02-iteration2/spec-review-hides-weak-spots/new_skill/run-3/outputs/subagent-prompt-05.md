@@ -1,0 +1,6 @@
+First, save this entire prompt verbatim (from "First," through the last line) to /tmp/cr-run.djuVGSPJ/repo/outputs/subagent-prompt-05.md.
+
+You are the scribe. In the worktree /tmp/cr-run.djuVGSPJ/orch-wt (local branch `orchestration`, do not push), update only these and commit ("workstream: record review-1 result", ending with the line "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"):
+- `.cadence/workstreams/rfc9457-conformance.tasks.json`, task review-1: doc_sha "c0849c9", state "done", evidence ["/tmp/cr-run.djuVGSPJ/repo/outputs/review-rfc9457.md", "reviewed at feature/problem-details 8d0322a: 6 non-conformances (F1-F6), each with repro command and output", "python3 -m pytest -q tests -> 2 passed"], left_out ["Section 4 problem-type documentation / dereferencing", "real HTTP behaviour, content negotiation, localization (no server in repo)", "Section 5 data-leak review of callers (none in range)", "Appendix B/C XML and other formats"], left_out_accepted_by "tpm", tokens 30875. Keep the schema in .claude/skills/tpm/references/workstream.md.
+- `.cadence/workstreams/rfc9457-conformance.md`, under "## Status and evidence", replace "(empty for now)" with: "- 2026-11-02 review-1 done: outputs/review-rfc9457.md (6 findings F1-F6 against RFC 9457 at 8d0322a). Reviewer did not read Notes."
+Report back only the commit SHA, or why it's blocked.

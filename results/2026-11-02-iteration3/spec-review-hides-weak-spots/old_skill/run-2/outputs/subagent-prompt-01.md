@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim, byte for byte, to /tmp/cr-run.FsYbmrLG/repo/outputs/subagent-prompt-01.md (create the directory; don't commit it).
+
+Then review the commit range main..14c867a (branch feature/problem-details) in /tmp/cr-run.FsYbmrLG/repo against RFC 9457, https://www.rfc-editor.org/rfc/rfc9457, and report every place it doesn't conform. No fixes, no edits to the repo, no subagents. For each finding give the RFC section and its MUST/SHOULD/MAY level, file:line, and a repro command with its raw output (run the code or tests to show it). Mark anything you couldn't reproduce as UNPROVEN. If something can't be checked, say so and why; end with a list of what you didn't check.

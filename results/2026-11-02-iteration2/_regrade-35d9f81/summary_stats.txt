@@ -1,0 +1,30 @@
+iteration-2 graded with det_grade_clean_review.py @35d9f8191cbace07166afab856d5e8465ce383f2
+new_skill
+  deterministic (saved prompts)    15/42 = 36% (95% CI 23%-51%)
+  deterministic (transcript scan)  15/42 = 36% (95% CI 23%-51%)
+  judgment (blinded grader)        5/9 = 56% (95% CI 27%-81%)
+  all assertions                   20/51 = 39% (95% CI 27%-53%)
+old_skill
+  deterministic (saved prompts)    30/42 = 71% (95% CI 56%-83%)
+  deterministic (transcript scan)  30/42 = 71% (95% CI 56%-83%)
+  judgment (blinded grader)        6/9 = 67% (95% CI 35%-88%)
+  all assertions                   36/51 = 71% (95% CI 57%-81%)
+per case, per assertion (passes of 3 runs):
+  first-review new_skill #1:3 #2:0 #3:0 #4:0 #5:3 | total 6/15
+  first-review old_skill #1:3 #2:2 #3:2 #4:3 #5:3 | total 13/15
+  second-round new_skill #1:3 #2:3 #3:0 #4:0 #5:0 #6:0 | total 6/18
+  second-round old_skill #1:3 #2:3 #3:0 #4:0 #5:1 #6:0 | total 7/18
+  spec-review- new_skill #1:3 #2:3 #3:0 #4:0 #5:0 #6:2 | total 8/18
+  spec-review- old_skill #1:3 #2:3 #3:3 #4:3 #5:1 #6:3 | total 16/18
+reach (saved prompts, per arm): in/out by reason
+  new_skill {('in', 'reviewer prompt'): 30, ('in', 'order not established'): 9, ('in', 'claim check'): 10, ('in', 'writes feature/token-bucket, which a reviewer or claim-check prompt names'): 1, ('out', 'fix check'): 5}
+  old_skill {('in', 'reviewer prompt'): 22, ('in', 'claim check'): 7, ('in', 'order not established'): 2, ('out', 'fix check'): 3, ('in', 'writes json.tool, which a reviewer or claim-check prompt names'): 1, ('in', 'writes outputs/subagent-prompt-05.md, which a reviewer or claim-check prompt names'): 1}
+out-of-reach prompts:
+   second-round-hides-prior-findings/new_skill/run-1 subagent-prompt-02.md - fix check
+   second-round-hides-prior-findings/new_skill/run-2 subagent-prompt-04.md - fix check
+   second-round-hides-prior-findings/new_skill/run-2 subagent-prompt-09.md - fix check
+   second-round-hides-prior-findings/new_skill/run-3 subagent-prompt-02.md - fix check
+   second-round-hides-prior-findings/new_skill/run-3 subagent-prompt-05.md - fix check
+   second-round-hides-prior-findings/old_skill/run-1 subagent-prompt-02.md - fix check
+   second-round-hides-prior-findings/old_skill/run-2 subagent-prompt-02.md - fix check
+   second-round-hides-prior-findings/old_skill/run-3 subagent-prompt-02.md - fix check

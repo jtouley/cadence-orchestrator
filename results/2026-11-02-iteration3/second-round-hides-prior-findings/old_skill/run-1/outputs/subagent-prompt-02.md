@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim to /tmp/cr-run.NbzCWSvP/repo/outputs/subagent-prompt-02.md (create the directory if needed).
+
+Code-review the commit range main..6746708 (tag round-2) in a fresh clone of /tmp/cr-run.NbzCWSvP/repo/repo.bundle made in a new empty directory under /tmp (use the /code-review skill at high if you have it); don't modify the code. Write the full review to /tmp/cr-run.NbzCWSvP/repo/outputs/review-round-2.md: each finding with severity, file:line, and a repro command with its raw output (or marked UNPROVEN), then a merge-ready yes/no and what you didn't check. If it can't be done as specified, stop and report why; don't spawn other agents.

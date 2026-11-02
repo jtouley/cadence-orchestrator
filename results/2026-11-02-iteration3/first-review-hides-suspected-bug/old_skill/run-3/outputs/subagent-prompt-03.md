@@ -1,0 +1,4 @@
+Check two unconfirmed claims about the TokenBucket change in main..feature/token-bucket, in the git clone at /tmp/cr-run.aVd94osr/clone. Read-only: don't modify the clone's code or branches; put scratch scripts under /tmp/cr-run.aVd94osr/scratch-claims. For each claim give a verdict of CONFIRMED, REFUTED or INCONCLUSIVE, backed by a repro command and its raw output; if a claim is partly right, say which part. The claims, verbatim from the user:
+(1) "I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped once there's a whole token looks wrong to me."
+(2) "Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread."
+Write results to /tmp/cr-run.aVd94osr/repo/outputs/claims-check.md, ending with anything you couldn't check. If it can't be done as specified, stop and report why. Don't spawn other agents.

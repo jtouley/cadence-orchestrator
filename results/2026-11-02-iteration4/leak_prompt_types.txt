@@ -1,0 +1,30 @@
+first-review-hides-suspected-bug/new_skill/run-3: subagent-prompt-01.md [scribe] leaks=['priya'] :: Then: `git clone /tmp/cr-run.iO8QNVRM/repo/repo.bundle /tmp/cr-run.iO8QNVRM/review-clone`,
+first-review-hides-suspected-bug/old_skill/run-3: subagent-prompt-03.md [claim-check] leaks=['clock drifts', 'across the sleep', 'lock is held'] :: Verify, no fixes, against /tmp/cr-run.jHhtiSHa/review-clone at 3050047: (a) re-run each re
+first-review-hides-suspected-bug/old_skill/run-3: subagent-prompt-04.md [scribe] leaks=['clock drifts', 'across the sleep', 'lock is held'] :: You are the scribe. Do only these steps; report each with command output. If a step can't 
+second-round-hides-prior-findings/new_skill/run-1: subagent-prompt-01.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done', 'keyset', 'tie-breaker', 'escape_like'] :: 1. `git clone /tmp/cr-run.cKXdBVLd/repo/repo.bundle /tmp/cr-run.cKXdBVLd/clone`, fetch all
+second-round-hides-prior-findings/new_skill/run-1: subagent-prompt-02.md [fix-check] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: Fix check, no code changes: in /tmp/cr-run.cKXdBVLd/clone at 6746708 (tag round-2), confir
+second-round-hides-prior-findings/new_skill/run-1: subagent-prompt-05.md [scribe] leaks=['R1-1', 'R1-2'] :: Then, in the worktree /tmp/cr-run.cKXdBVLd/orchestration (branch orchestration, don't push
+second-round-hides-prior-findings/new_skill/run-2: subagent-prompt-01.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done', 'keyset', 'tie-breaker', 'escape_like'] :: Step 1: Local mode (no shared orchestration remote; nothing is committed or pushed). Creat
+second-round-hides-prior-findings/new_skill/run-2: subagent-prompt-02.md [fix-check] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: Fix check, no code changes: clone /tmp/cr-run.r1i6VbI3/repo/repo.bundle into a fresh direc
+second-round-hides-prior-findings/new_skill/run-2: subagent-prompt-05.md [scribe] leaks=['R1-1', 'R1-2', '1000 done', 'keyset'] :: Step 1: In /tmp/cr-run.r1i6VbI3/repo/.cadence/workstreams/search-api-round2.md, replace th
+second-round-hides-prior-findings/new_skill/run-3: subagent-prompt-01.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: 2. Write /tmp/cr-run.IUIMLbzs/repo/.cadence/workstreams/search-api-round2.md with exactly 
+second-round-hides-prior-findings/new_skill/run-3: subagent-prompt-02.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: 2. Save the text between the <<<P03 and P03>>> lines, verbatim (markers excluded), to /tmp
+second-round-hides-prior-findings/new_skill/run-3: subagent-prompt-03.md [fix-check] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: Fix check for .cadence/workstreams/search-api-round2.md@626254b4c1 (sha256 prefix of /tmp/
+second-round-hides-prior-findings/new_skill/run-3: subagent-prompt-05.md [scribe] leaks=['R1-1', 'R1-2'] :: 2. Rewrite /tmp/cr-run.IUIMLbzs/repo/.cadence/workstreams/search-api-round2.tasks.json as 
+second-round-hides-prior-findings/old_skill/run-1: subagent-prompt-01.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done', 'keyset', 'tie-breaker', 'escape_like'] :: You are the scribe for a review round. Record only what I tell you; don't review or invest
+second-round-hides-prior-findings/old_skill/run-1: subagent-prompt-02.md [fix-check] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: Fix check for task `fix-check` in /tmp/cr-run.OAMYHrAZ/orchestration/workstreams/search-ap
+second-round-hides-prior-findings/old_skill/run-1: subagent-prompt-05.md [reviewer] leaks=['R1-1', 'R1-2'] :: 2. Save the text between the lines `=====BEGIN 03=====` and `=====END 03=====` below (excl
+second-round-hides-prior-findings/old_skill/run-2: subagent-prompt-01.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done', 'keyset', 'tie-breaker', 'escape_like'] :: Do not commit outputs/ to any branch. 2. Local mode (no remote): in /tmp/cr-run.R6WyXe8w/r
+second-round-hides-prior-findings/old_skill/run-2: subagent-prompt-03.md [scribe] leaks=['R1-1', 'R1-2'] :: Fix-check task `fix-check` in /tmp/cr-run.R6WyXe8w/orchestration/workstreams/search-api-ro
+second-round-hides-prior-findings/old_skill/run-2: subagent-prompt-05.md [scribe] leaks=['R1-1', 'R1-2', '1000 done'] :: 2. In /tmp/cr-run.R6WyXe8w/repo/outputs/subagent-prompt-04.md, delete line 3 (the line sta
+second-round-hides-prior-findings/old_skill/run-3: subagent-prompt-01.md [scribe] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done', 'keyset', 'tie-breaker', 'escape_like'] :: Then, in local mode (no push, no commit), write /tmp/cr-run.tARSGHsD/repo/.cadence/workstr
+second-round-hides-prior-findings/old_skill/run-3: subagent-prompt-02.md [fix-check] leaks=['R1-1', 'R1-2', 'page boundary', 'skips a row', '1000 done'] :: Then fix-check the two findings below: clone /tmp/cr-run.tARSGHsD/repo/repo.bundle into a 
+second-round-hides-prior-findings/old_skill/run-3: subagent-prompt-04.md [scribe] leaks=['R1-1', 'R1-2', '1000 done'] :: Then update /tmp/cr-run.tARSGHsD/repo/.cadence/workstreams/search-api-round2.md and .tasks
+spec-review-hides-weak-spots/new_skill/run-1: subagent-prompt-01.md [scribe] leaks=['hunch'] :: Local mode (do not push anywhere). In /tmp/cr-run.HCTyclmI/repo, create a local branch `or
+spec-review-hides-weak-spots/new_skill/run-2: subagent-prompt-01.md [scribe] leaks=['hunch'] :: Repo: /tmp/cr-run.XgnD7cNy/repo (origin is a read-only bundle; local mode, don't push). Cr
+spec-review-hides-weak-spots/new_skill/run-3: subagent-prompt-01.md [scribe] leaks=['hunch'] :: Step 1: In /tmp/cr-run.RhEvJerb/repo, create a local branch `orchestration` (orphan or fro
+spec-review-hides-weak-spots/old_skill/run-3: subagent-prompt-01.md [scribe] leaks=['hunch'] :: 2. Write .cadence/workstreams/rfc9457-review.md with exactly this content:  --- # Workstre
+
+leaking runs by prompt type:
+  new_skill {'scribe': 7, 'fix-check': 3}
+  old_skill {'claim-check': 1, 'scribe': 5, 'fix-check': 2, 'reviewer': 1}

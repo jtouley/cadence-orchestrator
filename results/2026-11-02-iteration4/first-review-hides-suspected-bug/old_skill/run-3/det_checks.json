@@ -1,0 +1,44 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md",
+    "subagent-prompt-04.md",
+    "subagent-prompt-05.md"
+  ],
+  "transcript_agent_calls": 4,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (4): PASS - match 'main..feature/token-bucket' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'clock drifts' in subagent-prompt-03.md: \u2026ach with your own repro command and raw output: \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026; 'clock drifts' in subagent-prompt-04.md: \u2026 reproduce. User hypotheses now unwithheld: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026 | transcript Agent prompts (4): FAIL - 'clock drifts' in agent-call-3: \u2026ach with your own repro command and raw output: \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026; 'clock drifts' in agent-call-4: \u2026 reproduce. User hypotheses now unwithheld: (1) \"the refill clock drifts when the bucket is empty, the way _last only gets bumped on\u2026"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): 'across the sleep' in subagent-prompt-03.md: \u2026ce there's a whole token looks wrong\" and \"the lock is held across the sleep in acquire(), which would stall every other thread\". Write \u2026; 'lock is held' in subagent-prompt-03.md: \u2026ets bumped once there's a whole token looks wrong\" and \"the lock is held across the sleep in acquire(), which would stall every othe\u2026; 'across the sleep' in subagent-prompt-04.md: \u20261); effect is over-granting, not lag. (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\" \u2014 confi\u2026 | transcript Agent prompts (4): FAIL - 'across the sleep' in agent-call-3: \u2026ce there's a whole token looks wrong\" and \"the lock is held across the sleep in acquire(), which would stall every other thread\". Write \u2026; 'lock is held' in agent-call-3: \u2026ets bumped once there's a whole token looks wrong\" and \"the lock is held across the sleep in acquire(), which would stall every othe\u2026; 'across the sleep' in agent-call-4: \u20261); effect is over-granting, not lag. (2) \"the lock is held across the sleep in acquire(), which would stall every other thread\" \u2014 confi\u2026"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (5: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md, subagent-prompt-05.md): none of the phrases present | transcript Agent prompts (4): PASS - none of the phrases present"
+    },
+    {
+      "n": 5,
+      "kind": "judgment"
+    }
+  ]
+}

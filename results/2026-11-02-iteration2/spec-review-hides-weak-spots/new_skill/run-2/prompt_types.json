@@ -1,0 +1,33 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "weak spot",
+      "stringif",
+      "double-encod",
+      "hunch",
+      "I have a feeling",
+      "not convinced"
+    ],
+    "head": "STEP 1. Write /tmp/cr-run.h26fVoVM/repo/.cadence/workstreams/rfc9457-review.md with exactly this content:  ---8<--- # Workstream: rfc9457-review  ## Ask (user's"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "STEP 1. Write /tmp/cr-run.h26fVoVM/repo/.cadence/workstreams/rfc9457-review.tasks.json with exactly this content:  {\"tasks\": [   {\"id\": \"T0\", \"owner\": \"scribe\","
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Review main..feature/problem-details in /tmp/cr-run.h26fVoVM/repo for conformance to RFC 9457 (fetch https://www.rfc-editor.org/rfc/rfc9457), per the Ask, Scope"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "STEP 1. Write /tmp/cr-run.h26fVoVM/repo/.cadence/workstreams/rfc9457-review.tasks.json with exactly this content:  {   \"workstream\": \"rfc9457-review\",   \"tasks\""
+  }
+]

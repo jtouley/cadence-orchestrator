@@ -1,0 +1,14 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "claim-check",
+    "leaks": [],
+    "head": "2. Clone /tmp/cr-run.laoxQAel/repo/repo.bundle into the new directory /tmp/cr-run.laoxQAel/clone (git clone the bundle; make local branches `main` and `feature/"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then: /code-review high on main..feature/token-bucket (f7f6429..3050047) in /tmp/cr-run.laoxQAel/clone, against .cadence/workstreams/token-bucket-review.md@486b"
+  }
+]

@@ -1,0 +1,3 @@
+Scribe follow-up: write the tasks file in object form and save this message verbatim as outputs/subagent-prompt-02.md.
+1. Save this entire message, verbatim, to /tmp/cr-run.4ESX4jKb/repo/outputs/subagent-prompt-02.md.
+2. Write .cadence/workstreams/search-api-round-2.tasks.json as {"tasks": [ ... ]} with the same two entries (T1-fix-check owner verifier-agent, T2-blind-review owner reviewer-agent, state "assigned", evidence null, tokens null) and add "doc": "workstreams/search-api-round-2.md@sha256:5eea10765f92059f2c7f0a0fa73ec2d2fb5ca666d554f88ab5110a3b7b45496f" to each. Validate with python3 -I -m json.tool. Don't edit the .md doc. Reply with the result or why it couldn't be done.

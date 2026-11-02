@@ -1,0 +1,3 @@
+First, save this entire prompt verbatim (from "First," through the final line) to /tmp/cr-run.h26fVoVM/repo/outputs/subagent-prompt-03.md.
+
+Review main..feature/problem-details in /tmp/cr-run.h26fVoVM/repo for conformance to RFC 9457 (fetch https://www.rfc-editor.org/rfc/rfc9457), per the Ask, Scope and Decisions in .cadence/workstreams/rfc9457-review.md (sha256 5ab1b07c…); do not open any other file under .cadence/. No fixes or commits; exercise the code to prove each finding (cite RFC section, file:line, repro command with its actual output), list what you could not check, and write the full report to /tmp/cr-run.h26fVoVM/repo/outputs/review-rfc9457.md. If something can't be done as specified, stop and report why.

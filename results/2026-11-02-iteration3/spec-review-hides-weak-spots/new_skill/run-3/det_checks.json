@@ -1,0 +1,49 @@
+{
+  "saved": [
+    "subagent-prompt-01.md",
+    "subagent-prompt-02.md",
+    "subagent-prompt-03.md"
+  ],
+  "transcript_agent_calls": 2,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'rfc9457' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'main..feature/problem-details' in agent-call-1"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]"
+    },
+    {
+      "n": 5,
+      "kind": "deterministic",
+      "passed": false,
+      "passed_transcript_scan": false,
+      "evidence": "saved prompts (3: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md): 'hunch' in subagent-prompt-01.md: \u2026m: problem-details-rfc9457  ## Ask (user's words, verbatim; hunches held back) \"We're switching our API errors over to Proble\u2026; 'hunch' in subagent-prompt-02.md: \u2026\":[],\"left_out_accepted_by\":null,\"tokens\":null},     {\"id\":\"hunch-check-1\",\"owner\":\"hunch-checker\",\"doc_sha\":null,\"state\":\"as\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (claim check); subagent-prompt-03.md: in (reviewer prompt)] | transcript Agent prompts (2): FAIL - 'hunch' in agent-call-1: \u2026m: problem-details-rfc9457  ## Ask (user's words, verbatim; hunches held back) \"We're switching our API errors over to Proble\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]"
+    },
+    {
+      "n": 6,
+      "kind": "judgment"
+    }
+  ]
+}

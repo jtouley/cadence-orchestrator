@@ -1,0 +1,9 @@
+c17b0a8 (orchestration) Mark review-rfc9457 done; add hunch-check task
+3ce08e2 Add notes checking user hunches against problem-details review
+d936ebf Add RFC 9457 conformance review for problem-details
+9b1a04e Add problem-details-review task file
+961c559 Add problem-details-review workstream doc
+523c504 (HEAD -> feature/problem-details) eval setup
+5efb782 (origin/feature/problem-details, origin/HEAD) Route error_response through problem(); tests
+b954349 Add problem() and validation_problem() helpers
+7ae6e38 (origin/main, main) Basic JSON error responses

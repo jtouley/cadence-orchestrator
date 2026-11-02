@@ -1,0 +1,1 @@
+Yes, my format was wrong. Write the tasks file as {"workstream":"rfc9457-review","tasks":[{"id":"review-1","owner":"reviewer-agent","state":"assigned","evidence":null,"tokens":null}]} and commit both files on `orchestration`. Also save the full text of THIS message, verbatim, to /tmp/cr-run.8fYtjgXe/repo/outputs/subagent-prompt-02.md. Reply with only the commit SHA.

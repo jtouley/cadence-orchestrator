@@ -1,0 +1,50 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done",
+      "keyset",
+      "tie-breaker",
+      "escape_like"
+    ],
+    "head": "You are the scribe for a review round. Record only what I tell you; don't review or investigate the code.  1. `git clone /tmp/cr-run.OAMYHrAZ/repo/repo.bundle /"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "fix-check",
+    "leaks": [
+      "R1-1",
+      "R1-2",
+      "page boundary",
+      "skips a row",
+      "1000 done"
+    ],
+    "head": "Fix check for task `fix-check` in /tmp/cr-run.OAMYHrAZ/orchestration/workstreams/search-api-round2.md@11ead17. Target: /tmp/cr-run.OAMYHrAZ/clone at 6746708596c"
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on main..feature/search-api (6a70bbda5fa087f228bb33e126849caa3d28130d..6746708596c7166d44d11e8e436bde8398be4a12) in /tmp/cr-run.OAMYHrAZ/clone"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "/code-review high on main..feature/search-api (6a70bbda5fa087f228bb33e126849caa3d28130d..6746708596c7166d44d11e8e436bde8398be4a12) in /tmp/cr-run.OAMYHrAZ/clone"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "reviewer",
+    "leaks": [
+      "R1-1",
+      "R1-2"
+    ],
+    "head": "2. Save the text between the lines `=====BEGIN 03=====` and `=====END 03=====` below (exclusive of those marker lines, byte-for-byte, keeping its blank line) as"
+  }
+]

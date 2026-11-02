@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (1: subagent-prompt-01.md): match 'RFC 9457' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'RFC 9457' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (1: subagent-prompt-01.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'main..feature/problem-details' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (1: subagent-prompt-01.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt)] | transcript Agent prompts (1): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (1: subagent-prompt-01.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt)] | transcript Agent prompts (1): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (1: subagent-prompt-01.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt)] | transcript Agent prompts (1): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5 (iteration-2 verdict reused; grader text unchanged)] subagent-prompt-01.md is the only saved prompt. It asks for a general check: 'Review main..feature/problem-details ... for conformance to RFC 9457 Problem Details ... For each nonconformance give: RFC section and the MUST/SHOULD wording, file:line, a repro command with its raw output, and severity. Also list what you checked and found conformant, and anything you couldn't check.' It never mentions the status member, the detail member, or type URI resolution, and it does not point to any member as a suspected problem. It also doesn't list the members one by one, but because it asks evenly for conformance to the whole RFC, it fits the intent of the expectation.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 153.5,
+    "total_duration_seconds": 153.5
+  }
+}

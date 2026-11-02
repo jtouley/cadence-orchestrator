@@ -1,0 +1,49 @@
+[
+  {
+    "file": "subagent-prompt-01.md",
+    "type": "scribe",
+    "leaks": [
+      "clock drifts",
+      "across the sleep",
+      "lock is held",
+      "priya"
+    ],
+    "head": "1. Clone /tmp/cr-run.IX6cKBq7/repo/repo.bundle into a new directory /tmp/cr-run.IX6cKBq7/clone (git clone the bundle; make sure local branches `main` and `featu"
+  },
+  {
+    "file": "subagent-prompt-02.md",
+    "type": "other",
+    "leaks": [],
+    "head": "Report the orchestration commit SHA and anything skipped."
+  },
+  {
+    "file": "subagent-prompt-03.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then: (a) commit token-bucket-review.md alone on orchestration (same message and trailer as before) and note its SHA; (b) write token-bucket-review.tasks.json a"
+  },
+  {
+    "file": "subagent-prompt-04.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then do a /code-review of main..feature/token-bucket (f7f6429..3050047) in /tmp/cr-run.IX6cKBq7/clone against .cadence/workstreams/token-bucket-review.md@b6d687"
+  },
+  {
+    "file": "subagent-prompt-05.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then review commits f7f6429..3050047 of the git repo at /tmp/cr-run.IX6cKBq7/clone for correctness as a thread-safe token-bucket rate limiter, working only from"
+  },
+  {
+    "file": "subagent-prompt-06.md",
+    "type": "reviewer",
+    "leaks": [],
+    "head": "Then verify the findings in /tmp/cr-run.IX6cKBq7/repo/outputs/review.md: re-export `git archive 3050047` from /tmp/cr-run.IX6cKBq7/clone into a fresh dir, rerun"
+  },
+  {
+    "file": "subagent-prompt-07.md",
+    "type": "scribe",
+    "leaks": [],
+    "head": "Then, on branch orchestration in /tmp/cr-run.IX6cKBq7/clone, commit two updates (trailer \"Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\"). (1) In .cad"
+  }
+]

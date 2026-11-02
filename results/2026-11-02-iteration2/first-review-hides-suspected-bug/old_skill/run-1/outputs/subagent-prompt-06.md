@@ -1,0 +1,1 @@
+First save this entire prompt verbatim to /tmp/cr-run.sgCR8FiU/repo/outputs/subagent-prompt-06.md. Then wait (bash loop, up to 9 minutes, checking every 10s) until /tmp/cr-run.sgCR8FiU/repo/outputs/review.md exists and hasn't changed for 30s; reply only "ready" or "timed out". Don't read or edit anything else.

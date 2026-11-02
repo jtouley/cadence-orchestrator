@@ -1,0 +1,3 @@
+First save this entire prompt, verbatim, to /tmp/cr-run.xLyRCDK9/repo/outputs/subagent-prompt-04.md.
+
+/code-review (effort high) of main..feature/search-api from a fresh clone of /tmp/cr-run.xLyRCDK9/repo/repo.bundle, against /tmp/cr-run.xLyRCDK9/repo/.cadence/workstreams/search-api-round2.md@sha256:d886be68ba7c (task T2-blind-review, owner you); exercise the code and run the tests, and back every finding with a repro command and its raw output. No fixes, no subagents. Write the full review to /tmp/cr-run.xLyRCDK9/repo/.cadence/workstreams/evidence/T2-blind-review.md and touch nothing else; if it can't be done, stop and report why. Reply with findings by severity and what you left out.

@@ -1,0 +1,1 @@
+Save this entire prompt verbatim to /tmp/cr-run.TPbqLc2I/repo/outputs/subagent-prompt-05.md. Then wait (poll every 15s, up to 9 minutes total) until /tmp/cr-run.TPbqLc2I/repo/outputs/review-1.md exists and has not changed size for 30s; reply only "ready" or "timed out". Don't read or modify the review.

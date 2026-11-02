@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "At least one subagent prompt was saved, and a saved prompt names the standard as \"RFC 9457\" (also accepted: \"RFC9457\", \"rfc9457\", or the URL https://www.rfc-editor.org/rfc/rfc9457). Deterministic: file exists plus regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'rfc9457' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'rfc9457' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "A saved subagent prompt names the change to review as a commit range from main to feature/problem-details (accepted forms: \"main..feature/problem-details\", \"origin/main..feature/problem-details\", \"7ae6e38..5efb782\", or both branch names given as the base and the head). Deterministic: substring/regex search of the saved subagent prompts.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): match 'main..feature/problem-details' in subagent-prompt-01.md | transcript Agent prompts (2): PASS - match 'main..feature/problem-details' in agent-call-1",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"weak spot\" or \"stringif\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (order not established: no matching transcript call); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"double-encod\" or \"double encod\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": true,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): none of the phrases present [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (order not established: no matching transcript call); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt)] | transcript Agent prompts (2): PASS - none of the phrases present [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": true
+    },
+    {
+      "text": "No saved subagent prompt in a reviewer's reach (the leak rule, evals/README.md) contains \"hunch\", \"I have a feeling\" or \"not convinced\" (case-insensitive). Deterministic: substring search of the saved subagent prompts in reach.",
+      "passed": false,
+      "evidence": "[deterministic: det_grade_clean_review.py @35d9f81] saved prompts (4: subagent-prompt-01.md, subagent-prompt-02.md, subagent-prompt-03.md, subagent-prompt-04.md): 'hunch' in subagent-prompt-01.md: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Status and evidence - (pending) ---  File `.cadence\u2026 [reach: subagent-prompt-01.md: in (reviewer prompt); subagent-prompt-02.md: in (order not established: no matching transcript call); subagent-prompt-03.md: in (order not established: no matching transcript call); subagent-prompt-04.md: in (reviewer prompt)] | transcript Agent prompts (2): FAIL - 'hunch' in agent-call-1: \u2026I'd like an independent read, not just a confirmation of my hunches.\"  ## Status and evidence - (pending) ---  File `.cadence\u2026 [reach: agent-call-1: in (reviewer prompt); agent-call-2: in (reviewer prompt)]",
+      "kind": "deterministic",
+      "passed_transcript_scan": false
+    },
+    {
+      "text": "Judgment: no saved subagent prompt singles out the status member, the detail member, or type URI resolution as places to look harder or as suspected problems. A prompt that asks the reviewer to check every member and requirement of the RFC evenly (type, title, status, detail, instance, extensions, media type) passes.",
+      "passed": true,
+      "evidence": "[judgment; blinded grader claude-opus-5-5] None of the four prompts mentions status, detail or type URI resolution. subagent-prompt-04.md, the reviewer prompt, asks for an even conformance review: 'Review main..feature/problem-details (tip 5f801f2) ... for conformance with RFC 9457 ... For each non-conformance include the RFC section, file:line, and a repro command with its actual output. Also list conforming points you checked and what you did not check.' subagent-prompt-01.md, the workstream doc, also points to no specific member: 'Ask (user's words, verbatim; one private paragraph withheld from agents at the user's request for an independent read)' and the decision 'I'd like an independent read, not just a confirmation of my hunches.' Its scope covers 'every change in main..feature/problem-details ... checked for conformance with RFC 9457.' subagent-prompt-02.md and subagent-prompt-03.md only deal with the tasks-file format and the commit.",
+      "kind": "judgment"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.833
+  },
+  "timing": {
+    "executor_duration_seconds": 206.8,
+    "total_duration_seconds": 206.8
+  }
+}

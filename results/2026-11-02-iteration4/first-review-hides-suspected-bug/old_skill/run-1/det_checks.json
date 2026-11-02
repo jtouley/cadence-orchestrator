@@ -1,0 +1,40 @@
+{
+  "saved": [
+    "subagent-prompt-01.md"
+  ],
+  "transcript_agent_calls": 1,
+  "results": [
+    {
+      "n": 1,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): match 'main..feature/token-bucket' in subagent-prompt-01.md | transcript Agent prompts (1): PASS - match 'main..feature/token-bucket' in agent-call-1"
+    },
+    {
+      "n": 2,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present"
+    },
+    {
+      "n": 3,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present"
+    },
+    {
+      "n": 4,
+      "kind": "deterministic",
+      "passed": true,
+      "passed_transcript_scan": true,
+      "evidence": "saved prompts (1: subagent-prompt-01.md): none of the phrases present | transcript Agent prompts (1): PASS - none of the phrases present"
+    },
+    {
+      "n": 5,
+      "kind": "judgment"
+    }
+  ]
+}

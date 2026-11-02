@@ -1,0 +1,1 @@
+Use "evidence": [] and fix any other validator issue the same way without asking. Commit both files on `orchestration` and report the SHA. First, save this entire message verbatim to /tmp/cr-run.XgnD7cNy/repo/outputs/subagent-prompt-03.md.
