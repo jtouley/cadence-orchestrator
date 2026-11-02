@@ -2,9 +2,19 @@
 
 Each workstream has two files on the `orchestration` branch, written by the scribe agent:
 
-- `workstreams/<slug>.md`: the ask (verbatim), scope, the user's decisions (verbatim, dated), status and links
-  to evidence. Prose, for people.
+- `workstreams/<slug>.md`: the ask (verbatim, with each of the user's hunches replaced by `[hunch held back]`),
+  scope, the user's decisions (verbatim, dated), status and links to evidence. Prose, for people.
 - `workstreams/<slug>.tasks.json`: task status, for agents and for checking mechanically.
+
+The user's hunches are in neither file, nor in any other file or prompt. Reviewers read the doc, and every
+agent's prompt can end up in what a reviewer reads, so the hunches stay with the orchestrator. After the
+reviews, it tells the user which hunches the reviews didn't cover, and the user decides what happens next. For
+"Let me mark a bag finished from its detail screen. I think the finish button is hidden behind the keyboard on
+small phones.", the doc's Ask reads:
+
+```markdown
+"Let me mark a bag finished from its detail screen. [hunch held back]"
+```
 
 ## tasks.json
 

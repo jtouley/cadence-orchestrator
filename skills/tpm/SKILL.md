@@ -47,7 +47,11 @@ similar, ADRs, the workstream docs) and for checking the artifacts agents hand b
 Chat relays get lost, paraphrased and truncated. Keep the shared context in written docs on a central branch on
 the remote, default name `orchestration`, one file per workstream (`workstreams/<slug>.md`). Each holds:
 
-- **Ask**: the user's words, verbatim.
+- **Ask**: the user's words, verbatim, except their hunches (unconfirmed suspected causes or weak spots), each
+  replaced by `[hunch held back]`. Keep the hunches to yourself and never write them into any prompt, the
+  scribe's, a setup or claim check's included: every agent's words can reach a reviewer, and a reviewer who
+  knows the suspicion checks it and stops looking. Findings from an earlier review round aren't hunches; they
+  go to builders and fix checks as step 5 says.
 - **Scope**: in, out, target repo and branch, what "done" means, and where to stop (e.g. "PR opened, not
   merged"). Point to the written definition the work is judged against (spec, a section of AGENTS.md or
   CLAUDE.md, guide). Add a **Deployed when:** line: where this change counts as deployed (npm publish, merged to
@@ -146,6 +150,8 @@ unwatched on a shared message board. These rules prevent each of those:
    verifier gets each blocker verbatim with its repro command and confirms it no longer reproduces (like a
    builder it sees the findings, and it judges only those), and a blind review of the new commit range. Stop
    after two or three rounds, then hand to the user to say "merge it".
+   Once the reviews are in, compare them with the hunches you held back and tell the user which ones the
+   reviews didn't cover. What to do about those is the user's call; if they want one checked, that's a new ask.
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the

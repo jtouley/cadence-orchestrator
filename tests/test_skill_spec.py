@@ -95,3 +95,17 @@ def test_skill_version_matches_the_package_version():
     readme = open(os.path.join(ROOT, "README.md")).read()
     for stated in re.findall(r"\bVersion (\d+\.\d+\.\d+)", readme):
         assert stated == version, f"README says Version {stated}, package.json says {version}"
+
+
+def test_user_hunches_stay_with_the_orchestrator():
+    # Hunches are held back from the doc and every prompt; after the reviews the user hears which went uncovered.
+    skill = " ".join(open(os.path.join(SKILL_DIR, "SKILL.md")).read().split())
+    workstream = " ".join(open(os.path.join(SKILL_DIR, "references", "workstream.md")).read().split())
+    for text in (skill, workstream):
+        assert "[hunch held back]" in text
+        assert ".notes.md" not in text and "Notes (not for reviewers)" not in text
+    assert "never write them into any prompt" in skill
+    assert "tell the user which ones the reviews didn't cover" in skill
+    # the PR #11 reviewer rule is unchanged
+    assert "compliance against the pinned doc, which the PR description cites" in skill
+    assert "Builders fixing blockers get the findings verbatim." in skill
