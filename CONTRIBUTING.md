@@ -35,8 +35,8 @@ say which version broke it. The release that fixes it lists the fix under `### F
 
    ```sh
    git switch main && git pull
-   git tag -a v0.1.4 -m "v0.1.4"
-   git push origin v0.1.4
+   git tag -a v0.1.5 -m "v0.1.5"
+   git push origin v0.1.5
    ```
 
 3. `.github/workflows/release.yml` runs two jobs:

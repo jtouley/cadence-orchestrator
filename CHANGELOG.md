@@ -6,6 +6,8 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+## 0.1.5
+
 - Reviewer prompts get no out-of-scope line (parallel reviewers may each own a slice that together covers the whole
   change), and the quality pass always runs over everything under review; the full rule lives in step 5.
 - Evals: record the blind-notes results in `evals/README.md`: two designs for keeping hunches from reviewers,

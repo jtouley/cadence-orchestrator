@@ -6,7 +6,7 @@ compatibility: Works as instructions in any Agent Skills client. The optional gu
 metadata:
   author: jtouley
   repository: https://github.com/jtouley/cadence-orchestrator
-  version: "0.1.4"
+  version: "0.1.5"
 ---
 
 # Technical program manager
