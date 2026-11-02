@@ -104,8 +104,10 @@ The wording tests err toward the kinds that count: a notes prompt that says "che
   - (b) **it can't reach them in time:** it was dispatched after every reviewer and claim-check prompt in the run
     had finished, and that order is established from the transcript.
 
-A fix check never counts, whatever it holds or wherever it writes: fix checks may carry prior findings. (The
-second-round judgment grader #06 still fails a fix check that describes how the fixes work.)
+A fix check never counts, whatever it holds or wherever it writes: fix checks may carry the prior findings and
+their repros. **One exception:** they may not carry a description of how the fixes work. Second-round grader 05
+(no "keyset", "tie-breaker" or "escape_like") reads every fix check as well as the prompts in reach, so a fix check
+that holds one of those fails it. (Judgment grader 06 also fails a fix check that describes the fixes.)
 
 So a prompt that writes elsewhere, such as a notes file no reviewer prompt names, and runs after the reviewers and
 claim checks are done, doesn't count. The same prompt dispatched before a reviewer finished, or one whose order
@@ -278,7 +280,8 @@ with `--legacy`.
   current step 5 (repro inputs, a fix-check prompt kind, a check that the fix check gets each finding), and the
   grader was tightened: a check over no prompts of its kind fails, a prompt that combines a fix check with a review
   counts as a review, and the fix description is checked in every prompt. Later the leak checks moved to the leak
-  rule above (a phrase counts only in a prompt that could steer a reviewer, and no longer in a fix check). The
+  rule above (a phrase counts only in a prompt that could steer a reviewer, and in a fix check only for the fix
+  description). The
   current graders give 14 deterministic checks per run (42 per arm) and would score these runs differently; they
   weren't re-scored. The
   second-round case was co-written after the skill change, so `cases.csv` marks it `author_read_skill: yes`.

@@ -16,7 +16,8 @@ rate, rework and recovery time.
   in train.
 - Evals: the clean-review grader's leak checks follow a leak rule (`evals/README.md`): a planted phrase counts in
   reviewer and claim-check prompts, and in any other prompt except a fix check unless the transcript shows it was
-  dispatched after every reviewer and claim check finished and none of them names what it writes.
+  dispatched after every reviewer and claim check finished and none of them names what it writes. The
+  second-round check for a fix description still reads fix checks too.
 
 ## 0.1.4
 

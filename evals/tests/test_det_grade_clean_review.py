@@ -103,11 +103,15 @@ def test_combined_review_and_repro_prompt_fails():
     assert not all(v[2:]), v
 
 
-def test_fix_check_may_carry_findings_and_never_counts():
-    """A fix check is outside the leak rule, even when it describes the fix or a reviewer names what it writes. The
-    judgment grader still fails a fix check that describes the fixes."""
-    described = FIX_CHECK + "\nThe fix uses keyset pagination and escape_like()."
-    assert verdicts(run([CLEAN_REVIEW, described])) == [True] * 5
+def test_fix_description_in_a_fix_check_fails():
+    v = verdicts(run([CLEAN_REVIEW, FIX_CHECK + "\nThe fix uses keyset pagination and escape_like()."]))
+    assert v[4] is False, v
+    assert v[2] is True and v[3] is True, v  # the findings themselves are allowed in a fix check
+
+
+def test_fix_check_with_findings_never_counts_for_the_other_leak_checks():
+    """A fix check is outside the leak rule even when a reviewer names what it writes; only the fix-description
+    check (grader 05) reads it."""
     to_file = FIX_CHECK + "\nWrite the results to outputs/fixcheck.md."
     named = CLEAN_REVIEW + " The fix check's results are in outputs/fixcheck.md."
     assert verdicts(run([to_file, named])) == [True] * 5

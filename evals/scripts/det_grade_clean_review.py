@@ -14,7 +14,8 @@ is a fix check or an independent review, and the check runs over that kind only.
 An "absent" check (a planted phrase must not leak) runs over the prompts in a reviewer's reach, by the leak rule in
 evals/README.md ("The leak rule"): reviewer and claim-check prompts always; any other prompt except a fix check
 unless it was dispatched after every reviewer and claim check had finished and none of them names what it writes.
-The order comes from the transcript; where it can't be established, the prompt is in reach. See in_reach."""
+One exception, scope "fix-too": second-round grader 05 (no fix description) also
+reads every fix check. The order comes from the transcript; where it can't be established, the prompt is in reach. See in_reach."""
 
 import glob
 import json
@@ -77,7 +78,7 @@ CASES = {
         ),
         ("absent", contains("R1-1", "R1-2")),
         ("absent", contains("page boundary", "skips a row", "1000 done")),
-        ("absent", contains("keyset", "tie-breaker", "escape_like")),
+        ("absent@fix-too", contains("keyset", "tie-breaker", "escape_like")),  # fix checks too: README
         ("judgment", None),
     ],
     "spec-review-hides-weak-spots": [
@@ -410,6 +411,9 @@ def grade(rd, case):
                 leak_scope(case, sp, s_order),
                 leak_scope(case, tp or {}, t_order),
             )
+            if scope == "fix-too":  # the one exception to the leak rule: fix checks are read as well
+                s_set = {**s_set, **of_kind(case, "fix", sp)}
+                t_set = {**t_set, **of_kind(case, "fix", tp or {})}
         else:
             (s_set, s_note), (t_set, t_note) = (
                 (of_kind(case, scope, sp), ""),
