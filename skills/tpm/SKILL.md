@@ -126,18 +126,19 @@ unwatched on a shared message board. These rules prevent each of those:
    substituting something similar.
 5. **Verify independently, in two passes.** Anchor it outside the agents first: tests, CI, a repro command.
    Reviewer agents sit on top of that, never instead of it, because agents can agree with each other on a
-   wrong answer. A separate reviewer gets the artifact (PR, diff, doc), the doc and the worker's left-out list,
-   never the maker's conclusion, and exercises the result itself: runs it, reproduces the bug. First pass: spec
-   compliance, all of what the doc asked and nothing else, and whether each left-out item is acceptable;
-   dropped scope is found here or not at all. Second pass, once that passes: quality. Fix blockers, re-review
-   only the delta, stop after two or three rounds, then hand to the user to say "merge it".
+   wrong answer. A separate reviewer starts from the target (PR or commits) and finds the diff, the pinned doc
+   it references and the worker's left-out list on its own; it never sees the maker's conclusion. It exercises
+   the result itself: runs it, reproduces the bug. First pass: spec compliance, all of what the doc asked and
+   nothing else, and whether each left-out item is acceptable; dropped scope is found here or not at all. Second
+   pass, once that passes: quality. Fix blockers, re-review only the delta, stop after two or three rounds, then
+   hand to the user to say "merge it".
    The reviewer's prompt is the target, the review skill or verb, and where the result goes:
    `/code-review on PR #42 and comment the full review to GitHub.` Name a standard only when the review is
    against something other than the repo's own code and docs (`... against https://agentskills.io/specification`).
    Leave out suspected issues, focus areas, what a fix does, earlier findings and your own conclusions: a
    reviewer told where to look confirms what it was pointed at and misses the rest, so its result stops being
-   independent evidence. A second round gets only the new commit range. Builders are the opposite: they get the
-   findings verbatim.
+   independent evidence. A second round gets the PR again or just the new commit range. Builders are the
+   opposite: they get the findings verbatim.
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the
