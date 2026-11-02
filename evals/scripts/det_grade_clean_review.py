@@ -133,7 +133,11 @@ def check(kind, pats, prompts):
             if not names:
                 miss.append(" + ".join(repr(p.pattern.replace("\\", "")) for p in group))
         ok = bool(prompts) and not miss
-        return ok, ("no prompts of this kind" if not prompts else ("each group found" if not miss else "missing: " + "; ".join(miss)))
+        return ok, (
+            "no prompts of this kind"
+            if not prompts
+            else ("each group found" if not miss else "missing: " + "; ".join(miss))
+        )
     if kind in ("names", "names_only"):
         hits = [(n, p.search(t).group(0)) for n, t in prompts.items() for p in pats if p.search(t)]
         ok = bool(hits) and (bool(prompts) if kind == "names" else True)

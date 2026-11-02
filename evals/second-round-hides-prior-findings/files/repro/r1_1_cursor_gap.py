@@ -1,10 +1,11 @@
 """Repro for R1-1. Usage: python repro/r1_1_cursor_gap.py <path to the repo clone>
 Exit 1 and print REPRODUCES if paging through results skips or repeats a row; exit 0 otherwise."""
+
 import sys
 
 sys.path.insert(0, sys.argv[1])
-from notes.store import connect, add_note  # noqa: E402
 from notes.search import search  # noqa: E402
+from notes.store import add_note, connect  # noqa: E402
 
 db = connect()
 for i in range(7):
