@@ -67,8 +67,10 @@ Pushing the tag is the approval only if nobody else can push one or publish. Set
   npm 11.5.1 or later (the workflow pins 11.21.1), Node 22.14.0 or later and a GitHub-hosted runner.
 - **Environment** `npm-release` (Settings → Environments): add the owner as a required reviewer and limit its
   deployment tags to `v*`. It should hold no npm token.
-- **No tokens**: on npmjs.com, set the package's Publishing access to **Require two-factor authentication and
-  disallow tokens** (the trusted publisher isn't affected), and keep no `NPM_TOKEN` secret in the repository.
+- **No tokens**, only after the first trusted publish succeeds (until then a token is the only fallback): on
+  npmjs.com, set the package's Publishing access to **Require two-factor authentication and disallow tokens** (the
+  trusted publisher isn't affected), then delete the `NPM_TOKEN` secret from the `npm-release` environment (and
+  keep none in repository secrets).
 - **Tag ruleset** (Settings → Rules → Rulesets, target tags `v*`): restrict creation, update and deletion to the
   owner.
 

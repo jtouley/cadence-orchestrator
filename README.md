@@ -227,7 +227,7 @@ The hook file it merges into, such as `.claude/settings.json`, has `//` comments
 ```console
 SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)
     at JSON.parse (<anonymous>)
-    at mergeHooks (…/bin/cadence-orchestrator.mjs:76:39)
+    at mergeHooks (…/bin/cadence-orchestrator.mjs:78:39)
 ```
 
 The skill files were copied but no hooks were added, and the file is unchanged. Remove the comments and run the
@@ -256,8 +256,8 @@ list against `guard.py`. `evals/` holds behaviour cases written against one app 
 
 ## Contributing
 
-Issues and pull requests are welcome; run `pre-commit run --all-files` and `pytest` before you open one. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and pull requests are welcome; run `uv run pre-commit run --all-files` and `uv run pytest` before you open
+one. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
