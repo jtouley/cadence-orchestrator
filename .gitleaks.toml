@@ -1,0 +1,15 @@
+# gitleaks config: the default rules, plus one allowlist for eval run records.
+#
+# The orchestration branch keeps eval run records under results/. A full-history scan (CI's leaks job) flags
+# generic-api-key there on values the eval cases themselves produce: pagination cursors that a case's app encodes as
+# base64 JSON of fixture rows (e.g. {"created_at": "2026-10-01", "id": 1}), and commit SHAs from a case's repo.bundle.
+# The allowlist covers that one rule under results/ only; every other rule, and generic-api-key everywhere else,
+# still applies.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Eval run records on the orchestration branch: case fixtures and app output, not credentials"
+targetRules = ["generic-api-key"]
+paths = ['''^results/''']

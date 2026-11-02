@@ -6,6 +6,8 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+- Evals: record the blind-notes results in `evals/README.md`: two designs for keeping hunches from reviewers,
+  neither shipped.
 - Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,
   never suspected issues, focus areas, fix summaries, earlier findings or the orchestrator's conclusions. The two
   review passes differ only in the standard (spec against the pinned doc, which builders cite in the PR
