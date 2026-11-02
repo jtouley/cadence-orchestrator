@@ -142,13 +142,15 @@ function fail(message, code = 1) {
 const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
        cadence-orchestrator doctor --target <...|all> [--repo <path>]
        cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
+       cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges|npm] [--include-prereleases] [--json]
 
 Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
 \`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
+\`dora\` computes DORA's delivery metrics from git (read-only).
 \`status\` reports what's installed and whether hooks have been seen firing in a live session (default: last 24 h).`;
 
 function parseArgs(argv, mode) {
-  const opts = { repo: ".", catalog: [], hours: 24, stateDir: "" };
+  const opts = { repo: ".", catalog: [], hours: 24, stateDir: "", since: null, deploys: "tags", json: false };
   for (let i = 0; i < argv.length; i++) {
     const [flag, inline] = argv[i].split(/=(.*)/s, 2);
     const value = () => inline ?? argv[++i] ?? fail(`${flag} needs a value\n${USAGE}`, 2);
@@ -156,6 +158,14 @@ function parseArgs(argv, mode) {
     else if (flag === "--repo") opts.repo = value();
     else if (flag === "--catalog" && mode === "install") opts.catalog.push(value());
     else if (flag === "--state-dir" && mode === "status") opts.stateDir = value();
+    else if (flag === "--since" && mode === "dora") {
+      opts.since = new Date(value());
+      if (Number.isNaN(opts.since.getTime())) fail(`--since needs a date like 2026-01-31\n${USAGE}`, 2);
+    } else if (flag === "--deploys" && mode === "dora") {
+      opts.deploys = value();
+      if (!["tags", "merges", "npm"].includes(opts.deploys)) fail(`--deploys is tags, merges or npm\n${USAGE}`, 2);
+    } else if (flag === "--json" && mode === "dora") opts.json = true;
+    else if (flag === "--include-prereleases" && mode === "dora") opts.includePrereleases = true;
     else if (flag === "--hours" && mode === "status") {
       opts.hours = Number(value());
       if (!(opts.hours > 0)) fail(`--hours needs a positive number\n${USAGE}`, 2);
@@ -163,12 +173,12 @@ function parseArgs(argv, mode) {
     else if (flag === "-h" || flag === "--help") {
       console.log(USAGE);
       process.exit(0);
-    } else if (["--catalog", "--hours", "--target", "--state-dir"].includes(flag)) {
+    } else if (["--catalog", "--hours", "--target", "--state-dir", "--since", "--deploys", "--json", "--include-prereleases"].includes(flag)) {
       fail(`${mode === "install" ? "install" : mode} doesn't take ${flag}\n${USAGE}`, 2);
     } else fail(`unknown argument ${argv[i]}\n${USAGE}`, 2);
   }
-  if (mode === "status") {
-    if (opts.target) fail(`status doesn't take --target\n${USAGE}`, 2);
+  if (mode === "status" || mode === "dora") {
+    if (opts.target) fail(`${mode} doesn't take --target\n${USAGE}`, 2);
     return opts;
   }
   if (!opts.target) fail(`--target is required\n${USAGE}`, 2);
@@ -177,11 +187,17 @@ function parseArgs(argv, mode) {
 }
 
 const argv = process.argv.slice(2);
-const mode = argv[0] === "doctor" || argv[0] === "status" ? argv[0] : "install";
+const mode = ["doctor", "status", "dora"].includes(argv[0]) ? argv[0] : "install";
 const isDoctor = mode === "doctor";
 const opts = parseArgs(mode === "install" ? argv : argv.slice(1), mode);
 const repo = path.resolve(opts.repo);
 if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
+if (mode === "dora") {
+  const { dora, formatDora } = await import("./dora.mjs");
+  const report = dora(repo, { since: opts.since, deploys: opts.deploys, includePrereleases: opts.includePrereleases });
+  console.log(opts.json ? JSON.stringify(report, null, 2) : formatDora(report).join("\n"));
+  process.exit(0);
+}
 if (mode === "status") {
   const { status } = await import("./status.mjs");
   const { lines, ok } = status(repo, TARGETS, opts.hours, opts.stateDir);
