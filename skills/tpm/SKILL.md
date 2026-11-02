@@ -131,6 +131,13 @@ unwatched on a shared message board. These rules prevent each of those:
    compliance, all of what the doc asked and nothing else, and whether each left-out item is acceptable;
    dropped scope is found here or not at all. Second pass, once that passes: quality. Fix blockers, re-review
    only the delta, stop after two or three rounds, then hand to the user to say "merge it".
+   The reviewer's prompt holds only the target (PR or commit range), the standard (the pinned doc, spec, the
+   repo's own docs), what's out (no fixes, no approval), that "nothing worth flagging" is a valid result, and
+   the output format. Leave out suspected issues, focus areas, what a fix does, earlier findings and your own
+   conclusions: a reviewer told where to look confirms what it was pointed at and misses the rest, so its result
+   stops being independent evidence. A second round gets only the new commit range. Builders are the opposite:
+   they get the findings verbatim. For example: `Review 3f2a1c9..8b41e07 against workstreams/finish-bag.md@3f2a1c9,
+   no fixes or approvals; "nothing worth flagging" is valid. PR comment: severity, file:line, evidence.`
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the
