@@ -45,6 +45,10 @@ Each workstream has two files on the `orchestration` branch, written by the scri
 - `left_out`: what the worker says it skipped or didn't finish (an empty list means "nothing"). The reviewer
   judges it; `left_out_accepted_by` names that reviewer. **`done` needs evidence and an accepted `left_out`.**
 - `tokens`: total tokens the delegated agent reported spending, or `null` if the platform doesn't report it.
+- Optional, for measuring delivery (`npx cadence-orchestrator dora`): `committed_at`, `merged_at`, `deployed_at`
+  (ISO 8601 with a timezone, e.g. `2026-11-02T09:30:00Z`, in that order; "deployed" as the doc's **Deployed
+  when:** line defines it), and `kind`: `planned` or `fix`. A `fix` names what it fixes in `fixes`: the version
+  it repairs (`"0.1.0"`) or a task id, and optionally `fixed_in`: the version that shipped the fix.
 
 The scribe rewrites the whole file on each update (no hand-merged fragments) and validates it as JSON before
 pushing.

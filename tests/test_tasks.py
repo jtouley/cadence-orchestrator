@@ -385,3 +385,53 @@ def test_task_file_writes_the_guard_cant_model_are_denied():
         project,
     )
     assert json.loads(out.stdout)["permissionDecision"] == "deny"  # can't read the current file
+
+
+# ------------------------------------------------------------- delivery fields (DORA)
+
+
+def test_delivery_times_and_kind_are_validated():
+    base = dict(CLAIMED, doc_sha="x")
+    good = dict(
+        base,
+        committed_at="2026-11-01T10:00:00Z",
+        merged_at="2026-11-01T11:00:00+00:00",
+        deployed_at="2026-11-02T09:00:00Z",
+        kind="fix",
+        fixes="0.1.0",
+    )
+    assert tasks_check.validate(doc(good)) == []
+    assert tasks_check.validate(doc(dict(base, kind="planned"))) == []  # all optional
+    cases = {
+        "merged_at is before committed_at": dict(good, merged_at="2026-10-31T00:00:00Z"),
+        "deployed_at is before merged_at": dict(good, deployed_at="2026-11-01T10:30:00Z"),
+        "deployed_at must be an ISO 8601 time": dict(good, deployed_at="yesterday"),
+        "committed_at must be an ISO 8601 time with a timezone": dict(
+            good, committed_at="2026-11-01T10:00:00"
+        ),
+        "kind must be one of": dict(good, kind="bug"),
+        "a fix must say what it fixes": dict(good, fixes=""),
+    }
+    for message, task in cases.items():
+        errors = tasks_check.validate(doc(task))
+        assert any(message in e for e in errors), (message, errors)
+    # Order is checked across whichever times are present.
+    assert tasks_check.validate(
+        doc(dict(base, committed_at="2026-11-02T00:00:00Z", deployed_at="2026-11-01T00:00:00Z"))
+    )
+
+
+def test_fixes_must_be_a_version_or_another_task_in_the_file():
+    fix = dict(CLAIMED, id="fix-1", kind="fix")
+    for ok in ("0.1.0", "v0.2.0", "1.0.0-rc.1", "review"):  # "review" is CLAIMED's id
+        assert tasks_check.validate(doc(CLAIMED, dict(fix, fixes=ok))) == [], ok
+    for bad in ("0.1", "latest", "missing-task", "fix-1", None, 3):  # fix-1 would fix itself
+        errors = tasks_check.validate(doc(CLAIMED, dict(fix, fixes=bad)))
+        assert any("a fix must say what it fixes" in e for e in errors), bad
+
+
+def test_fixed_in_must_be_a_version():
+    fix = dict(CLAIMED, id="fix-1", kind="fix", fixes="0.1.0")
+    assert tasks_check.validate(doc(dict(fix, fixed_in="0.1.1"))) == []
+    for bad in ("next", "0.1", 5):
+        assert any("fixed_in must be" in e for e in tasks_check.validate(doc(dict(fix, fixed_in=bad)))), bad

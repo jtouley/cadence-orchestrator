@@ -13,9 +13,32 @@ CLI: tasks_check.py FILE...   exit 0 if every file is valid, 1 otherwise.
 from __future__ import annotations
 
 import json
+import re
 import sys
+from datetime import datetime
 
 STATES = {"assigned", "claimed", "blocked", "done"}
+KINDS = {"planned", "fix"}
+TIMES = ("committed_at", "merged_at", "deployed_at")  # optional, in this order
+
+
+# The one ISO 8601 rule for task times, shared with bin/dora.mjs (a test keeps the two patterns identical):
+# extended format, seconds optional, fraction of 3 or 6 digits, and a timezone (Z or +hh:mm).
+ISO8601 = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3}|\.\d{6})?)?(Z|[+-]\d{2}:\d{2})$"
+# A version as `fixes` names it, shared with bin/dora.mjs too.
+SEMVER = r"^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
+
+
+def parse_time(value):
+    """An ISO 8601 timestamp matching ISO8601, as an aware datetime, or None."""
+    if not isinstance(value, str) or not re.match(ISO8601, value):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 SUFFIX = ".tasks.json"
 
 
@@ -43,6 +66,40 @@ def validate(data) -> list[str]:
             errors.append(f"{where}: state must be one of {sorted(STATES)}, not {state!r}")
         if "evidence" in task and not isinstance(task["evidence"], list):
             errors.append(f"{where}: evidence must be a list")
+        times = []
+        for key in TIMES:
+            if key in task and task[key] is not None:
+                parsed = parse_time(task[key])
+                if parsed is None:
+                    errors.append(
+                        f"{where}: {key} must be an ISO 8601 time with a timezone, not {task[key]!r}"
+                    )
+                else:
+                    times.append((key, parsed))
+        for (a, ta), (b, tb) in zip(times, times[1:], strict=False):
+            if tb < ta:
+                errors.append(f"{where}: {b} is before {a}")
+        if "kind" in task and task["kind"] not in KINDS:
+            errors.append(f"{where}: kind must be one of {sorted(KINDS)}, not {task['kind']!r}")
+        if "fixed_in" in task and not (
+            isinstance(task["fixed_in"], str) and re.match(SEMVER, task["fixed_in"])
+        ):
+            errors.append(
+                f"{where}: fixed_in must be the version that shipped the fix, like 0.1.1, not {task['fixed_in']!r}"
+            )
+        if "fixed_in" in task and not (
+            isinstance(task["fixed_in"], str) and re.match(SEMVER, task["fixed_in"])
+        ):
+            errors.append(
+                f"{where}: fixed_in must be the version that shipped the fix, like 0.1.1, not {task['fixed_in']!r}"
+            )
+        if task.get("kind") == "fix":
+            fixes = task.get("fixes")
+            ids = {t.get("id") for t in data["tasks"] if isinstance(t, dict)}
+            if not (isinstance(fixes, str) and (re.match(SEMVER, fixes) or (fixes in ids and fixes != tid))):
+                errors.append(
+                    f"{where}: a fix must say what it fixes: a version like 0.1.0 or another task's id, not {fixes!r}"
+                )
         if state == "done":
             if not task.get("evidence"):
                 errors.append(f"{where}: done without evidence")

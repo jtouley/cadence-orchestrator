@@ -164,6 +164,28 @@ catches those. On Claude Code a Stop hook also blocks the orchestrator once per 
 are still running; the next attempt goes through. The exact rules are in
 [`skills/tpm/references/guard.md`](skills/tpm/references/guard.md).
 
+## Measuring Delivery (DORA)
+
+`npx cadence-orchestrator dora` reports [DORA's five delivery metrics](https://dora.dev/guides/dora-metrics/) for a
+repo, read-only, with each metric's definition, source and sample size:
+
+- **Deploys** are release tags `v*` by default, changes landing on `main` with `--deploys merges`, or versions
+  published to npm with `--deploys npm`. Prefer `npm` for a published package (it asks the registry, so it's
+  opt-in): tag mode counts a tag even when its release failed, and a lightweight tag only has its commit's date.
+  Prereleases and `0.0.0` placeholders aren't production deploys and don't count (`--include-prereleases` counts
+  prereleases).
+- **Deployment frequency** is deploys per week from `--since` (or the first deploy) to now, plus the median
+  interval between deploys.
+- **Change lead time** runs from each commit to the first deploy that contains it, counted once. Commits from before
+  the window are the baseline and aren't measured. It uses the committer date, which a rebase or squash resets.
+- **Change fail rate, rework and recovery time** come only from explicit records: CHANGELOG
+  `### Fixed (regression from X.Y.Z)` entries and tasks.json tasks with `kind: "fix"` (matched to the release in
+  `fixed_in`, or the latest deploy at or before `deployed_at`, within 48 h). Without them it prints
+  "not measurable" rather than guess.
+
+`--since 2026-10-01` limits the window and `--json` gives machine-readable output. It warns when there are fewer than
+about 10 deploys, since a handful of releases says little.
+
 ## Threat Model
 
 The guard is not a sandbox. It keeps a cooperative orchestrator from drifting into doing the work, nothing more.
@@ -214,9 +236,9 @@ The install finishes, but the guard can't run until `python3` is installed. Mean
 ## Development
 
 ```sh
-pip install pre-commit==4.7.0 pytest==9.1.1    # the versions CI uses
-pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
-pytest
+uv sync    # dev tools from uv.lock, the versions CI uses (users of the kit never need uv)
+uv run pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
+uv run pytest
 ```
 
 The pre-commit hooks also block email addresses, account UUIDs and session logs (`checks/leak_check.py`) and

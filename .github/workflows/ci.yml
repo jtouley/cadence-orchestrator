@@ -13,15 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.13"
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-      - run: pip install pre-commit==4.7.0
+      # setup-uv's python-version sets UV_PYTHON, the one place a job picks its Python (.python-version can't move it).
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.32"
+          python-version: "3.13"
+      # uv.lock pins every dev dependency by version and hash; --locked fails if it's out of date.
+      - run: uv sync --locked --group dev
       # no-commit-to-branch guards local commits to main; CI isn't committing, so it's skipped here.
-      - run: SKIP=no-commit-to-branch pre-commit run --all-files --show-diff-on-failure
+      - run: SKIP=no-commit-to-branch uv run --locked pre-commit run --all-files --show-diff-on-failure
 
   leaks:
     runs-on: ubuntu-latest
@@ -29,13 +34,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # gitleaks scans the whole history, not just this commit
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: stable
-      - name: gitleaks over the full history (same version as the pre-commit hook)
+          persist-credentials: false
+      - name: gitleaks here is the version the pre-commit hook uses
+        run: python3 .github/scripts/check_gitleaks_version.py
+      - name: gitleaks over the full history
+        env:
+          # Release tarball, checked against this sha256 (from the release's gitleaks_8.30.1_checksums.txt).
+          # Keep GITLEAKS_VERSION equal to the gitleaks rev in .pre-commit-config.yaml (checked above).
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
         run: |
-          go install github.com/zricethezav/gitleaks/v8@v8.30.1
-          "$(go env GOPATH)/bin/gitleaks" git --redact --verbose .
+          tarball="$RUNNER_TEMP/gitleaks.tar.gz"
+          curl -sSfL -o "$tarball" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "$GITLEAKS_SHA256  $tarball" | sha256sum -c -
+          tar -xzf "$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose .
       # The leak check on tracked files runs in the pre-commit job (local leak-check hook).
       - name: Workstream task files, if any
         run: git ls-files -z 'workstreams/*.tasks.json' '**/workstreams/*.tasks.json' | xargs -0 -r python3 skills/tpm/scripts/tasks_check.py
@@ -52,19 +66,33 @@ jobs:
             node-version: "22"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: ${{ matrix.python-version }}
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
-      - run: pip install pytest==9.1.1
-      - run: pytest
+      # python-version sets UV_PYTHON for sync and run; without it `uv run` followed .python-version (3.13) and
+      # the 3.10 leg ran on 3.13.
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.32"
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --locked --group dev
+      - name: Tests run on the matrix Python
+        env:
+          WANT: ${{ matrix.python-version }}
+        run: |
+          got="$(uv run --locked python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+          echo "uv run python: $got (matrix: $WANT)"
+          [ "$got" = "$WANT" ]
+      - run: uv run --locked pytest
 
   installer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "18"
