@@ -47,18 +47,16 @@ similar, ADRs, the workstream docs) and for checking the artifacts agents hand b
 Chat relays get lost, paraphrased and truncated. Keep the shared context in written docs on a central branch on
 the remote, default name `orchestration`, one file per workstream (`workstreams/<slug>.md`). Each holds:
 
-- **Ask**: the user's words, verbatim. Any hunches in them (suspected causes, weak spots, earlier findings)
-  move, still verbatim, to Notes, with `[see Notes]` left in their place.
+- **Ask**: the user's words, verbatim, except their hunches (suspected causes, weak spots, earlier findings),
+  each replaced by `[hunch held back]`. You keep the hunches yourself and put them in no prompt, the scribe's
+  included, until the blind reviews are back (step 5): a reviewer, or an agent whose writing a reviewer reads,
+  that knows the user's suspicion checks it and stops looking.
 - **Scope**: in, out, target repo and branch, what "done" means, and where to stop (e.g. "PR opened, not
   merged"). Point to the written definition the work is judged against (spec, a section of AGENTS.md or
   CLAUDE.md, guide). Add a **Deployed when:** line: where this change counts as deployed (npm publish, merged to
   main, deploy job green), so delivery can be measured later.
 - **Decisions**: the user's decisions verbatim, dated and labeled as theirs, so a paraphrase never becomes the spec.
 - **Status and evidence**: links to PRs, PR comments, commits, and repro commands with their output.
-- **Notes (not for reviewers)**: the user's hunches, last in the doc under `## Notes (not for reviewers)`.
-  Reviewers read only Ask, Scope and Decisions, and neither the scribe nor any dispatch prompt copies Notes into
-  another agent's prompt. A reviewer who has read the user's suspicion checks that and stops looking, the same
-  leak as a pointed prompt, and the result is no longer independent.
 
 Task status lives beside it as JSON, `workstreams/<slug>.tasks.json`: one entry per task with `id`, `owner`,
 `state` (assigned, claimed, blocked, done), `evidence` and `tokens`. Several agents edit it, and models corrupt
@@ -136,8 +134,7 @@ unwatched on a shared message board. These rules prevent each of those:
    Reviewer agents sit on top of that, never instead of it, because agents can agree with each other on a
    wrong answer. A separate reviewer exercises the result itself (runs it, reproduces the bug) and never sees
    the maker's conclusion. The two passes are two prompts that differ only in the standard. First, spec
-   compliance against the pinned doc's Ask, Scope and Decisions (never its Notes), which the PR description
-   cites with the builder's left-out list:
+   compliance against the pinned doc, which the PR description cites with the builder's left-out list:
    `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
    It checks all of what the doc asked and nothing else, and whether each left-out item is acceptable; dropped
    scope is found here or not at all. Then quality: `/code-review on PR #42 and comment the full review to
@@ -152,6 +149,11 @@ unwatched on a shared message board. These rules prevent each of those:
    verifier gets each blocker verbatim with its repro command and confirms it no longer reproduces (like a
    builder it sees the findings, and it judges only those), and a blind review of the new commit range. Stop
    after two or three rounds, then hand to the user to say "merge it".
+   The user's hunches come last. Once the blind reviews are back, one agent gets the hunches verbatim, the
+   target and the review comments, checks each hunch the reviews didn't cover (reproduces it or shows it
+   doesn't hold), and records the hunches and its results in `workstreams/<slug>.notes.md`. No review prompt,
+   and no doc a reviewer is pointed to, names that file. The hunches still get tested, just not by steering the
+   reviewers.
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the

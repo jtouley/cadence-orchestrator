@@ -98,9 +98,13 @@ def test_skill_version_matches_the_package_version():
 
 
 def test_user_hunches_are_kept_away_from_reviewers():
-    # The user's suspected causes live in a section reviewers are told not to read.
+    # Hunches are held back from the doc and every prompt, then checked in a separate file after the blind reviews.
     skill = open(os.path.join(SKILL_DIR, "SKILL.md")).read()
     workstream = open(os.path.join(SKILL_DIR, "references", "workstream.md")).read()
     for text in (skill, workstream):
-        assert "## Notes (not for reviewers)" in text
-    assert "Reviewers read only Ask, Scope and Decisions" in skill
+        assert "[hunch held back]" in text
+        assert "workstreams/<slug>.notes.md" in text
+        assert "Notes (not for reviewers)" not in text  # no hunch section in the doc reviewers read
+    assert "the scribe's included" in " ".join(skill.split())
+    # the reviewer's standard is the pinned doc, which no longer holds hunches
+    assert "compliance against the pinned doc, which the PR description cites" in skill

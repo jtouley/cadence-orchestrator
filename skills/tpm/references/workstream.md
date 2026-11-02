@@ -1,30 +1,38 @@
 # Workstream files
 
-Each workstream has two files on the `orchestration` branch, written by the scribe agent:
+Each workstream has two files on the `orchestration` branch, written by the scribe agent, and sometimes a third:
 
-- `workstreams/<slug>.md`: the ask (verbatim), scope, the user's decisions (verbatim, dated), status and links
-  to evidence, then the user's hunches under `## Notes (not for reviewers)`. Prose, for people.
+- `workstreams/<slug>.md`: the ask (verbatim, with the user's hunches held back), scope, the user's decisions
+  (verbatim, dated), status and links to evidence. Prose, for people.
 - `workstreams/<slug>.tasks.json`: task status, for agents and for checking mechanically.
+- `workstreams/<slug>.notes.md`: the user's hunches and the check of each, written by the hunch-check agent
+  only after the blind reviews are back (SKILL.md, step 5). No review prompt or reviewer-facing doc names it.
 
 ## The doc
 
 ```markdown
 # Finish a bag
 ## Ask
-"Let me mark a bag finished from its detail screen. [see Notes]"
+"Let me mark a bag finished from its detail screen. [hunch held back]"
 ## Scope
 In: the detail screen. Out: the bag list. Done: PR opened, not merged. Judged against DESIGN.md#bags.
 Deployed when: merged to main.
 ## Decisions
 - 2026-11-02, user: "No undo for now."
 ## Status and evidence
-## Notes (not for reviewers)
-- From the ask, user: "I think the finish button is hidden behind the keyboard on small phones."
 ```
 
-Notes hold the user's suspected causes, weak spots and earlier findings, verbatim, so nothing they said is lost.
-Reviewers are told to read Ask, Scope and Decisions only, and nobody copies Notes into an agent's prompt: a
-reviewer who knows the user's suspicion checks that and misses the rest.
+And, once the blind reviews are back, `workstreams/finish-bag.notes.md`:
+
+```markdown
+# Finish a bag: hunches
+- From the ask, user: "I think the finish button is hidden behind the keyboard on small phones."
+  Reviews: not covered. Check: reproduced on a 375x667 viewport with the keyboard open; screenshot in PR #57.
+```
+
+The hunches stay out of the doc because every reviewer reads the doc, and out of every earlier prompt because
+the scribe's or a setup agent's words reach reviewers too. A reviewer who knows the suspicion checks that and
+misses the rest; checked afterwards, the hunch is still tested and the reviews stay independent.
 
 ## tasks.json
 
