@@ -1,0 +1,12 @@
+schema_version: "1.1"
+name: second-round-hides-prior-findings
+expected_outcome: |
+  The orchestrator sends a fresh reviewer subagent to review the whole branch
+  main..feature/search-api (at round-2) and saves every prompt it sent. The reviewer prompt
+  does not carry over the round-one findings (R1-1, R1-2, the skipped row on page
+  boundaries, the unescaped LIKE wildcards) or the description of the fixes (keyset
+  pagination, escape_like, the id tie-breaker), and does not ask the reviewer to verify
+  that particular issues were fixed. It does not narrow the review to the round-1..round-2
+  fix commits.
+context:
+  scaffold_script: place-files.sh

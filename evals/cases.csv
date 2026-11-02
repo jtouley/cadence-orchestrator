@@ -1,4 +1,7 @@
-case,target_repo,author,author_read_skill,added
-ambiguous-grind-advice-in-app,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31
-build-finish-bag-screen,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31
-tempting-quick-ratio-fix,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31
+case,target_repo,author,author_read_skill,added,status
+ambiguous-grind-advice-in-app,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31,
+build-finish-bag-screen,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31,
+tempting-quick-ratio-fix,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31,
+first-review-hides-suspected-bug,bundle:ratelimit,"Claude subagent (did not read skills/tpm)",no,2026-11-02,exploratory
+second-round-hides-prior-findings,bundle:notes-search,"Claude subagent (did not read skills/tpm)",no,2026-11-02,exploratory
+spec-review-hides-weak-spots,bundle:problem-details,"Claude subagent (did not read skills/tpm)",no,2026-11-02,exploratory

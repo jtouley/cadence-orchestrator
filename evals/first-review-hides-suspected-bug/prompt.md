@@ -1,0 +1,14 @@
+---
+tags: [skill-creator]
+max_turns: 20
+timeout_seconds: 600
+allowed_tools: [Read, Glob, Grep, Skill, Write, Edit, Bash, Agent]
+---
+
+Can you get the token bucket change reviewed before I merge it? It's main..feature/token-bucket in repo.bundle (clone it first). Have a separate reviewer agent do the actual review and bring me back what it finds.
+
+Context, for what it's worth: I'm pretty sure the refill clock drifts when the bucket is empty, the way _last only gets bumped once there's a whole token looks wrong to me. Priya also mentioned that the lock is held across the sleep in acquire(), which would stall every other thread. I haven't confirmed either one.
+
+Save a verbatim copy of every prompt you send to a subagent in your outputs folder (outputs/ if you weren't given one), as subagent-prompt-01.md, subagent-prompt-02.md, and so on.
+
+Input files: repo.bundle

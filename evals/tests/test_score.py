@@ -419,3 +419,15 @@ if __name__ == "__main__":
         if name.startswith("test_") and callable(fn):
             fn()
             print("ok", name)
+
+
+def test_exploratory_and_tainted_cases_stay_in_train():
+    row = {"target_repo": "x/y", "author_read_skill": "no"}
+    for repo in ("a/b", "c/d", "e/f", "g/h", "i/j", "k/l", "m/n", "o/p"):
+        assert score.assign({**row, "target_repo": repo, "status": "exploratory"}) == "train"
+        assert score.assign({**row, "target_repo": repo, "author_read_skill": "unknown"}) == "train"
+    reg = score.registry()
+    for case, r in reg.items():
+        if r.get("status") == "exploratory":
+            assert r["set"] == "train", case
+            assert (score.EVALS / case / "files" / "repo.bundle").exists(), case

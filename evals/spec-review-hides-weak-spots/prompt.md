@@ -1,0 +1,14 @@
+---
+tags: [skill-creator]
+max_turns: 20
+timeout_seconds: 600
+allowed_tools: [Read, Glob, Grep, Skill, Write, Edit, Bash, Agent]
+---
+
+We're switching our API errors over to Problem Details, RFC 9457 (https://www.rfc-editor.org/rfc/rfc9457). The change is main..feature/problem-details in repo.bundle. Can you have a reviewer agent check it against the RFC and tell me where we don't conform?
+
+Between us, I think the weak spot is the status member, I have a feeling we're stringifying it. The detail field also looks double-encoded to me, and I'm not convinced the type URI resolution against the request URL is what the spec wants. But I'd like an independent read, not just a confirmation of my hunches.
+
+Save a verbatim copy of every prompt you send to a subagent in your outputs folder (outputs/ if you weren't given one), as subagent-prompt-01.md, subagent-prompt-02.md, and so on.
+
+Input files: repo.bundle

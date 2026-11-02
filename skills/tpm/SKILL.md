@@ -83,8 +83,9 @@ the main thread still writes nothing, and there's no path carve-out in the guard
 The prompt is a verb or skill, a target pinned to a commit, what's out of scope, and where the result goes.
 Everything else is in the doc.
 
-- `/code-review on PR #42, not the unchanged files; push the full review to the PR as a comment.`
-- `Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR, don't merge; link it in the doc.`
+- `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
+- `Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR citing that doc@sha and what you
+  left out, don't merge; link it in the doc.`
 - `Investigate workstreams/grind-advice.md@3f2a1c9, no fixes. Add findings, with the repro command and output.`
 
 **Pin the doc**: cite it as `workstreams/<slug>.md@<sha>` and have the scribe record that SHA on the task, so a
@@ -132,19 +133,24 @@ unwatched on a shared message board. These rules prevent each of those:
    substituting something similar.
 5. **Verify independently, in two passes.** Anchor it outside the agents first: tests, CI, a repro command.
    Reviewer agents sit on top of that, never instead of it, because agents can agree with each other on a
-   wrong answer. A separate reviewer starts from the target (PR or commits) and finds on its own the diff, the
-   Ask, Scope and Decisions of the pinned doc it references, and the worker's left-out list; it never sees the
-   maker's conclusion. It exercises the result itself: runs it, reproduces the bug. First pass: spec compliance,
-   all of what the doc asked and nothing else, and whether each left-out item is acceptable; dropped scope is
-   found here or not at all. Second pass, once that passes: quality. Fix blockers, re-review only the delta,
-   stop after two or three rounds, then hand to the user to say "merge it".
-   The reviewer's prompt is the target, the review skill or verb, and where the result goes:
-   `/code-review on PR #42 and comment the full review to GitHub.` Name a standard only when the review is
-   against something other than the repo's own code and docs (`... against https://agentskills.io/specification`).
-   Leave out suspected issues, focus areas, what a fix does, earlier findings and your own conclusions: a
-   reviewer told where to look confirms what it was pointed at and misses the rest, so its result stops being
-   independent evidence. A second round gets the PR again or just the new commit range. Builders are the
-   opposite: they get the findings verbatim.
+   wrong answer. A separate reviewer exercises the result itself (runs it, reproduces the bug) and never sees
+   the maker's conclusion. The two passes are two prompts that differ only in the standard. First, spec
+   compliance against the pinned doc's Ask, Scope and Decisions (never its Notes), which the PR description
+   cites with the builder's left-out list:
+   `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
+   It checks all of what the doc asked and nothing else, and whether each left-out item is acceptable; dropped
+   scope is found here or not at all. Then quality: `/code-review on PR #42 and comment the full review to
+   GitHub.` A pinned pointer to requirements is a standard, not a hint; name any other standard the same way
+   (`... against https://agentskills.io/specification`).
+   Beyond target, skill, standard and destination, a reviewer's prompt holds only, when reviewers run in
+   parallel, which files or commits each owns: a boundary that splits the work is fine, a pointer to where
+   problems might be is not. Leave out suspected issues, focus areas, what a fix does, earlier findings and
+   your own conclusions: a reviewer told where to look confirms what it was pointed at and misses the rest, so
+   its result stops being independent evidence.
+   Builders fixing blockers get the findings verbatim. Round two then has two jobs: a fix check, where a
+   verifier gets each blocker verbatim with its repro command and confirms it no longer reproduces (like a
+   builder it sees the findings, and it judges only those), and a blind review of the new commit range. Stop
+   after two or three rounds, then hand to the user to say "merge it".
 6. **Report.** What's done, verified, open, each with its artifact: SHA, PR or comment link, command and raw
    output. A bug report without the repro command and its output is UNPROVEN, so is any claim without an
    artifact; the user has been told "tests green" when they weren't. LLM grades aren't evidence unless the

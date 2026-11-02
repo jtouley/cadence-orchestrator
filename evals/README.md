@@ -22,8 +22,9 @@ baseline only.
 
 ## Cases and the taint rule
 
-`cases.csv` lists every case: `case, target_repo, author, author_read_skill, added`. The scorer refuses a case that
-isn't listed.
+`cases.csv` lists every case: `case, target_repo, author, author_read_skill, added, status`. The scorer refuses a case
+that isn't listed. `status: exploratory` marks a case whose runs were already read while developing; like a tainted
+case, it stays in train.
 
 **Taint rule:** a case has to be written by an agent or person who has not read `skills/tpm/SKILL.md` or
 `skills/tpm/references/`, so the cases test what a user needs rather than echo the skill's own wording. Give the author
@@ -206,3 +207,15 @@ with `--legacy`.
   per arm. 15 valid runs. build/with_skill has none: all 6 attempts hit the 3600 s limit and are in `_invalid/`.
   The isolation check passed on commits and pushes. The clones shared one parent directory, which the rules above
   now forbid. Not graded; the deterministic scores are in its `scorer_output.txt`.
+- **2026-11-02 clean-review (exploratory, not a ship decision):** the reviewer-prompt rule (skills/tpm step 5), old
+  wording (b57e48e) against the first new wording (fd5d391). Cases `first-review-hides-suspected-bug`,
+  `second-round-hides-prior-findings`, `spec-review-hides-weak-spots`: each ships its repo as `files/repo.bundle`
+  (`target_repo` is `bundle:<name>`), placed by `place-files.sh`. 3 runs per case per arm, under the runner
+  requirements above. Their deterministic graders search the subagent prompts the run saved to
+  `outputs/subagent-prompt-*.md`, which `score.py facts` doesn't read, so they're scored by
+  `python3 evals/scripts/det_grade_clean_review.py <run_dir> <case>`; `score.py` accepts the cases (split, registry)
+  but leaves their graders to that script and to labelers. Judgment graders: one blinded Claude grader per run, no
+  second labeler. Deterministic: old 22/39 = 56% (41–71%), new 35/39 = 90% (76–96%); judgment old 6/9, new 7/9.
+  The run records aren't in this repo. Two caveats: grader 01 of the second-round case was relaxed before
+  the runs to also accept the new commit range, so its `case.yaml` still says otherwise; and the current step 5
+  sends blockers verbatim to a fix-check verifier, which that case's graders 02–05 would count as a leak.
