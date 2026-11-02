@@ -13,7 +13,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SCRIPTS, hasGuard, installed } from "./doctor.mjs";
+import { MANIFEST, SCRIPTS, hasGuard, installed, readManifest as manifestOf } from "./doctor.mjs";
 
 // No raw stack traces: one line with the cause (the full stack with DEBUG set). A refused write is usually an
 // agent's sandbox.
@@ -101,7 +101,6 @@ const template = (rel, skill) => read(path.join(ADAPTERS, rel)).replaceAll("__SK
 // managed block stops the run before anything is written.
 const BEGIN = "<!-- cadence-orchestrator:tpm begin -->";
 const END = "<!-- cadence-orchestrator:tpm end -->";
-const MANIFEST = ".cadence-install.json"; // in each skill folder: the version and a hash of each file we wrote
 const PKG_VERSION = JSON.parse(read(path.join(ROOT, "package.json"))).version;
 const sha = (text) => createHash("sha256").update(text).digest("hex");
 
@@ -117,6 +116,16 @@ function parseJson(rel, text) {
   } catch (e) {
     fail(`${rel} isn't valid JSON (${e.message}); fix it and run again. Nothing was changed.`);
   }
+}
+
+// Remove the managed block, touching only the blank lines right around it.
+function removeBlock(text) {
+  const start = text.indexOf(BEGIN);
+  const end = text.indexOf(END, start) + END.length;
+  const before = text.slice(0, start).replace(/\n+$/, "");
+  const after = text.slice(end).replace(/^\n+/, "");
+  if (!before) return after;
+  return after ? `${before}\n\n${after}` : `${before}\n`;
 }
 
 function checkMarkers(rel, text) {
@@ -147,9 +156,18 @@ function skillFiles(target) {
   return files;
 }
 
-function planHooks(plan, rel, ours) {
-  const text = current(plan, rel);
+// Hook files must be an object whose `hooks` is an object of lists; anything else stops the run before writing.
+function hookConfig(rel, text) {
   const cur = text === null ? {} : parseJson(rel, text);
+  const bad = (why) => fail(`${rel} isn't valid hook config (${why}); fix it and run again. Nothing was changed.`);
+  if (!cur || typeof cur !== "object" || Array.isArray(cur)) bad("it should be a JSON object");
+  if (cur.hooks !== undefined && (!cur.hooks || typeof cur.hooks !== "object" || Array.isArray(cur.hooks))) bad("hooks should be an object");
+  for (const [event, entries] of Object.entries(cur.hooks ?? {})) if (!Array.isArray(entries)) bad(`hooks.${event} should be a list`);
+  return cur;
+}
+
+function planHooks(plan, rel, ours) {
+  const cur = hookConfig(rel, current(plan, rel));
   for (const [key, value] of Object.entries(ours)) {
     if (key !== "hooks" && !(key in cur)) cur[key] = value;
   }
@@ -164,8 +182,9 @@ function planHooks(plan, rel, ours) {
 function planBlock(plan, rel, block) {
   const text = current(plan, rel) ?? "";
   checkMarkers(rel, text);
-  const rest = text.replace(BLOCK, "").replace(/\n+$/, "");
-  plan.set(rel, (rest ? rest + "\n\n" : "") + block);
+  // An existing block is replaced where it is; otherwise the block goes at the end.
+  if (text.includes(BEGIN)) plan.set(rel, text.replace(BLOCK, () => block));
+  else plan.set(rel, (text.replace(/\n+$/, "") ? text.replace(/\n+$/, "") + "\n\n" : "") + block);
 }
 
 const GITIGNORE = ["# tpm off switch (user-local)", ".cadence/tpm.off"];
@@ -216,14 +235,9 @@ function planSkill(plan, target, skill, targets) {
 
 const sortKeys = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => (a < b ? -1 : 1)));
 
-function readManifest(skill) {
-  const file = path.join(repo, skill, MANIFEST);
-  try {
-    return JSON.parse(read(file));
-  } catch {
-    return null;
-  }
-}
+const readManifest = (skill) => manifestOf(repo, skill);
+const skillOf = (rel) => Object.values(TARGETS).map((s) => s.skill).find((s) => rel.startsWith(s + "/"));
+const STAMP = new Date().toISOString().replace(/[-:]/g, "").replace(/\..*/, "Z"); // one backup folder per run
 
 // JSON files compare by value, so a reformatted but equal file isn't a change.
 function same(rel, a, b) {
@@ -246,23 +260,24 @@ function changes(plan) {
   return out.sort((a, b) => (a.rel < b.rel ? -1 : 1));
 }
 
-// Write the plan. A skill file whose text no longer matches the hash we recorded was edited by hand: it is
-// backed up under .cadence/backups/ before being overwritten.
+// Write the plan. Every manifest is read before the first write or delete, and the new manifests are written last,
+// so each file is compared with the hash recorded when it was installed. A skill file that no longer matches that
+// hash was edited by hand: it is copied to .cadence/backups/<run time>/ before it is overwritten or deleted.
+// Installs from before manifests existed have no hashes, so nothing of theirs is backed up.
 function apply(plan) {
+  const manifests = new Map(Object.values(TARGETS).map((s) => [s.skill, readManifest(s.skill)]));
+  const all = changes(plan);
+  const isManifest = (rel) => rel.endsWith("/" + MANIFEST);
   const backups = [];
-  const manifests = new Map();
-  for (const { rel, text } of changes(plan)) {
+  for (const { rel, text } of [...all.filter((c) => !isManifest(c.rel)), ...all.filter((c) => isManifest(c.rel))]) {
     const file = path.join(repo, rel);
-    const skill = Object.values(TARGETS).map((s) => s.skill).find((s) => rel.startsWith(s + "/"));
-    if (skill && exists(file) && !rel.endsWith(MANIFEST)) {
-      if (!manifests.has(skill)) manifests.set(skill, readManifest(skill));
-      const recorded = manifests.get(skill)?.files?.[rel.slice(skill.length + 1)];
-      if (recorded && recorded !== sha(read(file))) {
-        const dest = path.join(repo, ".cadence", "backups", rel);
-        fs.mkdirSync(path.dirname(dest), { recursive: true });
-        fs.copyFileSync(file, dest);
-        backups.push(rel);
-      }
+    const skill = skillOf(rel);
+    const recorded = skill && !isManifest(rel) && manifests.get(skill)?.files?.[rel.slice(skill.length + 1)];
+    if (recorded && exists(file) && recorded !== sha(read(file))) {
+      const dest = path.join(repo, ".cadence", "backups", STAMP, rel);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(file, dest);
+      backups.push({ rel, to: path.relative(repo, dest) });
     }
     if (text === null) fs.rmSync(file, { force: true });
     else {
@@ -284,6 +299,8 @@ function addCatalogs(plan, files) {
 
 // Uninstall: only what the installer adds. Hook entries carrying our marker, our managed block, our files, our
 // shim, the skill folder once no remaining target uses it, and the .gitignore lines once nothing is left.
+const pycache = []; // bytecode caches inside the skill folders uninstall removes
+
 function planUninstall(plan, targets, remaining) {
   const removed = [];
   for (const t of targets) {
@@ -291,7 +308,7 @@ function planUninstall(plan, targets, remaining) {
     for (const [src, dst] of spec.hooks ?? []) {
       const text = current(plan, dst);
       if (text === null) continue;
-      const cur = parseJson(dst, text);
+      const cur = hookConfig(dst, text);
       const ours = JSON.parse(template(src, spec.skill));
       let hit = false;
       for (const event of Object.keys(cur.hooks ?? {})) {
@@ -311,8 +328,7 @@ function planUninstall(plan, targets, remaining) {
       const text = current(plan, dst);
       if (text === null || !text.includes(BEGIN)) continue;
       checkMarkers(dst, text);
-      const rest = text.replace(BLOCK, "").replace(/\n{3,}/g, "\n\n").replace(/\n+$/, "");
-      plan.set(dst, rest ? rest + "\n" : null);
+      plan.set(dst, removeBlock(text) || null);
       removed.push(`${dst} (tpm block)`);
     }
     for (const [, dst] of spec.files ?? []) {
@@ -327,10 +343,23 @@ function planUninstall(plan, targets, remaining) {
     }
   }
   for (const skill of new Set(targets.map((t) => TARGETS[t].skill))) {
-    if (remaining.some((t) => TARGETS[t].skill === skill) || current(plan, `${skill}/SKILL.md`) === null) continue;
-    const ours = [...Object.keys(skillFiles("codex")), MANIFEST];
+    const manifest = readManifest(skill);
+    if (remaining.some((t) => TARGETS[t].skill === skill)) {
+      // The folder stays for another target: drop the uninstalled shims from its record.
+      if (manifest) {
+        const files = { ...manifest.files };
+        for (const t of targets) delete files[`scripts/shim_${t}.py`];
+        plan.set(`${skill}/${MANIFEST}`, JSON.stringify({ ...manifest, files }, null, 2) + "\n");
+      }
+      continue;
+    }
+    if (current(plan, `${skill}/SKILL.md`) === null && !manifest) continue;
+    // What the manifest records was installed; for an install from before manifests, this version's file list.
+    const owner = targets.find((t) => TARGETS[t].skill === skill);
+    const ours = [...Object.keys(manifest?.files ?? skillFiles(owner)), "SKILL.md", MANIFEST];
     for (const rel of ours) if (current(plan, `${skill}/${rel}`) !== null) plan.set(`${skill}/${rel}`, null);
-    removed.push(`${skill}/`);
+    pycache.push(`${skill}/scripts/__pycache__`);
+    removed.push(`${skill}/ (${manifest ? "the files its install manifest records" : "this version's skill files"})`);
   }
   if (!remaining.length) {
     const text = current(plan, ".gitignore");
@@ -343,18 +372,40 @@ function planUninstall(plan, targets, remaining) {
   return removed;
 }
 
-// Remove folders the uninstall left empty, up to (not including) the repo root.
-function pruneEmpty(rels) {
-  for (const rel of rels) {
-    for (let dir = path.dirname(path.join(repo, rel)); dir.startsWith(repo + path.sep); dir = path.dirname(dir)) {
-      try {
-        if (fs.readdirSync(dir).length) break;
-        fs.rmdirSync(dir);
-      } catch {
-        break;
-      }
-    }
+// Folders this run will create: the parents of planned files that don't exist yet. They are recorded in each
+// install manifest (with the ones earlier installs recorded), so uninstall removes only folders the installer made.
+function recordCreatedDirs(plan) {
+  const created = new Set();
+  for (const [rel, text] of plan) {
+    if (text === null) continue;
+    for (let dir = path.dirname(rel); dir !== "." && !exists(path.join(repo, dir)); dir = path.dirname(dir)) created.add(dir);
   }
+  for (const [rel, text] of plan) {
+    if (text === null || !rel.endsWith("/" + MANIFEST)) continue;
+    const old = readManifest(rel.slice(0, -MANIFEST.length - 1));
+    const dirs = [...new Set([...(old?.created_dirs ?? []), ...created])].sort();
+    plan.set(rel, JSON.stringify({ ...JSON.parse(text), created_dirs: dirs }, null, 2) + "\n");
+  }
+}
+
+// What earlier installs recorded as created, read before uninstall deletes the manifests. Installs from before
+// manifests recorded it give nothing, so their folders are kept.
+const createdDirs = () => Object.values(TARGETS).flatMap((s) => readManifest(s.skill)?.created_dirs ?? []);
+
+// Remove a folder only if the installer created it and it's now empty, and never a skills or hooks folder (other
+// tools keep theirs there).
+function pruneCreated(dirs) {
+  const removed = [];
+  for (const dir of [...new Set(dirs)].sort((a, b) => b.split("/").length - a.split("/").length || (a < b ? 1 : -1))) {
+    if (["skills", "hooks"].includes(path.basename(dir))) continue;
+    const abs = path.join(repo, dir);
+    try {
+      if (fs.readdirSync(abs).length) continue;
+      fs.rmdirSync(abs);
+      removed.push(dir + "/");
+    } catch {}
+  }
+  return removed;
 }
 
 function fail(message, code = 1) {
@@ -461,7 +512,7 @@ if (mode === "status") {
   process.exit(ok ? 0 : 1);
 }
 if (isDoctor) {
-  const { doctor } = await import("./doctor.mjs");
+  const { doctor, guiPathNote } = await import("./doctor.mjs");
   let targets = [opts.target];
   const results = [];
   if (opts.target === "all") {
@@ -478,6 +529,8 @@ if (isDoctor) {
     }
   }
   results.push(...targets.flatMap((t) => doctor(repo, t, TARGETS[t])));
+  const note = targets.some((t) => hasGuard(TARGETS[t])) ? guiPathNote() : ""; // once per run, not per target
+  if (note) results.push({ name: `note: ${note}`, ok: true, skip: true });
   const failed = results.filter((r) => !r.ok).length;
   const ran = results.filter((r) => !r.skip).length;
   if (opts.json) {
@@ -526,8 +579,12 @@ if (mode === "uninstall") {
     console.log("Dry run: nothing was changed.");
     process.exit(0);
   }
-  apply(plan);
-  pruneEmpty([...plan.keys()]);
+  const dirs = createdDirs();
+  const backups = apply(plan);
+  for (const dir of pycache) fs.rmSync(path.join(repo, dir), { recursive: true, force: true });
+  for (const b of backups) console.log(`backed up hand-edited ${b.rel} to ${b.to} before removing it`);
+  const pruned = pruneCreated(dirs);
+  if (pruned.length) console.log(`Removed empty folders it had created: ${pruned.join(", ")}`);
   console.log("Done. Review and commit the changes.");
   process.exit(0);
 }
@@ -547,6 +604,7 @@ for (const [skill, t] of folders) planSkill(plan, t, skill, targets);
 const touched = targets.map((t) => planTarget(plan, t));
 planGitignore(plan);
 const catalogs = addCatalogs(plan, opts.catalog);
+recordCreatedDirs(plan);
 const diff = changes(plan);
 
 if (opts.check || opts.dryRun) {
@@ -572,7 +630,7 @@ targets.forEach((t, k) => {
   console.log(`${t}: ${touched[k].join(", ")}${hasGuard(TARGETS[t]) ? "" : " (instructions only, no guard)"}`);
 });
 if (catalogs.length) console.log(`catalog: ${catalogs.join(", ")}`);
-for (const b of backups) console.log(`backed up hand-edited ${b} to .cadence/backups/${b}`);
+for (const b of backups) console.log(`backed up hand-edited ${b.rel} to ${b.to}`);
 console.log("Done. Review and commit the changes; see README for per-platform notes.");
 if (guarded.length) console.log("Reload once: start a new chat or session in this repo, so the hooks load (approve them if asked).");
 for (const t of targets) {

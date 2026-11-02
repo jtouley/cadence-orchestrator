@@ -4,7 +4,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { guiPathNote, hasGuard, hookEntries, installed, resolveStateDir } from "./doctor.mjs";
+import { guiPathNote, hasGuard, hookEntries, installed, readManifest, resolveStateDir } from "./doctor.mjs";
 
 const ago = (seconds) =>
   seconds < 90 ? `${Math.round(seconds)} s ago` : seconds < 5400 ? `${Math.round(seconds / 60)} min ago` : `${(seconds / 3600).toFixed(1)} h ago`;
@@ -46,9 +46,8 @@ function leftovers(repo, spec, TARGETS) {
 
 // The version a skill folder was installed from: its install manifest, or SKILL.md's metadata for older installs.
 function installedVersion(repo, skill) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(repo, skill, ".cadence-install.json"), "utf8")).version ?? "";
-  } catch {}
+  const manifest = readManifest(repo, skill);
+  if (manifest?.version) return manifest.version;
   try {
     const m = fs.readFileSync(path.join(repo, skill, "SKILL.md"), "utf8").match(/^\s+version:\s*"?([^"\n]+)"?/m);
     return m ? m[1] : "";

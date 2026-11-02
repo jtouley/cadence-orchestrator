@@ -80,11 +80,14 @@ def session_context(session: str) -> str:
 
 
 def is_session_start(p: dict) -> bool:
-    # hook_event_name is a documented base field. Without it, sessionStart is the only event this config registers
-    # whose input has session_id and is_background_agent (sessionEnd has them too, plus reason; it isn't registered).
+    # hook_event_name is a documented base field. Without it, go only by sessionStart's documented input
+    # (session_id, is_background_agent): sessionEnd adds reason, and a tool or prompt event is never a sessionStart,
+    # so a payload with tool_name, tool_input or prompt goes to the guard (https://cursor.com/docs/hooks).
     if "hook_event_name" in p:
         return p.get("hook_event_name") == "sessionStart"
-    return "session_id" in p and "is_background_agent" in p and "reason" not in p and "prompt" not in p
+    if any(k in p for k in ("tool_name", "tool_input", "prompt", "reason")):
+        return False
+    return "session_id" in p and "is_background_agent" in p
 
 
 def main() -> int:

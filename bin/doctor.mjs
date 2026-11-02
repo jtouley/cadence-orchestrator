@@ -11,6 +11,15 @@ import os from "node:os";
 import path from "node:path";
 
 export const SCRIPTS = ["guard.py", "runtime.py", "tasks_check.py"];
+// In each skill folder: the installed version, a hash of each file written, and the folders the install created.
+export const MANIFEST = ".cadence-install.json";
+export function readManifest(repo, skill) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(repo, skill, MANIFEST), "utf8"));
+  } catch {
+    return null;
+  }
+}
 // Environment variables a platform's runtime consults for its state dir (see each shim's state_env).
 const STATE_ENV = { claude: ["CLAUDE_PLUGIN_DATA"] };
 
@@ -70,7 +79,12 @@ export function resolveStateDir(repo, target, spec) {
 // Editors started from the desktop (not a shell) may get only the system's default PATH, so a python3 found only
 // on the shell's PATH (pyenv, Homebrew, a venv) may be missing there. The hook command stays as it is; this is a note.
 export const DEFAULT_PATH = "/usr/bin:/bin:/usr/sbin:/sbin";
+let pathNote; // computed once per run
 export function guiPathNote() {
+  pathNote ??= probePath();
+  return pathNote;
+}
+function probePath() {
   const here = spawnSync("bash", ["-c", "command -v python3"], { encoding: "utf8" });
   if (here.status !== 0) return "";
   const there = spawnSync("/bin/sh", ["-c", "command -v python3"], { encoding: "utf8", env: { PATH: DEFAULT_PATH } });
@@ -169,8 +183,6 @@ export function doctor(repo, target, spec) {
 
   const py = spawnSync("python3", ["--version"], { encoding: "utf8" });
   check("python3 is on PATH", !py.error && py.status === 0, "the hooks run python3; without it they allow everything");
-  const note = guiPathNote();
-  if (note) check(note, true, "", true);
 
   const { dir: realState, error: stateError } = resolveStateDir(repo, target, spec);
   let writable = false;

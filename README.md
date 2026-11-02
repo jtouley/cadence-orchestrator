@@ -73,7 +73,10 @@ From anywhere inside the git repository you want to use it in:
    if asked: on Codex, review and trust them in `/hooks`.
 4. Start the skill: `$tpm` on Codex, `/tpm` everywhere else.
 5. Check the guard with `npx cadence-orchestrator status`. Claude Code, Codex and Gemini also show the agent
-   `TPM guard armed (session <id>, log <path>)`; Copilot and Cursor can't, so `status` is the check there.
+   `TPM guard armed (session <id>, log <path>)`. Copilot can't, so run `status` there. On Cursor, the skill runs
+   `status` for you after `/tpm` and says whether this chat is armed.
+
+In a repo that already has `.claude/` and `.cursor/`:
 
 ```console
 Installing into /home/you/project for claude, cursor (detected)
@@ -86,13 +89,13 @@ cursor: start with /tpm
 Then check the guard is running: npx cadence-orchestrator status
 ```
 
-A bare run installs for every editor it detects from the repo's config (`.claude/`, `.codex/`, `.cursor/`,
-`.gemini/`, `.github/copilot-instructions.md` or `.github/hooks/`, and for Antigravity `.agent/`, `.agents/rules/`,
-`.agents/workflows/` or `.agents/hooks.json`). With none of those, it installs for the agent it's running under
-(Claude Code, Codex, Cursor or Gemini CLI, from the variables they set), or else stops and asks for `--target`.
-Detection can pick up config you no longer use, so check the `(detected)` line. `--target <name>` installs for that
-one platform instead (`all` for every one). `npm i` alone writes nothing into the repo. On Cursor the guard only
-warns; it never blocks. On Antigravity there's no guard, only the skill: its hooks can't see that you typed `/tpm`.
+A bare run installs for every editor it detects from the repo's config (`.claude/`, `.codex/`, `.cursor/`, `.gemini/`,
+`.github/copilot-instructions.md` or `.github/hooks/`, and for Antigravity `.agent/`, `.agents/rules/`,
+`.agents/workflows/` or `.agents/hooks.json`). With none of those, it installs for the agent it's running under (Claude
+Code, Codex, Cursor or Gemini CLI, from the variables they set), or else stops and asks for `--target`. Detection can
+pick up config you no longer use, so check the `(detected)` line. `--target <name>` installs for that one platform
+instead (`all` for every one). `npm i` alone writes nothing into the repo. On Antigravity there's no guard, only the
+skill: its hooks can't see that you typed `/tpm`.
 
 You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
 warns if `python3` is missing. To install from source instead of npm, use
@@ -100,28 +103,27 @@ warns if `python3` is missing. To install from source instead of npm, use
 
 `--repo <path>` installs into the repository whose root is that path; without it, into the one you're in, at its top
 level (but not your home directory, if that's a git repository). Re-running is safe: the installer replaces only its own
-entries in the files it touches. It also adds `.cadence/tpm.off` to `.gitignore`. From a clone of this repository,
+entries in the files it touches, and adds `.cadence/tpm.off` to `.gitignore`. From a clone of this repository,
 `./install.sh` takes the same options.
 
-`--dry-run` lists the files a run would create or update and writes nothing. `--check` exits 1 if the installed
-files differ from what this version would write (for CI). If you edited a vendored skill file, a reinstall backs it
-up to `.cadence/backups/` first and says so. `npx cadence-orchestrator uninstall` removes only what the installer
-added: its hook entries, its block in `AGENTS.md` or `GEMINI.md`, its files and skill folders, and its `.gitignore`
-lines (`--target <name>` for one platform, `--dry-run` to preview). Your own hooks and text stay.
+| Command | What it does | Exits non-zero when |
+| --- | --- | --- |
+| `npx cadence-orchestrator [--target <name>\|all] [--repo <path>]` | Installs (detects targets without `--target`) | 2: nothing detected; 1: other errors |
+| `… --dry-run` | Lists `would create\|update <file>`; writes nothing | |
+| `… --check` | Lists files that differ from what this version would write (for CI) | 1: any differ, or nothing is installed |
+| `… uninstall [--target <name>] [--dry-run]` | Removes only what the installer added | 1: on error |
+| `… doctor --target all [--json]` | Checks files and hook config, runs the hooks on simulated events; changes nothing | 1: a check fails |
+| `… status [--hours <n>] [--state-dir <path>] [--json]` | Installed targets and version, and live hook activity | 1: an install is incomplete, nothing is installed, or a guarded target has no live activity |
 
-To check an install, run `npx cadence-orchestrator doctor --target claude` (`all` checks every target that's
-installed). It checks that the files and hook config are in place and point at existing scripts, that `python3`
-is on `PATH`, and runs the installed hooks on simulated events: arming, an orchestrator write (denied, or an
-advisory on Codex, Cursor and Gemini), a subagent write (allowed) and, on Claude Code, a stop. It prints one line
-per check, exits 1 if any fail, and changes nothing in the repo. A passing `doctor` doesn't show that the hooks
-fire in a real session; `npx cadence-orchestrator status` does. It lists, separately, the skill files, the hook
-config, the sessions whose hooks have fired in the last 24 hours (`--hours <n>`) and whether each is armed, and the
-advisory log path. It also shows the installed version, and `--json` (on `status` and `doctor`) prints one JSON object
-instead. It exits 1 when an install is incomplete (it says what to reinstall) or when a guarded target
-is installed but no live hook activity has been seen; instructions-only targets such as Antigravity exit 0. Run it
-from inside the agent's session (ask the agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as
-the hooks, or pass `--state-dir <path>`; it prints where the state dir came from. To test in a real session, follow
-[`docs/live-testing.md`](docs/live-testing.md).
+A passing `doctor` doesn't show that the hooks fire in a real session; `status` does. Run `status` from inside the
+agent's session (ask the agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as the hooks, or pass
+`--state-dir <path>`. To test in a real session, follow [`docs/live-testing.md`](docs/live-testing.md).
+
+A reinstall backs up a vendored skill file you edited to `.cadence/backups/<time>/` before replacing it, for installs
+made with this version or later (older installs have no record of what they wrote). Uninstall removes the hook
+entries, the block in `AGENTS.md` or `GEMINI.md`, the installer's files and the `.gitignore` lines, and only empty
+folders the installer created, never a `skills` or `hooks` folder. Your own hooks and text, `--catalog` files and
+`.cadence/backups/` stay.
 
 | Platform | `--target` | What it adds | Guard |
 | --- | --- | --- | --- |
@@ -245,12 +247,27 @@ npm_config_cache=/tmp/npm-cache npx cadence-orchestrator --target codex
 A hook file it would merge into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
 
 ```console
-cadence-orchestrator: .claude/settings.json isn't valid JSON (Expected property name or '}' in JSON at position 4 (line 2 column 3)); fix it and run again. Nothing was changed.
+cadence-orchestrator: .claude/settings.json isn't valid JSON (…parse error…); fix it and run again. Nothing was changed.
 ```
 
 Every file the run would touch is checked before anything is written, so the repo is unchanged. Remove the
 comments and run the installer again. A managed block in `AGENTS.md` or `GEMINI.md` whose begin or end marker
 was deleted stops the run the same way. Errors print one line; set `DEBUG=1` to also print the full stack trace.
+
+### "no editor config found … and no supported agent detected" (exit 2)
+
+The repo has none of the editor folders listed under [Install in a Repo](#install-in-a-repo), and the run isn't
+inside a supported agent. Choose the platform: `npx cadence-orchestrator --target cursor` (or `all`).
+
+### "… is your home directory"
+
+You ran it outside a project, and your home directory is a git repository (dotfiles), so it refuses to install there.
+Run it inside the project's repository, or pass `--repo <path>` if you do mean that repository.
+
+### "permission denied (EACCES) on <path>"
+
+The installer couldn't write to the repo. If an agent ran it, its sandbox may need to allow writes to the repo:
+approve the command, or run it yourself in a terminal.
 
 ### `warning: python3 is not on PATH`
 

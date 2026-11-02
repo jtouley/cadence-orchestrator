@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -984,8 +985,8 @@ def test_uninstall_removes_only_what_the_installer_added_and_is_safe_to_rerun():
         "  .claude/settings.json (hook entries)",
         "  AGENTS.md (tpm block)",
         "  .cursor/hooks.json (hook entries)",
-        "  .agents/skills/tpm/",
-        "  .claude/skills/tpm/",
+        "  .agents/skills/tpm/ (the files its install manifest records)",
+        "  .claude/skills/tpm/ (the files its install manifest records)",
         "  .gitignore (tpm off-switch lines)",
     ):
         assert line in out.stdout.splitlines(), (line, out.stdout)
@@ -998,15 +999,17 @@ def test_uninstall_removes_only_what_the_installer_added_and_is_safe_to_rerun():
         json.load(open(os.path.join(repo, ".claude/settings.json"))) == mine
     )  # same value; JSON is re-indented
     for gone in (
-        ".agents",
-        ".claude/skills",
+        ".agents/skills/tpm",
+        ".claude/skills/tpm",
         ".codex",
         ".gemini",
-        ".github",
         "GEMINI.md",
         ".cursor/hooks.json",
     ):
         assert not os.path.exists(os.path.join(repo, gone)), gone
+    # Skills and hooks folders stay even though the installer created them; .claude and .cursor existed before.
+    for kept in (".agents/skills", ".claude/skills", ".github/skills", ".github/hooks", ".claude", ".cursor"):
+        assert os.path.isdir(os.path.join(repo, kept)), kept
     again = cli(["uninstall"], repo)
     assert again.returncode == 0 and again.stdout == f"Nothing to remove in {repo}.\n"
 
@@ -1132,19 +1135,28 @@ def test_status_reports_the_installed_version():
     )
 
 
+def _backups(repo):
+    root = os.path.join(repo, ".cadence/backups")
+    found = []
+    for base, _, names in os.walk(root):
+        found += [os.path.relpath(os.path.join(base, n), root) for n in names]
+    return sorted(found)
+
+
 def test_hand_edited_skill_files_are_backed_up_before_overwrite():
     repo = scratch_repo()
     install(repo, "cursor")
     skill = os.path.join(repo, ".agents/skills/tpm/SKILL.md")
     open(skill, "a").write("\nmy note\n")
     out = install(repo, "cursor")
-    assert (
-        "backed up hand-edited .agents/skills/tpm/SKILL.md to .cadence/backups/.agents/skills/tpm/SKILL.md"
-        in out
+    line = next(
+        ln
+        for ln in out.splitlines()
+        if ln.startswith("backed up hand-edited .agents/skills/tpm/SKILL.md to ")
     )
-    assert (
-        open(os.path.join(repo, ".cadence/backups/.agents/skills/tpm/SKILL.md")).read().endswith("my note\n")
-    )
+    dest = line.split(" to ", 1)[1]
+    assert re.fullmatch(r"\.cadence/backups/\d{8}T\d{6}Z/\.agents/skills/tpm/SKILL\.md", dest), dest
+    assert open(os.path.join(repo, dest)).read().endswith("my note\n")
     assert not open(skill).read().endswith("my note\n")
     assert "backed up" not in install(repo, "cursor")  # unchanged files aren't backed up
 
@@ -1219,3 +1231,200 @@ def test_python3_outside_the_default_path_gets_a_note():
     assert (note in st.stdout) == (not has_default) and (note in doc.stdout) == (not has_default), st.stdout
     # The committed hook command is unchanged: it still looks python3 up on PATH.
     assert "command -v python3" in open(os.path.join(repo, ".cursor/hooks.json")).read()
+
+
+# ------------------------------------------------------------------- uninstall folders, manifests, backups
+
+
+def _two_versions(tmp_name):
+    """Copies of this package, the second with one upstream reference file changed."""
+    root = tempfile.mkdtemp()
+    out = []
+    for name in ("a", "b"):
+        dest = os.path.join(root, name)
+        os.makedirs(dest)
+        for part in ("bin", "skills", "adapters", "package.json"):
+            src = os.path.join(ROOT, part)
+            (shutil.copytree if os.path.isdir(src) else shutil.copy)(src, os.path.join(dest, part))
+        out.append(os.path.join(dest, "bin", "cadence-orchestrator.mjs"))
+    open(os.path.join(root, "b", "skills/tpm/references/catalogs.md"), "a").write("\nupstream change\n")
+    return out
+
+
+def test_upgrade_does_not_back_up_files_nobody_edited():
+    old, new = _two_versions("up")
+    repo = scratch_repo()
+    subprocess.run(
+        [old, "--target", "claude", "--repo", repo], check=True, capture_output=True, env=clean_env()
+    )
+    out = subprocess.run(
+        [new, "--target", "claude", "--repo", repo], capture_output=True, text=True, env=clean_env()
+    )
+    assert out.returncode == 0 and "backed up" not in out.stdout, out.stdout
+    assert (
+        open(os.path.join(repo, ".claude/skills/tpm/references/catalogs.md"))
+        .read()
+        .endswith("upstream change\n")
+    )
+    manifest = json.load(open(os.path.join(repo, ".claude/skills/tpm/.cadence-install.json")))
+    text = open(os.path.join(repo, ".claude/skills/tpm/references/catalogs.md"), "rb").read()
+    import hashlib
+
+    assert (
+        manifest["files"]["references/catalogs.md"] == hashlib.sha256(text).hexdigest()
+    )  # written last, new hashes
+
+
+def test_uninstall_backs_up_hand_edited_files_before_deleting_them():
+    repo = scratch_repo()
+    install(repo, "claude")
+    open(os.path.join(repo, ".claude/skills/tpm/SKILL.md"), "a").write("\nmy edit\n")
+    out = cli(["uninstall"], repo)
+    assert out.returncode == 0
+    assert (
+        "backed up hand-edited .claude/skills/tpm/SKILL.md to .cadence/backups/" in out.stdout
+        and "before removing it" in out.stdout
+    )
+    (backup,) = _backups(repo)
+    assert backup.endswith("/.claude/skills/tpm/SKILL.md")
+    assert open(os.path.join(repo, ".cadence/backups", backup)).read().endswith("my edit\n")
+    assert not os.path.exists(os.path.join(repo, ".claude/skills/tpm"))
+
+
+def test_backups_never_overwrite_an_earlier_backup():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    skill = os.path.join(repo, ".agents/skills/tpm/SKILL.md")
+    open(skill, "a").write("\nfirst\n")
+    install(repo, "cursor")
+    import time
+
+    time.sleep(1.1)  # backups are grouped per run, by second
+    open(skill, "a").write("\nsecond\n")
+    install(repo, "cursor")
+    found = _backups(repo)
+    assert len(found) == 2, found
+    texts = [open(os.path.join(repo, ".cadence/backups", f)).read() for f in found]
+    assert texts[0].endswith("first\n") and texts[1].endswith("second\n")
+
+
+def test_uninstall_removes_only_empty_folders_the_installer_created():
+    repo = scratch_repo()
+    os.makedirs(os.path.join(repo, ".cursor"))  # the user's empty folder
+    install(repo, "cursor")
+    manifest = json.load(open(os.path.join(repo, ".agents/skills/tpm/.cadence-install.json")))
+    assert ".cursor" not in manifest["created_dirs"] and ".cursor/rules" in manifest["created_dirs"]
+    assert ".agents/skills/tpm" in manifest["created_dirs"]
+    open(os.path.join(repo, ".cursor/rules/mine.mdc"), "w").write(
+        "mine\n"
+    )  # user file in a folder we created
+    out = cli(["uninstall"], repo)
+    assert out.returncode == 0, out.stderr
+    assert os.path.isdir(os.path.join(repo, ".cursor"))  # existed before the install
+    assert os.path.exists(os.path.join(repo, ".cursor/rules/mine.mdc"))  # created by us, but not empty
+    assert os.path.isdir(os.path.join(repo, ".agents/skills"))  # never removed
+    assert not os.path.exists(os.path.join(repo, ".agents/skills/tpm"))
+
+
+def test_uninstall_never_removes_skills_or_hooks_folders():
+    repo = scratch_repo()
+    install(repo, "copilot")
+    install(repo, "claude")
+    cli(["uninstall"], repo)
+    for kept in (".github/skills", ".github/hooks", ".claude/skills"):
+        assert os.path.isdir(os.path.join(repo, kept)) and not os.listdir(os.path.join(repo, kept)), kept
+
+
+def test_uninstall_of_an_old_install_removes_files_but_no_folders():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    os.remove(
+        os.path.join(repo, ".agents/skills/tpm/.cadence-install.json")
+    )  # as an install from 0.1.6 would be
+    out = cli(["uninstall"], repo)
+    assert out.returncode == 0 and "  .agents/skills/tpm/ (this version's skill files)" in out.stdout, (
+        out.stdout
+    )
+    assert "Removed empty folders" not in out.stdout
+    assert os.path.isdir(os.path.join(repo, ".agents/skills/tpm/references"))
+    assert not os.path.exists(os.path.join(repo, ".agents/skills/tpm/SKILL.md"))
+    assert not os.path.exists(os.path.join(repo, ".cursor/rules/tpm.mdc")) and os.path.isdir(
+        os.path.join(repo, ".cursor/rules")
+    )
+
+
+def test_uninstall_removes_what_the_manifest_records_and_bytecode_caches():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    path = os.path.join(repo, ".agents/skills/tpm/.cadence-install.json")
+    manifest = json.load(open(path))
+    manifest["files"]["references/old-name.md"] = "0" * 64  # a file an older version installed
+    json.dump(manifest, open(path, "w"))
+    open(os.path.join(repo, ".agents/skills/tpm/references/old-name.md"), "w").write("old\n")
+    os.makedirs(os.path.join(repo, ".agents/skills/tpm/scripts/__pycache__"))
+    open(os.path.join(repo, ".agents/skills/tpm/scripts/__pycache__/runtime.cpython-313.pyc"), "w").write("x")
+    out = cli(["uninstall"], repo)
+    assert out.returncode == 0, out.stderr
+    assert not os.path.exists(os.path.join(repo, ".agents/skills/tpm")), out.stdout
+
+
+def test_uninstall_touches_only_the_lines_around_the_block():
+    repo = scratch_repo()
+    mine = "# Rules\n\n```\na\n\n\n\nb\n```\n\nTail.\n"
+    open(os.path.join(repo, "AGENTS.md"), "w").write(mine)
+    install(repo, "codex")
+    cli(["uninstall"], repo)
+    assert open(os.path.join(repo, "AGENTS.md")).read() == mine
+    # A block in the middle: the text on both sides is kept as it was.
+    text = (
+        open(os.path.join(ROOT, "adapters/codex/AGENTS.pointer.md"))
+        .read()
+        .replace("__SKILL__", ".agents/skills/tpm")
+    )
+    open(os.path.join(repo, "AGENTS.md"), "w").write("Top\n\n\n\nkeep\n\n" + text + "\nBottom\n")
+    install(repo, "codex")
+    cli(["uninstall"], repo)
+    assert open(os.path.join(repo, "AGENTS.md")).read() == "Top\n\n\n\nkeep\n\nBottom\n"
+
+
+def test_hook_event_that_is_not_a_list_is_a_one_line_error():
+    for argv in ([], ["uninstall"]):
+        repo = _with_markers(".claude/")
+        if argv:
+            install(repo, "claude")
+        cfg = {"hooks": {"Stop": {"command": "x"}}}
+        json.dump(cfg, open(os.path.join(repo, ".claude/settings.json"), "w"))
+        before = snapshot(repo)
+        out = cli(argv, repo)
+        assert out.returncode == 1 and out.stderr == (
+            "cadence-orchestrator: .claude/settings.json isn't valid hook config (hooks.Stop should be a list); "
+            "fix it and run again. Nothing was changed.\n"
+        ), (argv, out.stderr)
+        assert snapshot(repo) == before
+
+
+def test_cursor_tool_payload_without_event_name_is_never_session_start():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py")
+    state = tempfile.mkdtemp()
+    arm = {"hook_event_name": "beforeSubmitPrompt", "conversation_id": "c1", "prompt": "/tpm go"}
+    run(shim_path, dict(arm, workspace_roots=[repo]), state)
+    tool = {
+        "conversation_id": "c1",
+        "session_id": "c1",
+        "is_background_agent": False,
+        "tool_name": "Write",
+        "tool_input": {"path": "x.txt"},
+        "workspace_roots": [repo],
+    }
+    out = run(shim_path, tool, state)
+    assert "additional_context" not in out.stdout
+    assert json.loads(out.stdout) == {"permission": "allow"} and "tpm advisory" in out.stderr  # the guard ran
+
+
+def test_path_note_is_computed_once_per_run():
+    src = open(os.path.join(ROOT, "bin/doctor.mjs")).read()
+    assert "pathNote ??= probePath()" in src
+    body = src[src.index("export function doctor(") :]
+    assert "guiPathNote()" not in body  # not per target
