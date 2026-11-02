@@ -546,22 +546,25 @@ def test_no_repository_fails_with_one_short_line():
         assert proc.stdout == "" and not os.path.exists(os.path.join(outside, ".cursor"))
 
 
-def test_never_installs_into_a_home_directory_repo():
+def test_install_never_walks_up_into_a_home_directory_repo():
     home = os.path.realpath(tempfile.mkdtemp())
     subprocess.run(["git", "init", "-q", home], check=True)  # dotfiles in git
     for rel in (".claude", ".cursor", ".codex"):
         os.makedirs(os.path.join(home, rel))
     sub = os.path.join(home, "Downloads", "foo")
     os.makedirs(sub)
-    for argv, cwd in (([], sub), (["--repo"], home), (["--repo", home], sub)):
+    refused = f"cadence-orchestrator: {home} is your home directory; run this inside a project's repository, or pass --repo\n"
+    for argv, cwd in (([], sub), (["--repo"], home)):
         proc = cli(argv, cwd, HOME=home)
-        assert proc.returncode == 1 and proc.stdout == "", (argv, proc.stdout)
-        assert (
-            proc.stderr
-            == f"cadence-orchestrator: {home} is your home directory; run this inside a project's repository\n"
-        )
+        assert proc.returncode == 1 and proc.stdout == "" and proc.stderr == refused, (argv, proc.stderr)
     assert not os.path.exists(os.path.join(home, ".claude/settings.json"))
-    assert not os.path.exists(os.path.join(home, ".cursor/hooks.json"))
+    # Read-only modes don't refuse: HOME can be the checkout (CI, Heroku-style /app, devcontainers).
+    for argv in (["status"], ["doctor", "--target", "all"], ["dora", "--json"]):
+        proc = cli(argv, sub, HOME=home)
+        assert "home directory" not in proc.stderr, (argv, proc.stderr)
+    # An explicit --repo is taken as given.
+    proc = cli(["--repo", home], sub, HOME=home)
+    assert proc.returncode == 0 and proc.stdout.startswith(f"Installing into {home} for "), proc.stderr
 
 
 def test_doctor_status_and_dora_resolve_the_repo_like_the_installer():
@@ -772,12 +775,33 @@ def test_permission_error_is_one_line_naming_the_path():
     assert lines[0].endswith("If an agent ran this, its sandbox may need to allow writes to the repo.")
 
 
-def test_other_errors_are_one_line():
-    repo = _with_markers(".cursor/")
-    open(os.path.join(repo, ".cursor/hooks.json"), "w").write("{not json")
+def test_invalid_hook_json_names_the_file_and_debug_keeps_the_stack():
+    repo = _with_markers(".claude/")
+    open(os.path.join(repo, ".claude/settings.json"), "w").write("{\n  // mine\n}\n")
     proc = cli([], repo)
     assert proc.returncode == 1 and len(proc.stderr.splitlines()) == 1, proc.stderr
-    assert proc.stderr.startswith("cadence-orchestrator: ") and "JSON" in proc.stderr
+    assert proc.stderr.startswith("cadence-orchestrator: .claude/settings.json isn't valid JSON (")
+    assert proc.stderr.endswith("); fix it and run the installer again\n")
+    assert open(os.path.join(repo, ".claude/settings.json")).read() == "{\n  // mine\n}\n"
+    readme = open(os.path.join(ROOT, "README.md")).read()
+    assert (
+        "cadence-orchestrator: .claude/settings.json isn't valid JSON (" in readme
+    )  # troubleshooting sample
+
+
+def test_debug_prints_the_full_stack():
+    repo = _with_markers(".cursor/")
+    os.makedirs(
+        os.path.join(repo, ".agents/skills/tpm/SKILL.md")
+    )  # a folder where a file goes: an unexpected error
+    quiet = cli([], repo)
+    assert quiet.returncode == 1 and len(quiet.stderr.splitlines()) == 1, quiet.stderr
+    loud = cli([], repo, DEBUG="1")
+    assert (
+        loud.returncode == 1
+        and "    at " in loud.stderr
+        and loud.stderr.splitlines()[-1] == quiet.stderr.strip()
+    )
 
 
 def test_cursor_arming_check_does_not_claim_this_chat():
@@ -828,24 +852,34 @@ def test_shared_skill_folder_does_not_make_antigravity_installed():
     assert "skip antigravity: not installed" in doc.stdout, doc.stdout
 
 
-def test_status_fails_and_says_reinstall_when_hooks_or_shim_are_gone():
+def test_status_uses_per_target_markers_and_notes_an_unowned_skill_folder():
     repo = scratch_repo()
     install(repo, "cursor")
     os.remove(os.path.join(repo, ".cursor/hooks.json"))
     os.remove(os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"))
     st = cli(["status"], repo)
-    assert st.returncode == 1, st.stdout
-    assert (
-        ".agents/skills/tpm/ has the skill but no hook config or shim for codex or cursor or gemini"
-        in st.stdout
-    )
-    assert "reinstall with `npx cadence-orchestrator --target <name>`" in st.stdout
+    assert st.returncode == 1 and "cursor: not installed" in st.stdout, st.stdout
+    assert "note: .agents/skills/tpm/ has a tpm skill, but no target here is installed with it" in st.stdout
+    assert "<name>" not in st.stdout
     repo = scratch_repo()
     install(repo, "claude")
     os.remove(os.path.join(repo, ".claude/settings.json"))
     st = cli(["status"], repo)
+    assert st.returncode == 1, st.stdout
     assert (
-        st.returncode == 1
-        and "claude: incomplete install; reinstall with `npx cadence-orchestrator --target claude`"
-        in st.stdout
+        "claude: incomplete install; reinstall with `npx cadence-orchestrator --target claude`" in st.stdout
     )
+    # An instructions-only target is installed by its marker alone; no shim is looked for.
+    repo = scratch_repo()
+    install(repo, "antigravity")
+    st = cli(["status"], repo)
+    assert st.returncode == 0 and "antigravity: instructions only" in st.stdout and "note:" not in st.stdout
+
+
+def test_bare_repo_before_any_double_dash_argument_keeps_typos_visible():
+    repo, sub = _repo_with_subfolder()
+    proc = cli(["--repo", "--tagret", "claude"], sub)
+    assert proc.returncode == 2 and proc.stderr.startswith(
+        "cadence-orchestrator: unknown argument --tagret"
+    ), proc.stderr
+    assert "FLAGS" not in open(INSTALL).read()

@@ -37,22 +37,18 @@ export function status(repo, TARGETS, hours, stateDir = "") {
   let anyHooked = false;
   let broken = false;
   const reinstall = (t) => `reinstall with \`npx cadence-orchestrator --target ${t}\``;
-  const used = new Set(); // skill folders an installed target accounts for
-  const orphans = new Map(); // skill folder -> hooked targets that use it but aren't installed
+  const owned = new Set(); // skill folders an installed target accounts for
   const states = new Map();
   for (const target of Object.keys(TARGETS).sort()) {
     const spec = TARGETS[target];
     const inst = installed(repo, target, spec);
-    const skillFiles = ["SKILL.md", `scripts/shim_${target}.py`].every((f) => fs.existsSync(path.join(repo, spec.skill, f)));
-    if (!inst.installed && !skillFiles) {
+    // Installed is per target: a guarded target's shim or hook entries, an instructions-only target's marker.
+    if (!inst.installed) {
       lines.push(`${target}: not installed`);
-      if (hasGuard(spec) && fs.existsSync(path.join(repo, spec.skill, "SKILL.md"))) {
-        orphans.set(spec.skill, [...(orphans.get(spec.skill) ?? []), target]);
-      }
       continue;
     }
     anyInstalled = true;
-    used.add(spec.skill);
+    owned.add(spec.skill);
     if (!hasGuard(spec)) {
       const skill = fs.existsSync(path.join(repo, spec.skill, "SKILL.md"));
       lines.push(`${target}: instructions only, no guard hooks on this platform; skill ${skill ? "found" : "missing"} (${spec.skill})`);
@@ -63,6 +59,7 @@ export function status(repo, TARGETS, hours, stateDir = "") {
       continue;
     }
     anyHooked = true;
+    const skillFiles = ["SKILL.md", `scripts/shim_${target}.py`].every((f) => fs.existsSync(path.join(repo, spec.skill, f)));
     lines.push(`${target}: skill files ${skillFiles ? "found" : "missing"} (${spec.skill})`);
     const hooks = hookEntries(repo, target, spec);
     const have = hooks.events.filter((e) => e.installed).map((e) => e.event);
@@ -107,15 +104,12 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     lines.push(`state dir: ${dir} (from ${source})`);
     lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
   }
-  for (const [skill, targets] of orphans) {
-    if (used.has(skill)) continue;
-    broken = true;
-    lines.push(
-      `${skill}/ has the skill but no hook config or shim for ${targets.join(" or ")}; ` +
-        `${reinstall(targets.length > 1 ? "<name>" : targets[0])}`,
-    );
+  for (const skill of new Set(Object.values(TARGETS).map((s) => s.skill))) {
+    if (!owned.has(skill) && fs.existsSync(path.join(repo, skill, "SKILL.md"))) {
+      lines.push(`note: ${skill}/ has a tpm skill, but no target here is installed with it`);
+    }
   }
-  if (!anyInstalled && !broken) lines.push("No target is installed in this repo.");
+  if (!anyInstalled) lines.push("No target is installed in this repo.");
   else if (anyHooked && !anyLive) {
     lines.push(
       "No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session " +

@@ -99,7 +99,7 @@ warns if `python3` is missing. To install from source instead of npm, use
 `npx github:jtouley/cadence-orchestrator`.
 
 `--repo <path>` installs into the repository whose root is that path; without it, into the one you're in, at its
-top level (never your home directory). Re-running is safe: the installer replaces only its own entries in the
+top level (but not your home directory, if that's a git repository). Re-running is safe: the installer replaces only its own entries in the
 files it touches. It also adds `.cadence/tpm.off` to `.gitignore`. From a clone of this repository,
 `./install.sh` takes the same options.
 
@@ -233,16 +233,16 @@ isn't writable), point npm at a writable cache:
 npm_config_cache=/tmp/npm-cache npx cadence-orchestrator --target codex
 ```
 
-### The installer stops with a `SyntaxError` from `JSON.parse`
+### The installer stops with "isn't valid JSON"
 
 The hook file it merges into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
 
 ```console
-SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)
+cadence-orchestrator: .claude/settings.json isn't valid JSON (Expected property name or '}' in JSON at position 4 (line 2 column 3)); fix it and run the installer again
 ```
 
 The skill files were copied but no hooks were added, and the file is unchanged. Remove the comments and run the
-installer again.
+installer again. Errors print one line; set `DEBUG=1` to also print the full stack trace.
 
 ### `warning: python3 is not on PATH`
 

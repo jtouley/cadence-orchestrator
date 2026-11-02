@@ -13,15 +13,16 @@ rate, rework and recovery time.
   with one line. It ends with per-target next steps: reload once where hooks were installed, `$tpm` on Codex and
   `/tpm` elsewhere, then `status`.
 - `--repo` defaults to the git repository you're in, at its top level, also from a subfolder or as a bare `--repo`
-  (last, or followed by another flag). `--repo <path>` must still be a repository root. It never resolves to the
-  home directory. The installer prints which repository it installs into; outside a repository it fails with one
+  (last, or followed by a `--` argument). `--repo <path>` must still be a repository root. When installing, the
+  walk up from the current folder never lands on the home directory. The installer prints which repository it installs into; outside a repository it fails with one
   line. `doctor`, `status` and `dora` resolve it the same way.
-- Errors print one line instead of a stack trace; a permission error names the path and says an agent's sandbox may
-  need to allow writes to the repo.
+- Errors print one line instead of a stack trace (`DEBUG=1` adds the stack); a permission error names the path and
+  says an agent's sandbox may need to allow writes to the repo, and a hook file that isn't valid JSON is named.
 - New `antigravity` target (Google Antigravity): the skill in `.agents/skills/tpm/` (run as `/tpm`) and a manual rule
   `.agents/rules/tpm.md` that marks the install. Instructions only: no Antigravity hook input carries the prompt, so
   nothing can arm the guard. `doctor` and `status` report it as instructions only.
-- `status` exits 1, naming the reinstall command, when a guarded target's skill, shim or hook config is missing.
+- `status` exits 1, naming the reinstall command, when an installed guarded target's skill, shim or hook config is
+  missing, and notes a skill folder that no installed target owns.
 - On Cursor, `/tpm` reports "guard armed in a recent session; can't confirm this chat" or "instructions only" with
   the fix command.
 - Shared skill folders are copied once per run, and `.gitignore` is updated once.

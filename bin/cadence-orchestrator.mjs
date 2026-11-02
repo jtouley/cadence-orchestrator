@@ -14,8 +14,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hasGuard } from "./doctor.mjs";
 
-// No raw stack traces: one line with the cause. A refused write is usually an agent's sandbox.
+// No raw stack traces: one line with the cause (the full stack with DEBUG set). A refused write is usually an
+// agent's sandbox.
 function crashed(e) {
+  if (process.env.DEBUG) console.error(e?.stack ?? e);
   const line = String(e?.message ?? e).split("\n")[0];
   if (["EACCES", "EPERM", "EROFS"].includes(e?.code)) {
     console.error(
@@ -107,7 +109,6 @@ function copyDir(src, dest) {
   }
 }
 
-// Once per skill folder per run: Antigravity, Codex, Cursor and Gemini share .agents/skills/tpm.
 function copySkill(repo, target, skill) {
   const dest = path.join(repo, skill);
   let text = read(path.join(CORE, "SKILL.md"));
@@ -125,8 +126,14 @@ function copySkill(repo, target, skill) {
   }
 }
 
-function mergeHooks(file, ours) {
-  const current = exists(file) ? JSON.parse(read(file)) : {};
+function mergeHooks(repo, rel, ours) {
+  const file = path.join(repo, rel);
+  let current = {};
+  try {
+    if (exists(file)) current = JSON.parse(read(file));
+  } catch (e) {
+    fail(`${rel} isn't valid JSON (${e.message}); fix it and run the installer again`);
+  }
   for (const [key, value] of Object.entries(ours)) {
     if (key !== "hooks" && !(key in current)) current[key] = value;
   }
@@ -165,16 +172,15 @@ function addCatalogs(repo, files) {
   });
 }
 
-function install(repo, target, copied) {
+// Per target: the shim and the target's own files. The skill folders are copied before this, once each.
+function install(repo, target) {
   const spec = TARGETS[target];
-  if (!copied.has(spec.skill)) copySkill(repo, target, spec.skill);
-  copied.add(spec.skill);
   if (hasGuard(spec)) {
     fs.copyFileSync(path.join(ADAPTERS, target, "shim.py"), path.join(repo, spec.skill, "scripts", `shim_${target}.py`));
   }
   const touched = [spec.skill + "/"];
   for (const [src, dst] of spec.hooks ?? []) {
-    mergeHooks(path.join(repo, dst), JSON.parse(template(src, spec.skill)));
+    mergeHooks(repo, dst, JSON.parse(template(src, spec.skill)));
     touched.push(dst);
   }
   for (const [src, dst] of spec.files ?? []) {
@@ -205,9 +211,6 @@ or, without it, every editor the repo has config for (or else the agent running 
 \`dora\` computes DORA's delivery metrics from git (read-only).
 \`status\` reports what's installed and whether hooks have been seen firing in a live session (default: last 24 h).`;
 
-const FLAGS = ["--target", "--repo", "--catalog", "--state-dir", "--since", "--deploys", "--json",
-  "--include-prereleases", "--hours", "-h", "--help"];
-
 function parseArgs(argv, mode) {
   const opts = { repo: null, catalog: [], hours: 24, stateDir: "", since: null, deploys: "tags", json: false };
   for (let i = 0; i < argv.length; i++) {
@@ -215,9 +218,9 @@ function parseArgs(argv, mode) {
     const value = () => inline ?? argv[++i] ?? fail(`${flag} needs a value\n${USAGE}`, 2);
     if (flag === "--target") opts.target = value();
     else if (flag === "--repo") {
-      // A bare --repo (last, or followed by a known flag) means "here", like no --repo at all.
+      // A bare --repo (last, or followed by a --flag, known or not) means "here", like no --repo at all.
       const next = argv[i + 1];
-      const bare = inline === undefined && (next === undefined || FLAGS.includes(next.split("=")[0]));
+      const bare = inline === undefined && (next === undefined || next.startsWith("--"));
       opts.repo = bare ? null : inline === undefined ? argv[++i] : inline || null;
     }
     else if (flag === "--catalog" && mode === "install") opts.catalog.push(value());
@@ -255,18 +258,24 @@ const mode = ["doctor", "status", "dora"].includes(argv[0]) ? argv[0] : "install
 const isDoctor = mode === "doctor";
 const opts = parseArgs(mode === "install" ? argv : argv.slice(1), mode);
 // --repo <path> must be a repository root. Without it, the repository containing the current folder (the nearest
-// folder up with a .git). Never the home directory, even when it's a git repository (dotfiles).
+// folder up with a .git); when installing, that walk-up never lands on the home directory (a dotfiles repo).
 function findRepo(explicit) {
   const real = (p) => (exists(p) ? fs.realpathSync(p) : p);
   const home = real(os.homedir());
-  let repo = explicit && path.resolve(explicit);
-  if (repo && !exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
-  for (let dir = process.cwd(); !repo; dir = path.dirname(dir)) {
-    if (exists(path.join(dir, ".git"))) repo = dir;
-    else if (path.dirname(dir) === dir) fail(`${process.cwd()} is not inside a git repository`);
+  if (explicit) {
+    const repo = path.resolve(explicit);
+    if (!exists(path.join(repo, ".git"))) fail(`${repo} is not a git repository root`);
+    return repo;
   }
-  if (real(repo) === home) fail(`${repo} is your home directory; run this inside a project's repository`);
-  return repo;
+  for (let dir = process.cwd(); ; dir = path.dirname(dir)) {
+    if (exists(path.join(dir, ".git"))) {
+      if (mode === "install" && real(dir) === home) {
+        fail(`${dir} is your home directory; run this inside a project's repository, or pass --repo`);
+      }
+      return dir;
+    }
+    if (path.dirname(dir) === dir) fail(`${process.cwd()} is not inside a git repository`);
+  }
 }
 const repo = findRepo(opts.repo);
 if (mode === "dora") {
@@ -331,9 +340,11 @@ const py = guarded.length ? spawnSync("python3", ["--version"], { stdio: "ignore
 if (py.error || py.status !== 0) {
   console.error("warning: python3 is not on PATH. The guard hooks run python3 and will not work until it is installed.");
 }
-const copied = new Set();
+// Antigravity, Codex, Cursor and Gemini share .agents/skills/tpm: copy each skill folder once.
+const folders = new Map(targets.map((t) => [TARGETS[t].skill, t]));
+for (const [skill, t] of folders) copySkill(repo, t, skill);
 for (const t of targets) {
-  console.log(`${t}: ${install(repo, t, copied).join(", ")}${hasGuard(TARGETS[t]) ? "" : " (instructions only, no guard)"}`);
+  console.log(`${t}: ${install(repo, t).join(", ")}${hasGuard(TARGETS[t]) ? "" : " (instructions only, no guard)"}`);
 }
 addGitignore(repo);
 if (opts.catalog.length) console.log(`catalog: ${addCatalogs(repo, opts.catalog).join(", ")}`);
