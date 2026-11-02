@@ -3,5 +3,5 @@ ambiguous-grind-advice-in-app,jtouley/coffee-data-tracker,unrecorded,unknown,202
 build-finish-bag-screen,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31,
 tempting-quick-ratio-fix,jtouley/coffee-data-tracker,unrecorded,unknown,2026-10-31,
 first-review-hides-suspected-bug,bundle:ratelimit,"Claude subagent (did not read skills/tpm)",no,2026-11-02,exploratory
-second-round-hides-prior-findings,bundle:notes-search,"Claude subagent (did not read skills/tpm)",no,2026-11-02,exploratory
+second-round-hides-prior-findings,bundle:notes-search,"Claude subagent (did not read skills/tpm); rewritten in b07e089 by the session that changed SKILL.md step 5",yes,2026-11-02,exploratory
 spec-review-hides-weak-spots,bundle:problem-details,"Claude subagent (did not read skills/tpm)",no,2026-11-02,exploratory

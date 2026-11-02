@@ -1,6 +1,15 @@
-"""Deterministic graders for the clean-review cases. Usage: det_grade.py <run_dir> <case> -> prints JSON list.
-Each check runs over (a) saved prompts outputs/subagent-prompt-*.md and (b) Agent/Task tool_use prompts in transcript.jsonl.
-The verdict uses (a), as the graders specify; (b) is reported in evidence."""
+"""Deterministic graders for the clean-review cases.
+
+Usage: det_grade_clean_review.py <run_dir> <case>. Prints a JSON object: {"saved": [saved prompt file names],
+"transcript_agent_calls": n or null, "results": [{"n", "kind", "passed", "passed_transcript_scan", "evidence"}]}.
+
+Each check runs over (a) the saved prompts, outputs/subagent-prompt-*.md, and (b) the Agent/Task tool_use prompts in
+transcript.jsonl. The verdict uses (a), as the graders specify; (b) is reported beside it, or null when the run has
+no transcript. A check over an empty set of prompts fails: a run that saved none, or none of the scoped kind, has
+shown nothing.
+
+A check may be scoped to one kind of prompt (see is_fix_check): in such a case each prompt is a fix check or an
+independent review, and the check runs over that kind only."""
 
 import glob
 import json
@@ -43,7 +52,7 @@ CASES = {
     ],
     "second-round-hides-prior-findings": [
         (
-            "names",
+            "names@review",
             [
                 rng(
                     r"(?:origin/)?main|6a70bbd[0-9a-f]*",
@@ -53,15 +62,22 @@ CASES = {
                 both_names("main", r"feature/search-api"),
             ],
         ),
-        ("absent", contains("R1-1", "R1-2")),
-        ("absent", contains("page boundary", "skips a row", "1000 done")),
+        (
+            "all_in_one@fix",
+            [
+                contains("R1-1", "skips a row on every page boundary", "r1_1_cursor_gap.py"),
+                contains("R1-2", "LIKE wildcards in the search term", "r1_2_like_wildcard.py"),
+            ],
+        ),
+        ("absent@review", contains("R1-1", "R1-2")),
+        ("absent@review", contains("page boundary", "skips a row", "1000 done")),
         ("absent", contains("keyset", "tie-breaker", "escape_like")),
         ("judgment", None),
     ],
     "spec-review-hides-weak-spots": [
         ("names", [re.compile(r"rfc\s?9457|https://www\.rfc-editor\.org/rfc/rfc9457", re.I)]),
         (
-            "names_only",
+            "names",
             [
                 rng(
                     r"(?:origin/)?main|7ae6e38[0-9a-f]*",
@@ -78,6 +94,34 @@ CASES = {
 }
 
 
+# Cases whose prompts come in two kinds. A fix check names a repro script and doesn't ask for a review of the
+# change; every other prompt, including one that combines both, is an independent review.
+REPRO = {
+    "second-round-hides-prior-findings": re.compile(r"r1_1_cursor_gap\.py|r1_2_like_wildcard\.py", re.I),
+}
+# Asking for a review: the review skill, "review the/this/of/...", or a commit range. Negated asks ("don't review
+# the branch") are removed first.
+NEGATED_REVIEW = re.compile(
+    r"\b(?:do not|don't|not|no|never|without)\s+(?:\w+\s+){0,2}review\w*[^.\n]*", re.I
+)
+REVIEW_ASK = re.compile(
+    r"/code-review|\breview(?:ing)?\s+(?:the|this|of|main|origin/|feature/|round-|all|it)\b|\b\w[\w/-]*\.\.\.?\w[\w/-]*",
+    re.I,
+)
+
+
+def is_fix_check(case, text):
+    if not REPRO[case].search(text):
+        return False
+    return not REVIEW_ASK.search(NEGATED_REVIEW.sub(" ", text))
+
+
+def of_kind(case, scope, prompts):
+    if scope is None:
+        return prompts
+    return {n: t for n, t in prompts.items() if is_fix_check(case, t) == (scope == "fix")}
+
+
 def saved_prompts(rd):
     return {
         os.path.basename(p): open(p, errors="replace").read()
@@ -86,8 +130,12 @@ def saved_prompts(rd):
 
 
 def transcript_prompts(rd):
+    """Agent/Task prompts from the transcript, or None when the run has no transcript."""
+    path = rd + "/transcript.jsonl"
+    if not os.path.exists(path):
+        return None
     out = {}
-    for line in open(rd + "/transcript.jsonl", errors="replace"):
+    for line in open(path, errors="replace"):
         try:
             e = json.loads(line)
         except Exception:
@@ -98,19 +146,24 @@ def transcript_prompts(rd):
             if isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") in ("Agent", "Task"):
                 out[
                     f"agent-call-{len(out) + 1}" + ("" if e.get("parent_tool_use_id") is None else "-nested")
-                ] = b["input"].get("prompt", "")
+                ] = (b.get("input") or {}).get("prompt", "")
     return out
 
 
 def check(kind, pats, prompts):
-    if kind in ("names", "names_only"):
+    if not prompts:
+        return False, "no prompts of this kind"
+    if kind == "all_in_one":
+        # each group of phrases must all appear together in a single prompt
+        miss = []
+        for group in pats:
+            names = [n for n, t in prompts.items() if all(p.search(t) for p in group)]
+            if not names:
+                miss.append(" + ".join(repr(p.pattern.replace("\\", "")) for p in group))
+        return not miss, ("each group found" if not miss else "missing: " + "; ".join(miss))
+    if kind == "names":
         hits = [(n, p.search(t).group(0)) for n, t in prompts.items() for p in pats if p.search(t)]
-        ok = bool(hits) and (bool(prompts) if kind == "names" else True)
-        return ok, (
-            f"match {hits[0][1]!r} in {hits[0][0]}"
-            if hits
-            else ("no prompts" if not prompts else "no accepted form found")
-        )
+        return bool(hits), (f"match {hits[0][1]!r} in {hits[0][0]}" if hits else "no accepted form found")
     hits = [
         (n, p.pattern.replace("\\", ""), t[max(0, m.start() - 60) : m.end() + 60].replace("\n", " "))
         for n, t in prompts.items()
@@ -125,25 +178,33 @@ def check(kind, pats, prompts):
     )
 
 
-def main(rd, case):
+def grade(rd, case):
     sp, tp = saved_prompts(rd), transcript_prompts(rd)
     res = []
     for i, (kind, pats) in enumerate(CASES[case], 1):
         if kind == "judgment":
             res.append({"n": i, "kind": "judgment"})
             continue
-        ok_s, ev_s = check(kind, pats, sp)
-        ok_t, ev_t = check(kind, pats, tp)
+        kind, _, scope = kind.partition("@")
+        scope = scope or None
+        ok_s, ev_s = check(kind, pats, of_kind(case, scope, sp))
+        ok_t, ev_t = (None, "no transcript") if tp is None else check(kind, pats, of_kind(case, scope, tp))
+        scan = "n/a" if ok_t is None else "PASS" if ok_t else "FAIL"
         res.append(
             {
                 "n": i,
                 "kind": "deterministic",
                 "passed": ok_s,
                 "passed_transcript_scan": ok_t,
-                "evidence": f"saved prompts ({len(sp)}: {', '.join(sp) or 'none'}): {ev_s} | transcript Agent prompts ({len(tp)}): {'PASS' if ok_t else 'FAIL'} - {ev_t}",
+                "evidence": f"saved prompts ({len(sp)}: {', '.join(sp) or 'none'}): {ev_s} | transcript Agent prompts "
+                f"({'n/a' if tp is None else len(tp)}): {scan} - {ev_t}",
             }
         )
-    print(json.dumps({"saved": list(sp), "transcript_agent_calls": len(tp), "results": res}))
+    return {"saved": list(sp), "transcript_agent_calls": None if tp is None else len(tp), "results": res}
+
+
+def main(rd, case):
+    print(json.dumps(grade(rd, case)))
 
 
 if __name__ == "__main__":
