@@ -15,6 +15,9 @@ rate, rework and recovery time.
 - Cursor: also installs `.cursor/commands/tpm.md`, so `/tpm` is a command in the picker; after `/tpm` the skill
   checks `status` and says "guard armed (advisory on Cursor: warns, doesn't block)" or "instructions only" with
   the fix command.
+- New `antigravity` target (Google Antigravity): installs the skill in `.agents/skills/tpm/`, which Antigravity runs
+  as `/tpm`. Instructions only, no guard: Antigravity's hooks get no prompt text to arm on. `doctor` and `status`
+  report it as instructions only, not as a failure.
 
 ## 0.1.6
 

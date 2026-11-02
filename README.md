@@ -6,8 +6,8 @@ cadence-orchestrator is a skill that makes your coding agent act as a technical 
 the work; the orchestrator plans it with you, hands every piece of it to subagents, has separate reviewers check
 what comes back, and reports with evidence. A guard stops the orchestrator from doing the work itself.
 
-It works with Claude Code, GitHub Copilot, Codex, Cursor and Gemini CLI. It is an offshoot of
-[cadence-core](https://github.com/jtouley/cadence-core). The skill in [`skills/tpm/`](skills/tpm/) follows the
+It works with Claude Code, GitHub Copilot, Codex, Cursor, Gemini CLI and (instructions only) Google Antigravity.
+It is an offshoot of [cadence-core](https://github.com/jtouley/cadence-core). The skill in [`skills/tpm/`](skills/tpm/) follows the
 [Agent Skills open standard](https://agentskills.io/specification), so any client that reads Agent Skills can use
 it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
 
@@ -89,8 +89,10 @@ Then start with /tpm ($tpm on Codex) and verify with `npx cadence-orchestrator s
 ```
 
 It installs for each editor the repo already has config for (`.claude/`, `.cursor/`, `.gemini/`, `.codex/` or
-`AGENTS.md`, `.github/copilot-instructions.md` or `.github/hooks/`); if it finds none, it says so and you choose
-with `--target`. On Cursor the guard only warns; it never blocks.
+`AGENTS.md`, `.github/copilot-instructions.md` or `.github/hooks/`, and for Antigravity `.agent/`,
+`.agents/rules/`, `.agents/workflows/` or `.agents/hooks.json`); if it finds none, it says so and you choose with
+`--target`. `npm i` alone writes nothing into the repo. On Cursor the guard only warns; it never blocks. On
+Antigravity there's no guard, only the skill: its hooks can't see that you typed `/tpm`.
 
 You need Node 18 or later to run the installer, and `python3` for the guard hooks it installs; the installer
 warns if `python3` is missing. To install from source instead of npm, use
@@ -119,6 +121,7 @@ it prints where the state dir came from. To test in a real session, follow
 | GitHub Copilot (CLI and cloud agent) | `copilot` | `.github/skills/tpm/`, `.github/hooks/tpm.json` | **Blocks** |
 | Codex | `codex` | `.agents/skills/tpm/`, `.codex/hooks.json`, a block in `AGENTS.md` | CLI: warns (live hooks unverified). Cloud: **instructions only**; hooks didn't run in the one observed task (2026-10-31, kit 0.1.2) |
 | Cursor | `cursor` | `.agents/skills/tpm/`, `.cursor/hooks.json`, `.cursor/rules/tpm.mdc`, `.cursor/commands/tpm.md` | Warns |
+| Google Antigravity | `antigravity` | `.agents/skills/tpm/` (`/tpm` runs it) | **Instructions only** |
 | Gemini CLI | `gemini` | `.agents/skills/tpm/`, `.gemini/settings.json`, a block in `GEMINI.md` | Warns |
 
 Claude Code and Copilot mark tool calls made by subagents, so the guard can block the orchestrator and let

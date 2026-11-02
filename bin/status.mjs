@@ -34,6 +34,7 @@ export function status(repo, TARGETS, hours, stateDir = "") {
   const lines = [];
   let anyInstalled = false;
   let anyLive = false;
+  let anyHooked = false;
   const states = new Map();
   for (const target of Object.keys(TARGETS).sort()) {
     const spec = TARGETS[target];
@@ -44,6 +45,11 @@ export function status(repo, TARGETS, hours, stateDir = "") {
       continue;
     }
     anyInstalled = true;
+    if (!spec.hooks) {
+      lines.push(`${target}: skill found (${spec.skill}); instructions only: no guard hooks on this platform`);
+      continue;
+    }
+    anyHooked = true;
     lines.push(`${target}: skill files ${skillFiles ? "found" : "missing"} (${spec.skill})`);
     const hooks = hookEntries(repo, target, spec);
     const have = hooks.events.filter((e) => e.installed).map((e) => e.event);
@@ -85,12 +91,12 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
   }
   if (!anyInstalled) lines.push("No target is installed in this repo.");
-  else if (!anyLive) {
+  else if (anyHooked && !anyLive) {
     lines.push(
       "No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session " +
         "in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again from inside " +
         "that session (so it sees the agent's environment), or pass --state-dir.",
     );
   }
-  return { lines, ok: anyLive };
+  return { lines, ok: anyLive || (anyInstalled && !anyHooked) };
 }

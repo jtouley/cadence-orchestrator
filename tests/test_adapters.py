@@ -201,6 +201,7 @@ def snapshot(repo):
 
 
 EXPECTED = {
+    "antigravity": [".agents/skills/tpm/SKILL.md"],
     "claude": [
         ".claude/skills/tpm/SKILL.md",
         ".claude/skills/tpm/scripts/shim_claude.py",
@@ -531,6 +532,7 @@ def test_doctor_status_and_dora_resolve_the_repo_like_the_installer():
 
 
 MARKERS = {
+    "antigravity": [".agent/", ".agents/rules/", ".agents/workflows/", ".agents/hooks.json"],
     "claude": [".claude/"],
     "codex": [".codex/", "AGENTS.md"],
     "copilot": [".github/copilot-instructions.md", ".github/hooks/"],
@@ -567,6 +569,7 @@ def test_bare_run_installs_for_each_detected_editor_only():
             others = {p for t, paths in EXPECTED.items() if t != target for p in paths} - set(
                 EXPECTED[target]
             )
+            others -= set(EXPECTED["antigravity"])  # the skill dir Codex, Cursor and Gemini share
             assert not [p for p in others if os.path.exists(os.path.join(repo, p))], marker
     repo = _with_markers(".cursor/", ".claude/")
     proc = _bare_run(repo)
@@ -599,7 +602,7 @@ def test_nothing_detected_fails_with_one_line_naming_targets():
     assert proc.returncode == 2 and proc.stdout == ""
     assert proc.stderr.count("\n") == 1, proc.stderr
     assert proc.stderr.startswith(f"cadence-orchestrator: no editor config found in {repo} (")
-    assert "--target <claude|codex|copilot|cursor|gemini|all>" in proc.stderr
+    assert "--target <antigravity|claude|codex|copilot|cursor|gemini|all>" in proc.stderr
     assert snapshot(repo) == {}
 
 
@@ -621,3 +624,25 @@ def test_npm_install_never_runs_scripts():
     pkg = json.load(open(os.path.join(ROOT, "package.json")))
     lifecycle = {"preinstall", "install", "postinstall", "prepare", "prepublish", "preprepare", "postprepare"}
     assert not lifecycle & set(pkg.get("scripts", {}))
+
+
+def test_antigravity_is_instructions_only_and_reported_as_such():
+    repo = _with_markers(".agents/rules/")
+    proc = _bare_run(repo)
+    assert proc.returncode == 0, proc.stderr
+    assert "antigravity: .agents/skills/tpm/ (instructions only: no guard hooks)" in proc.stdout
+    assert not os.path.exists(os.path.join(repo, ".agents/hooks.json"))
+    assert not [
+        n for n in os.listdir(os.path.join(repo, ".agents/skills/tpm/scripts")) if n.startswith("shim_")
+    ]
+    doc = subprocess.run(
+        [INSTALL, "doctor", "--target", "antigravity"], capture_output=True, text=True, cwd=repo
+    )
+    assert doc.returncode == 0 and "FAIL" not in doc.stdout, doc.stdout
+    assert "skip antigravity: instructions only: no guard hooks on this platform" in doc.stdout
+    st = subprocess.run([INSTALL, "status"], capture_output=True, text=True, cwd=repo)
+    assert st.returncode == 0, st.stdout
+    assert "antigravity: skill found (.agents/skills/tpm); instructions only: no guard hooks" in st.stdout
+    assert "No live hook activity" not in st.stdout
+    alldoc = subprocess.run([INSTALL, "doctor", "--target", "all"], capture_output=True, text=True, cwd=repo)
+    assert alldoc.returncode == 0 and "FAIL" not in alldoc.stdout, alldoc.stdout

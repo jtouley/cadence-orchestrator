@@ -19,7 +19,13 @@ const MARK = "skills/tpm/scripts/shim_"; // identifies our hook entries on re-in
 const BLOCK = /<!-- cadence-orchestrator:tpm begin -->[\s\S]*?<!-- cadence-orchestrator:tpm end -->\n?/g;
 
 // `detect`: what in a repo shows it uses that editor, for a run without --target.
+// A target without `hooks` is instructions only: the skill, no guard.
 const TARGETS = {
+  antigravity: {
+    // Antigravity runs /tpm from .agents/skills; its hooks get no prompt text, so nothing could arm the guard.
+    skill: ".agents/skills/tpm",
+    detect: [".agent", ".agents/rules", ".agents/workflows", ".agents/hooks.json"],
+  },
   claude: {
     skill: ".claude/skills/tpm",
     hooks: [["claude/settings.hooks.json", ".claude/settings.json"]],
@@ -86,7 +92,9 @@ function copySkill(repo, target, skill) {
   for (const name of ["guard.py", "runtime.py", "tasks_check.py"]) {
     fs.copyFileSync(path.join(CORE, "scripts", name), path.join(dest, "scripts", name));
   }
-  fs.copyFileSync(path.join(ADAPTERS, target, "shim.py"), path.join(dest, "scripts", `shim_${target}.py`));
+  if (TARGETS[target].hooks) {
+    fs.copyFileSync(path.join(ADAPTERS, target, "shim.py"), path.join(dest, "scripts", `shim_${target}.py`));
+  }
 }
 
 function mergeHooks(file, ours) {
@@ -256,7 +264,7 @@ if (isDoctor) {
   const failed = results.filter((r) => !r.ok).length;
   const ran = results.filter((r) => !r.skip).length;
   console.log(failed ? `${failed} check(s) failed.` : `All ${ran} checks passed.`);
-  if (!failed) {
+  if (!failed && targets.some((t) => TARGETS[t].hooks)) {
     console.log(
       "Simulation passed; this does not confirm the hooks fire in a live session. Run " +
         "`npx cadence-orchestrator status` after starting a session here with $tpm (Codex) or /tpm.",
@@ -280,7 +288,9 @@ const detected = () => {
 };
 const targets = !opts.target ? detected() : opts.target === "all" ? Object.keys(TARGETS).sort() : [opts.target];
 console.log(`Installing into ${repo}${opts.target ? "" : ` for ${targets.join(", ")} (detected)`}`);
-for (const t of targets) console.log(`${t}: ${install(repo, t).join(", ")}`);
+for (const t of targets) {
+  console.log(`${t}: ${install(repo, t).join(", ")}${TARGETS[t].hooks ? "" : " (instructions only: no guard hooks)"}`);
+}
 if (opts.catalog.length) console.log(`catalog: ${addCatalogs(repo, opts.catalog).join(", ")}`);
 console.log("Done. Review and commit the changes; see README for per-platform notes.");
 console.log("Reload once: start a new chat or session in this repo, so the hooks load.");

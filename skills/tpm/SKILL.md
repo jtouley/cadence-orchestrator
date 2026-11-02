@@ -30,7 +30,8 @@ user the guard is active without that evidence.
 On Cursor the line never shows, so have a subagent run `npx cadence-orchestrator status` here once you start. If
 it lists a `cursor` session as `armed` with its last event in the last few minutes, tell the user "guard armed
 (advisory on Cursor: warns, doesn't block)". Otherwise tell them "instructions only — to fix, run
-`npx cadence-orchestrator --target cursor`, start a new chat, then /tpm again", and carry on without it.
+`npx cadence-orchestrator --target cursor`, start a new chat, then /tpm again", and carry on without it. On
+Antigravity there's no guard to check: tell the user "instructions only: no guard hooks on Antigravity".
 
 **Fit the setup you actually have.** If there's no remote, you can't push, or pre-commit isn't available, use local
 mode: workstream docs under `.cadence/workstreams/` in the repo, written by an agent but not pushed, and tell the

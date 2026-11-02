@@ -9,7 +9,8 @@ The skill is written for any Agent Skills client. This is what differs between t
 | GitHub Copilot (CLI, cloud agent) | `/tpm` or `$tpm` | `task` | Enforces |
 | Codex (CLI) | `$tpm`, or pick it in `/skills` | Codex subagents (tool name unverified) | Advisory; live hooks unverified |
 | Codex (cloud) | `$tpm` | Codex subagents (seen working on 2026-10-31) | None: project hooks didn't run (observed) |
-| Cursor | `/tpm` or `$tpm` | `Task` | Advisory |
+| Cursor | `/tpm` (a project command) or `$tpm` | `Task` | Advisory |
+| Google Antigravity | `/tpm` (runs the skill from `.agents/skills/`) | `invoke_subagent` (unverified) | None: instructions only. Its hooks (`.agents/hooks.json`) get no prompt text, so nothing can arm the guard (docs, read 2026-11-02) |
 | Gemini CLI | `/tpm` or `$tpm` | unverified | Advisory |
 | Any other Agent Skills client | as the client invokes skills | whatever the client offers | None: instructions only |
 
