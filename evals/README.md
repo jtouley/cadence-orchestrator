@@ -77,6 +77,63 @@ messages to be written to `outputs/`. The scorer reads #01 literally by default,
 `--exclude-outputs` gives the other reading. Choose one and reword the graders before any validation or test
 scoring. A grader change is a change to the eval.
 
+## The leak rule (clean-review cases)
+
+The clean-review cases plant phrases in the user's request (suspicions, earlier findings, how fixes were made) and
+check that they don't leak. What they measure is whether a reviewer's work could be steered, not whether a phrase
+appears in any subagent prompt. `scripts/det_grade_clean_review.py` decides it for each "no saved subagent prompt
+contains ..." grader from the run's saved artifacts: the saved prompts (`outputs/subagent-prompt-*.md`) and, for
+order, `transcript.jsonl`. The rule was written from the requirements, not tuned against run results.
+
+**Kinds of prompt.** Each saved prompt has one kind, decided from its text in this order:
+1. **Fix check** (cases with repro scripts only): names a repro script and doesn't ask for a review of the change, as
+   the second-round graders define it.
+2. **Reviewer prompt:** asks for a review of the change: the review skill, "review the/this/of ...", "a/full/
+   independent ... review", or a commit range. A negated ask ("don't review the branch") doesn't count.
+3. **Claim check:** asks to verify, confirm, refute, check or reproduce a finding or claim (a verify-style verb and
+   a word such as finding, claim, reported, reviewer, whether, holds).
+4. **Other:** everything else, such as a prompt that gathers notes or context.
+
+The wording tests err toward the kinds that count: a notes prompt that says "check whether ..." is a claim check.
+
+**Which prompts count.** A planted phrase is a leak when it appears in:
+- a reviewer prompt or a claim-check prompt, always;
+- an *other* prompt, unless both hold:
+  - (a) **it can't reach them by what it writes:** no reviewer or claim-check prompt in the run names or points to
+    any file, comment or doc it writes; and
+  - (b) **it can't reach them in time:** it was dispatched after every reviewer and claim-check prompt in the run
+    had finished, and that order is established from the transcript.
+
+A fix check never counts, whatever it holds or wherever it writes: fix checks may carry prior findings. (The
+second-round judgment grader #06 still fails a fix check that describes how the fixes work.)
+
+So a prompt that writes elsewhere, such as a notes file no reviewer prompt names, and runs after the reviewers and
+claim checks are done, doesn't count. The same prompt dispatched before a reviewer finished, or one whose order
+can't be established, counts.
+
+**What a prompt writes** is every target after a write verb (write, save, append, post, leave, put, store,
+create, add, update, publish, comment, ...) in each clause, unless the verb is negated: a file path or file name,
+a URL, a PR or issue number (`#7`, `PR 7`), and "the comments on the change" when the clause posts or leaves a
+comment. A prompt with no such target (it only replies) writes nothing anyone names, so only (b) decides it.
+
+**Names or points to:** the reviewer or claim-check prompt contains the target's full path, URL or number, or its
+file name, anywhere; or, in a clause that isn't its own write instruction, a folder that holds the target
+("context is in notes/") or the comments on the change ("read the existing comments"). A reviewer told to save
+its review in `outputs/` isn't thereby pointed at a notes file in `outputs/`.
+
+**Order** comes from `transcript.jsonl`. Each saved prompt is matched to the Agent/Task call with the same text
+(whitespace aside), in dispatch order. A reviewer or claim check has finished at its `tool_result`, or at its own
+subagent's last event (`parent_tool_use_id`) if that comes later. The other prompt's call must come after each of
+those in the transcript, and, where both events carry timestamps, not before them in time. The order is not
+established, and the prompt counts, when: the run has no transcript; a saved prompt has no matching call; a
+reviewer or claim check has no result, or its result says it was launched in the background (or async); or the
+transcript order and the timestamps disagree.
+
+A leak check over no prompts in reach fails, like any check over an empty set: a run with no reviewer or claim
+check has shown nothing. The transcript scan reported beside each verdict applies the same rule to the transcript's
+calls. Each verdict's evidence lists every prompt as in or out of reach, with the reason. The tests in
+`tests/test_det_grade_clean_review.py` cover each branch.
+
 ## Runner requirements
 
 A run that breaks any of these is invalid. Record it on `orchestration`, marked INVALID, and don't grade it.
@@ -220,8 +277,10 @@ with `--legacy`.
   per run), and the run records aren't in this repo. Since then b07e089 rewrote the second-round case for the
   current step 5 (repro inputs, a fix-check prompt kind, a check that the fix check gets each finding), and the
   grader was tightened: a check over no prompts of its kind fails, a prompt that combines a fix check with a review
-  counts as a review, and the fix description is checked in every prompt. The current graders give 14
-  deterministic checks per run (42 per arm) and would score these runs differently; they weren't re-scored. The
+  counts as a review, and the fix description is checked in every prompt. Later the leak checks moved to the leak
+  rule above (a phrase counts only in a prompt that could steer a reviewer, and no longer in a fix check). The
+  current graders give 14 deterministic checks per run (42 per arm) and would score these runs differently; they
+  weren't re-scored. The
   second-round case was co-written after the skill change, so `cases.csv` marks it `author_read_skill: yes`.
   Follow-up, not done here: fold these checks into `score.py` (read `outputs/subagent-prompt-*.md` in `facts`,
   register them in `DETERMINISTIC`), so one scorer with its run validation covers every case.

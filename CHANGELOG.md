@@ -14,6 +14,9 @@ rate, rework and recovery time.
 - Evals: three exploratory cases on reviewer-prompt leaks, with a deterministic grader
   (`evals/scripts/det_grade_clean_review.py`); `cases.csv` gains a `status` column, and `exploratory` cases stay
   in train.
+- Evals: the clean-review grader's leak checks follow a leak rule (`evals/README.md`): a planted phrase counts in
+  reviewer and claim-check prompts, and in any other prompt except a fix check unless the transcript shows it was
+  dispatched after every reviewer and claim check finished and none of them names what it writes.
 
 ## 0.1.4
 
