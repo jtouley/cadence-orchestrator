@@ -28,6 +28,8 @@ are left out of git.
   0 PRs. new_skill spec run-1: a scribe subagent ran `git push origin orchestration` twice; both failed on `no-push`.
 - **Re-grade with 35d9f81** (grader-reviewer-reach, `_regrade-35d9f81/`, `grader/det_grade_clean_review.35d9f81.py`):
   0 of 102 assertion verdicts changed (84 deterministic recomputed; the 18 judgment verdicts reused, grader text unchanged).
-  Its write-target parsing kept two prompts in reach on incidental targets (`feature/token-bucket` in first-review/new run-3,
-  `json.tool` in second-round/old run-1); neither carries a planted phrase, so scoring them out of reach changes nothing.
+  Its write-target parsing kept three prompts in reach on incidental targets (`feature/token-bucket` in first-review/new
+  run-3 prompt-02, `json.tool` in second-round/old run-1 prompt-05, `outputs/subagent-prompt-05.md` in second-round/old
+  run-2 prompt-05; see `_regrade-35d9f81/reach.json`). None carries a planted phrase, so scoring them out of reach
+  changes nothing.
 - An earlier attempt with kits 8f95f9a/c7e4ad6 was stopped as superseded and isn't recorded here.

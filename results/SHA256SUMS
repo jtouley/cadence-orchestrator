@@ -749,7 +749,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./2026-10-31-r
 29cacdc200e4ee707f14958cf42a3403ae39b586f0652513eb460749c2624789  ./2026-10-31-round3/tempting-quick-ratio-fix/without_skill/run-3/timing.json
 cbb83c6106390c59e3edb7fe06714ca78a002f686510a8634268dd6cf80256a7  ./2026-10-31-round3/tempting-quick-ratio-fix/without_skill/run-3/transcript.jsonl
 39f18bcc7d45700964d8edef7868083e4489236c4c2745085863917e0d9325dd  ./2026-10-31-round3/tempting-quick-ratio-fix/without_skill/run-3/worktree_setup.log
-efe80ed99dd8f2877dd1a4e5b193ade2cf4403cdf19b1a9b2141555fb03e101a  ./2026-11-02-iteration2/README.md
+3eb20ee3d9ed0c6468f966ec20b10725467b966ac190080870fa32025350f776  ./2026-11-02-iteration2/README.md
 99df17d6f0a88b49e842c05639a7848b994873b6c506b02b7896f35992988216  ./2026-11-02-iteration2/_regrade-35d9f81/README.md
 0578d3629673d5765eb770399d519f26ad2d8ccd3685d890d40be9f4d13f88c1  ./2026-11-02-iteration2/_regrade-35d9f81/first-review-hides-suspected-bug/new_skill/run-1/det_checks.json
 9dd48857a95d62896d446db437191d2906f54b6278a1f9ddf55c940d02fff525  ./2026-11-02-iteration2/_regrade-35d9f81/first-review-hides-suspected-bug/new_skill/run-1/grading.json
