@@ -216,6 +216,12 @@ with `--legacy`.
   `python3 evals/scripts/det_grade_clean_review.py <run_dir> <case>`; `score.py` accepts the cases (split, registry)
   but leaves their graders to that script and to labelers. Judgment graders: one blinded Claude grader per run, no
   second labeler. Deterministic: old 22/39 = 56% (41–71%), new 35/39 = 90% (76–96%); judgment old 6/9, new 7/9.
-  The run records aren't in this repo. Two caveats: grader 01 of the second-round case was relaxed before
-  the runs to also accept the new commit range, so its `case.yaml` still says otherwise; and the current step 5
-  sends blockers verbatim to a fix-check verifier, which that case's graders 02–05 would count as a leak.
+  These came from the cases and grader as committed at 946e145 (the iteration-1 versions, 13 deterministic checks
+  per run), and the run records aren't in this repo. Since then b07e089 rewrote the second-round case for the
+  current step 5 (repro inputs, a fix-check prompt kind, a check that the fix check gets each finding), and the
+  grader was tightened: a check over no prompts of its kind fails, a prompt that combines a fix check with a review
+  counts as a review, and the fix description is checked in every prompt. The current graders give 14
+  deterministic checks per run (42 per arm) and would score these runs differently; they weren't re-scored. The
+  second-round case was co-written after the skill change, so `cases.csv` marks it `author_read_skill: yes`.
+  Follow-up, not done here: fold these checks into `score.py` (read `outputs/subagent-prompt-*.md` in `facts`,
+  register them in `DETERMINISTIC`), so one scorer with its run validation covers every case.

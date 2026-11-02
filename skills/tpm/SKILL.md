@@ -76,7 +76,8 @@ the main thread still writes nothing, and there's no path carve-out in the guard
 ## Dispatch prompts are one or two lines
 
 The prompt is a verb or skill, a target pinned to a commit, what's out of scope, and where the result goes.
-Everything else is in the doc.
+Everything else is in the doc. For a reviewer, scope means only the split of files or commits it owns when
+reviewers run in parallel; its prompt carries nothing else about where to look (step 5).
 
 - `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
 - `Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR citing that doc@sha and what you
