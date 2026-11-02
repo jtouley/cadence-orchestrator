@@ -29,6 +29,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.32"
       - name: Tag matches package.json version
         id: version
         run: |
@@ -54,8 +57,9 @@ jobs:
             echo "$name@$version is already on npm; bump the version instead of re-tagging" >&2
             exit 1
           fi
-      - run: pip install pytest==9.1.1
-      - run: pytest
+      # Dev tools from uv.lock (pinned by version and hash), as in CI.
+      - run: uv sync --locked --group dev --python 3.13
+      - run: uv run --locked pytest
       - run: node .github/scripts/check-pack.mjs
 
   publish:
