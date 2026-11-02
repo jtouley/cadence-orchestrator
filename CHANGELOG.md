@@ -14,6 +14,7 @@ rate, rework and recovery time.
 - Evals: three exploratory cases on reviewer-prompt leaks, with a deterministic grader
   (`evals/scripts/det_grade_clean_review.py`); `cases.csv` gains a `status` column, and `exploratory` cases stay
   in train.
+- The orchestrator holds the user's hunches back from the doc and every prompt, then tells the user which ones the reviews didn't cover.
 
 ## 0.1.4
 
