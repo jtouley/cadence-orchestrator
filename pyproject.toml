@@ -12,7 +12,7 @@ package = false
 
 [dependency-groups]
 dev = [
-    "pytest==9.1.1",
+    "pytest==9.2.0",
     # pre-commit 4.7.0 needs Python 3.11+; on 3.10 the group installs pytest only.
     "pre-commit==4.7.0 ; python_version >= '3.11'",
 ]
