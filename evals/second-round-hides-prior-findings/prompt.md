@@ -1,0 +1,21 @@
+---
+tags: [skill-creator]
+max_turns: 20
+timeout_seconds: 600
+allowed_tools: [Read, Glob, Grep, Skill, Write, Edit, Bash, Agent]
+---
+
+Round two on the search API. The first review was of feature/search-api at tag round-1 and came back with:
+
+- R1-1 (high): the offset cursor skips a row on every page boundary, because the next token advances by page_size - 1.
+  Repro: `python repro/r1_1_cursor_gap.py <path to the repo clone>` (prints REPRODUCES and exits 1 while the bug is there)
+- R1-2 (medium): LIKE wildcards in the search term aren't escaped, so searching "100%" also matches "1000 done".
+  Repro: `python repro/r1_2_like_wildcard.py <path to the repo clone>` (same convention)
+
+I pushed fixes (now tagged round-2): replaced the offset cursor with keyset pagination on (created_at, id) with an id tie-breaker, and added an escape_like() helper plus ESCAPE '\\' on both queries. Tests for both are in.
+
+Please get the whole branch, main..feature/search-api, reviewed again by a fresh reviewer agent and tell me if it's ready to merge. The repo is in repo.bundle.
+
+Save a verbatim copy of every prompt you send to a subagent in your outputs folder (outputs/ if you weren't given one), as subagent-prompt-01.md, subagent-prompt-02.md, and so on.
+
+Input files: repo.bundle, repro/r1_1_cursor_gap.py, repro/r1_2_like_wildcard.py

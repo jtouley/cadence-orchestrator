@@ -4,6 +4,17 @@ A fix for something an earlier release broke goes under `### Fixed (regression f
 ships it, naming the release that broke it. `npx cadence-orchestrator dora` reads these to measure change fail
 rate, rework and recovery time.
 
+## Unreleased
+
+- Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,
+  never suspected issues, focus areas, fix summaries, earlier findings or the orchestrator's conclusions. The two
+  review passes differ only in the standard (spec against the pinned doc, which builders cite in the PR
+  description with their left-out list; then quality). Round two is a fix check, given the blockers verbatim,
+  plus a blind review of the new commit range. Parallel reviewers may be given a split of files or commits.
+- Evals: three exploratory cases on reviewer-prompt leaks, with a deterministic grader
+  (`evals/scripts/det_grade_clean_review.py`); `cases.csv` gains a `status` column, and `exploratory` cases stay
+  in train.
+
 ## 0.1.4
 
 - Releases are published by CI from a `vX.Y.Z` tag on `main` (`.github/workflows/release.yml`): a `verify` job
