@@ -91,6 +91,9 @@ def test_skill_version_matches_the_package_version():
 
     version = json.load(open(os.path.join(ROOT, "package.json")))["version"]
     assert frontmatter(SKILL_DIR)["metadata"]["version"] == version
+    # Claude Code plugin installs compare this version to detect an update.
+    plugin = json.load(open(os.path.join(ROOT, ".claude-plugin", "plugin.json")))["version"]
+    assert plugin == version, f".claude-plugin/plugin.json says {plugin}, package.json says {version}"
     # The README ships on the npm page: any "Version X.Y.Z" there must be the package version.
     readme = open(os.path.join(ROOT, "README.md")).read()
     for stated in re.findall(r"\bVersion (\d+\.\d+\.\d+)", readme):

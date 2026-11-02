@@ -8,20 +8,21 @@ rate, rework and recovery time.
 
 ## 0.1.5
 
-- Reviewer prompts get no out-of-scope line (parallel reviewers may each own a slice that together covers the whole
-  change), and the quality pass always runs over everything under review; the full rule lives in step 5.
+- Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,
+  never suspected issues, focus areas, fix summaries, earlier findings, the orchestrator's conclusions or an
+  out-of-scope line. The two review passes differ only in the standard (spec against the pinned doc, which builders
+  cite in the PR description with their left-out list; then quality, which always runs over everything under
+  review). Round two is a fix check, given the blockers verbatim, plus a blind review of the new commit range.
+  Parallel reviewers may each be given a slice of files or commits that together cover the whole change.
 - Evals: record the blind-notes results in `evals/README.md`: two designs for keeping hunches from reviewers,
   neither shipped.
-- Reviewer prompts stay clean (`skills/tpm/SKILL.md`, step 5): target, skill, standard and destination only,
-  never suspected issues, focus areas, fix summaries, earlier findings or the orchestrator's conclusions. The two
-  review passes differ only in the standard (spec against the pinned doc, which builders cite in the PR
-  description with their left-out list; then quality). Round two is a fix check, given the blockers verbatim,
-  plus a blind review of the new commit range. Parallel reviewers may be given a split of files or commits.
 - Evals: three exploratory cases on reviewer-prompt leaks, with a deterministic grader
   (`evals/scripts/det_grade_clean_review.py`); `cases.csv` gains a `status` column, and `exploratory` cases stay
   in train.
 
 ## 0.1.4
+
+Tagged `v0.1.4` but not published to npm (the publish job failed); its changes first reach npm in 0.1.5.
 
 - Releases are published by CI from a `vX.Y.Z` tag on `main` (`.github/workflows/release.yml`): a `verify` job
   without publishing rights checks the tag, `main`, that the version isn't on npm yet, and runs the tests; a

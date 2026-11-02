@@ -28,15 +28,16 @@ say which version broke it. The release that fixes it lists the fix under `### F
 
 ## Releasing (maintainers)
 
-1. Bump `package.json` (and the skill's `metadata.version`, which a test keeps equal) and move the CHANGELOG's
-   Unreleased entries under the new version, in a pull request.
+1. Bump `package.json` (and the skill's `metadata.version` and `.claude-plugin/plugin.json`'s `version`, which a
+   test keeps equal) and move the CHANGELOG's Unreleased entries under the new version, in a pull request.
 2. After it merges, the owner tags the merge commit on `main` with an annotated tag (its date is the release time
    `dora` uses) and pushes it:
 
    ```sh
    git switch main && git pull
-   git tag -a v0.1.5 -m "v0.1.5"
-   git push origin v0.1.5
+   v="v$(node -p 'require("./package.json").version')"
+   git tag -a "$v" -m "$v"
+   git push origin "$v"
    ```
 
 3. `.github/workflows/release.yml` runs two jobs:
