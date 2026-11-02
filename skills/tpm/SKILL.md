@@ -75,9 +75,10 @@ the main thread still writes nothing, and there's no path carve-out in the guard
 
 ## Dispatch prompts are one or two lines
 
-The prompt is a verb or skill, a target pinned to a commit, what's out of scope, and where the result goes.
-Everything else is in the doc. For a reviewer, scope means only the split of files or commits it owns when
-reviewers run in parallel; its prompt carries nothing else about where to look (step 5).
+A builder's or investigator's prompt is a verb or skill, a target pinned to a commit, what's out of scope, and
+where the result goes; everything else is in the doc. A reviewer's prompt has no out-of-scope line; parallel
+reviewers may each own a slice of files or commits, as long as together they cover the whole change. What a
+reviewer's prompt holds is in step 5.
 
 - `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
 - `Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR citing that doc@sha and what you
@@ -85,9 +86,9 @@ reviewers run in parallel; its prompt carries nothing else about where to look (
 - `Investigate workstreams/grind-advice.md@3f2a1c9, no fixes. Add findings, with the repro command and output.`
 
 **Pin the doc**: cite it as `workstreams/<slug>.md@<sha>` and have the scribe record that SHA on the task, so a
-later edit can't silently change what an agent was asked to do. **Name the boundary**: a prompt that says what
-is out stops two agents from both doing the overlap. **Ask for what was left out**: every worker reports what
-it skipped or didn't finish, alongside what it did.
+later edit can't silently change what an agent was asked to do. **Name the boundary**: a builder's or
+investigator's prompt that says what is out stops two agents from both doing the overlap. **Ask for what was
+left out**: every worker reports what it skipped or didn't finish, alongside what it did.
 
 Results land as durable artifacts (PR comments, commits, doc updates), not as chat you have to relay. Name an
 existing skill when one fits (code review, security review, cleanup, running the app, project skills). For big
@@ -135,7 +136,11 @@ unwatched on a shared message board. These rules prevent each of those:
    `/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.`
    It checks all of what the doc asked and nothing else, and whether each left-out item is acceptable; dropped
    scope is found here or not at all. Then quality: `/code-review on PR #42 and comment the full review to
-   GitHub.` A pinned pointer to requirements is a standard, not a hint; name any other standard the same way
+   GitHub.` The quality pass always runs, whatever the spec pass found, and is never skipped or narrowed: it
+   covers everything under review (the whole change in round one, the new commit range in round two), whether
+   one reviewer takes it all or parallel reviewers split it, because it finds what the doc didn't ask about. In
+   round two the new commit range is the target, not a fence: the reviewer reads any code that range affects. A
+   pinned pointer to requirements is a standard, not a hint; name any other standard the same way
    (`... against https://agentskills.io/specification`).
    Beyond target, skill, standard and destination, a reviewer's prompt holds only, when reviewers run in
    parallel, which files or commits each owns: a boundary that splits the work is fine, a pointer to where

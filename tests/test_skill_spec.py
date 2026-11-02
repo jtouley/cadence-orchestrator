@@ -95,3 +95,32 @@ def test_skill_version_matches_the_package_version():
     readme = open(os.path.join(ROOT, "README.md")).read()
     for stated in re.findall(r"\bVersion (\d+\.\d+\.\d+)", readme):
         assert stated == version, f"README says Version {stated}, package.json says {version}"
+
+
+def _flat(path):
+    return " ".join(open(path).read().split())
+
+
+def test_reviewer_scope_rules():
+    skill = _flat(os.path.join(SKILL_DIR, "SKILL.md"))
+    # dispatch: only builders and investigators get an out-of-scope line
+    assert (
+        "A builder's or investigator's prompt is a verb or skill, a target pinned to a commit, what's out of scope"
+        in skill
+    )
+    assert "A reviewer's prompt has no out-of-scope line" in skill
+    # step 5: the quality pass always runs and is never narrowed
+    assert "The quality pass always runs" in skill and "never skipped or narrowed" in skill
+    # the PR #11 reviewer rule is still here
+    assert (
+        "Leave out suspected issues, focus areas, what a fix does, earlier findings and your own conclusions"
+        in skill
+    )
+    assert "Builders fixing blockers get the findings verbatim." in skill
+
+
+def test_readme_and_sources_dont_say_every_prompt_names_whats_out():
+    for path in (os.path.join(ROOT, "README.md"), os.path.join(SKILL_DIR, "references", "sources.md")):
+        text = _flat(path)
+        assert "The prompt names a skill or verb" not in text, path
+        assert "Every prompt names its scope boundary" not in text, path
