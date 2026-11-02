@@ -69,7 +69,8 @@ jobs:
       contents: read
       id-token: write # OIDC token for npm trusted publishing and provenance; only this job gets it
     env:
-      # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0; dist-tags with OIDC need npm >= 11.21.0.
+      # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0. Node 22 bundles npm 10, so the job installs npm;
+      # the pin, 11.21.1, is above the 11.5.1 minimum only because it was the newest npm 11 release when pinned.
       # Pinned by version and by the registry's sha512 integrity, checked before installing.
       NPM_VERSION: "11.21.1"
       NPM_INTEGRITY: "sha512-YTzL6QBEJXyHcTu0JiUc7RKMp+mzlJtl7rGLmERaXUQeFHIMc9atdr6G9M9C8vDWbv40epoTQAzNL2/PtZVDhQ=="
@@ -81,6 +82,12 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+      - name: Check Node version
+        run: |
+          node -e '
+            const [maj, min] = process.versions.node.split(".").map(Number);
+            if (maj < 22 || (maj === 22 && min < 14)) { console.error(`Node ${process.version} < 22.14.0`); process.exit(1); }
+          '
       - name: Install pinned npm
         run: |
           tarball="$(npm pack "npm@$NPM_VERSION" --pack-destination "$RUNNER_TEMP" --silent)"
@@ -90,12 +97,8 @@ jobs:
             exit 1
           fi
           npm install --global --ignore-scripts "$RUNNER_TEMP/$tarball"
-      - name: Check npm and Node versions
+      - name: Check npm version
         run: |
-          node -e '
-            const [maj, min] = process.versions.node.split(".").map(Number);
-            if (maj < 22 || (maj === 22 && min < 14)) { console.error(`Node ${process.version} < 22.14.0`); process.exit(1); }
-          '
           if [ "$(npm --version)" != "$NPM_VERSION" ]; then
             echo "npm is $(npm --version), expected $NPM_VERSION" >&2
             exit 1

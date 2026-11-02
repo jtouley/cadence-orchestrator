@@ -66,19 +66,11 @@ Pushing the tag is the approval only if nobody else can push one or publish. Set
   `jtouley/cadence-orchestrator`, workflow `release.yml`, environment `npm-release`. Trusted publishing needs
   npm 11.5.1 or later (the workflow pins 11.21.1), Node 22.14.0 or later and a GitHub-hosted runner.
 - **Environment** `npm-release` (Settings → Environments): add the owner as a required reviewer and limit its
-  deployment tags to `v*`. It holds no npm token.
+  deployment tags to `v*`. It should hold no npm token.
+- **No tokens**: on npmjs.com, set the package's Publishing access to **Require two-factor authentication and
+  disallow tokens** (the trusted publisher isn't affected), and keep no `NPM_TOKEN` secret in the repository.
 - **Tag ruleset** (Settings → Rules → Rulesets, target tags `v*`): restrict creation, update and deletion to the
   owner.
-
-### Switching to trusted publishing
-
-The trusted publisher is pending validation until it publishes once, which must happen before 2026-11-04 21:13 UTC.
-Make the first OIDC release a prerelease (for example `v0.1.6-rc.0`), so it goes to `next` and leaves `latest`
-alone if something is wrong. After it succeeds, the owner locks down token publishing:
-
-1. On npmjs.com, the package's Settings → **Publishing access** → **Require two-factor authentication and disallow
-   tokens**. This doesn't affect the trusted publisher.
-2. Delete the `NPM_TOKEN` secret from the `npm-release` environment (Settings → Environments → `npm-release`).
 
 ## Repository settings (maintainers)
 
