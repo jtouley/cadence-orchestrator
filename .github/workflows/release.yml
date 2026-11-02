@@ -23,15 +23,13 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.13"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: "0.11.32"
+          python-version: "3.13" # sets UV_PYTHON; the one place this job picks its Python
           enable-cache: false # no cache shared with other workflows in the release path
       - name: Tag matches package.json version
         id: version
@@ -59,7 +57,7 @@ jobs:
             exit 1
           fi
       # Dev tools from uv.lock (pinned by version and hash), as in CI.
-      - run: uv sync --locked --group dev --python 3.13
+      - run: uv sync --locked --group dev
       - run: uv run --locked pytest
       - run: node .github/scripts/check-pack.mjs
 

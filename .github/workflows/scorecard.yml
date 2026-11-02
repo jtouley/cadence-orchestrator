@@ -19,7 +19,7 @@ jobs:
     permissions:
       security-events: write # upload SARIF to code scanning
       contents: read
-      # Phase 2 (publish_results: true) adds id-token: write; actions: read is only needed for private repos.
+      # Phase 2 (publish_results: true) adds only id-token: write; actions: read is for private repos.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

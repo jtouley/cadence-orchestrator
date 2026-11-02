@@ -71,11 +71,14 @@ The `orchestration` branch used by the skill needs its own pre-commit setup; see
 weekly and when branch protection changes, and uploads its findings to the repository's code scanning (Security
 tab). It isn't a required check: it doesn't run on pull requests. Results aren't published yet
 (`publish_results: false`), so the job has only `security-events: write` and `contents: read`. Phase 2, deferred
-until the repository is 90 days old (around 2027-01-29), sets `publish_results: true`, adds the badge, and adds
-back `id-token: write` (to publish) and `actions: read`.
+until the repository is 90 days old (around 2027-01-29), sets `publish_results: true`, adds the badge, and adds only
+`id-token: write` (to publish); `actions: read` is needed only for private repositories.
 
-`.github/workflows/codeql.yml` runs CodeQL on Python and JavaScript for pull requests and pushes to `main`.
+`.github/workflows/codeql.yml` runs CodeQL on the workflows (`actions`), Python and JavaScript for pull requests,
+pushes to `main` and weekly.
 
 Dependabot (`.github/dependabot.yml`) proposes weekly updates for the pinned actions, `uv.lock` and the pre-commit
-hook revisions. The gitleaks version that CI's `leaks` job installs (pinned by commit in `ci.yml`) and the Go
-version there aren't covered; update them with the pre-commit gitleaks hook.
+hook revisions. CI's `leaks` job downloads the gitleaks release tarball named by `GITLEAKS_VERSION` in `ci.yml` and
+checks it against `GITLEAKS_SHA256`; Dependabot doesn't update those. When it bumps the gitleaks hook `rev`, CI
+fails (`.github/scripts/check_gitleaks_version.py`, also a test) until you set both to the new release (the sha256
+of `gitleaks_<version>_linux_x64.tar.gz` is in that release's `gitleaks_<version>_checksums.txt`).

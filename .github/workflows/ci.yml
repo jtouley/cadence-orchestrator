@@ -15,17 +15,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.13"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+      # setup-uv's python-version sets UV_PYTHON, the one place a job picks its Python (.python-version can't move it).
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: "0.11.32"
+          python-version: "3.13"
       # uv.lock pins every dev dependency by version and hash; --locked fails if it's out of date.
-      - run: uv sync --locked --group dev --python 3.13
+      - run: uv sync --locked --group dev
       # no-commit-to-branch guards local commits to main; CI isn't committing, so it's skipped here.
       - run: SKIP=no-commit-to-branch uv run --locked pre-commit run --all-files --show-diff-on-failure
 
@@ -36,27 +35,27 @@ jobs:
         with:
           fetch-depth: 0 # gitleaks scans the whole history, not just this commit
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.10" # exact; GOTOOLCHAIN=local below stops Go switching toolchains
-          cache: false
-      - name: gitleaks over the full history (same version as the pre-commit hook)
+      - name: gitleaks here is the version the pre-commit hook uses
+        run: python3 .github/scripts/check_gitleaks_version.py
+      - name: gitleaks over the full history
         env:
-          GOTOOLCHAIN: local
+          # Release tarball, checked against this sha256 (from the release's gitleaks_8.30.1_checksums.txt).
+          # Keep GITLEAKS_VERSION equal to the gitleaks rev in .pre-commit-config.yaml (checked above).
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
         run: |
-          # v8.30.1 pinned by commit (git ls-remote: lightweight tag -> 83d9cd68); Go checks the module against
-          # sum.golang.org.
-          go install github.com/zricethezav/gitleaks/v8@83d9cd684c87d95d656c1458ef04895a7f1cbd8e
-          "$(go env GOPATH)/bin/gitleaks" git --redact --verbose .
+          tarball="$RUNNER_TEMP/gitleaks.tar.gz"
+          curl -sSfL -o "$tarball" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "$GITLEAKS_SHA256  $tarball" | sha256sum -c -
+          tar -xzf "$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose .
       # The leak check on tracked files runs in the pre-commit job (local leak-check hook).
       - name: Workstream task files, if any
         run: git ls-files -z 'workstreams/*.tasks.json' '**/workstreams/*.tasks.json' | xargs -0 -r python3 skills/tpm/scripts/tasks_check.py
 
   pytest:
     runs-on: ubuntu-latest
-    env:
-      # Without this, `uv run` follows .python-version (3.13) and rebuilds the venv, so the 3.10 leg ran on 3.13.
-      UV_PYTHON: ${{ matrix.python-version }}
     strategy:
       matrix:
         include:
@@ -69,15 +68,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
+      # python-version sets UV_PYTHON for sync and run; without it `uv run` followed .python-version (3.13) and
+      # the 3.10 leg ran on 3.13.
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: "0.11.32"
+          python-version: ${{ matrix.python-version }}
       - run: uv sync --locked --group dev
       - name: Tests run on the matrix Python
         env:
