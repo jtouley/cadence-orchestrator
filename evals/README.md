@@ -226,14 +226,26 @@ with `--legacy`.
   Follow-up, not done here: fold these checks into `score.py` (read `outputs/subagent-prompt-*.md` in `facts`,
   register them in `DETERMINISTIC`), so one scorer with its run validation covers every case.
 - **2026-11-02 clean-review, blind notes (exploratory; neither design shipped):** two ways to keep the user's
-  hunches from reviewers, each against main (13a9a21), on the three clean-review cases as of 13a9a21, 3 runs per
-  case per arm, all valid. Iteration 2 put the hunches in a "Notes (not for reviewers)" section of the workstream
-  doc (012d107), graded with the 012d107 grader: deterministic main 30/42 = 71% (56–83%), change 15/42 = 36%
-  (23–51%); judgment main 6/9, change 5/9. Iteration 3 ran a hunch-check agent after the reviews (b361b96), graded
-  with grader-reviewer-reach 35d9f81, whose leak checks count only prompts in a reviewer's reach: deterministic main
-  26/42 = 62% (47–75%), change 20/42 = 48% (33–62%); judgment main 6/9, change 4/9. Re-grading iteration 2 with
-  35d9f81 changed no verdict. The cause is the same in both: any prompt that carries the user's hunches leaks,
-  whether it is the scribe writing the notes or the agent checking them. Every reviewer and claim-check prompt
-  counts, and no notes prompt qualified as out of reach; only fix checks did. grader-reviewer-reach (35d9f81) is
-  held unmerged: its write-target parsing kept two prompts in reach on targets that a reviewer prompt names only in
-  passing (`feature/token-bucket`, `json.tool`). The run records aren't in this repo.
+  hunches from reviewers, each against main (13a9a21) on the three clean-review cases as of 13a9a21, 3 runs per
+  case per arm. Limits from one pilot per case per arm: 1200 / 600 / 600 s. 36/36 runs valid, 0 reruns per arm,
+  isolation check PASS. Judgment: one blinded Claude grader per run (claude-opus-5-5, the model under test with
+  another prompt), no second labeler, no person spot-check. Hard rules: no main-thread edits or PRs in either arm;
+  in one iteration-2 change run a scribe subagent tried `git push` twice, refused by `no-push`.
+  - Iteration 2, a "Notes (not for reviewers)" doc section (012d107), main's grader (13a9a21): deterministic
+    main 30/42 = 71% (56–83%), change 15/42 = 36% (23–51%); judgment main 6/9 = 67% (35–88%), change
+    5/9 = 56% (27–81%).
+    Per case, main / change: first-review 10/12 / 3/12, second-round 7/15 / 6/15 (a tainted case,
+    `author_read_skill: yes`), spec-review 13/15 / 6/15.
+  - Iteration 3, a hunch-check agent after the reviews (b361b96), grader-reviewer-reach 35d9f81 (leak checks count
+    only prompts in a reviewer's reach): deterministic main 26/42 = 62% (47–75%), change 20/42 = 48% (33–62%);
+    judgment main 6/9 = 67% (35–88%), change 4/9 = 44% (19–73%). Per case: first-review 4/12 / 3/12,
+    second-round 9/15 / 9/15, spec-review 13/15 / 8/15.
+  - Re-grading iteration 2 with 35d9f81 changed none of the 102 per-assertion verdicts.
+
+  The change is behind or level in every case of both iterations; the judgment intervals overlap almost entirely.
+  The cause is the same in both: any prompt that carries the user's hunches leaks, whether the scribe writing the
+  notes or the agent checking them; only fix checks were ever out of reach. grader-reviewer-reach (35d9f81) is held
+  unmerged. Its write-target parsing kept two prompts in reach on incidental targets (`feature/token-bucket`,
+  `json.tool`), only in the iteration-2 re-grade and in prompts with no planted phrase, so scoring them out of reach
+  changes no verdict; iteration 3 has none. Run records, pilots, isolation output and a copy of each grader:
+  `orchestration:results/2026-11-02-iteration2/` and `-iteration3/`.
