@@ -1,9 +1,9 @@
 name: Release
 
 # Publishing starts when the repo owner pushes a vX.Y.Z tag on main. The `verify` job checks the tag and runs the
-# tests without any publishing rights; the `publish` job then runs in the `npm-release` environment, which holds
-# NPM_TOKEN and requires the owner's approval (see CONTRIBUTING), and publishes with npm provenance so the npm
-# version links back to this run, commit and tag.
+# tests without any publishing rights; the `publish` job then runs in the `npm-release` environment, which requires
+# the owner's approval (see CONTRIBUTING), and publishes with npm trusted publishing (OIDC): no npm token is stored
+# or passed. npm adds provenance automatically, so the npm version links back to this run, commit and tag.
 on:
   push:
     tags: ["v*"]
@@ -63,22 +63,45 @@ jobs:
 
   publish:
     needs: verify
-    runs-on: ubuntu-latest
-    environment: npm-release
+    runs-on: ubuntu-latest # trusted publishing needs a GitHub-hosted runner
+    environment: npm-release # must match the trusted publisher on npmjs.com
     permissions:
       contents: read
-      id-token: write # npm provenance; only this job gets it
+      id-token: write # OIDC token for npm trusted publishing and provenance; only this job gets it
+    env:
+      # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0; dist-tags with OIDC need npm >= 11.21.0.
+      # Pinned by version and by the registry's sha512 integrity, checked before installing.
+      NPM_VERSION: "11.21.1"
+      NPM_INTEGRITY: "sha512-YTzL6QBEJXyHcTu0JiUc7RKMp+mzlJtl7rGLmERaXUQeFHIMc9atdr6G9M9C8vDWbv40epoTQAzNL2/PtZVDhQ=="
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # No registry-url: it would write an .npmrc expecting NODE_AUTH_TOKEN. npm's default registry is npmjs.org.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
-      # Node 22's bundled npm supports --provenance; nothing is installed or upgraded unpinned.
-      - name: Publish to npm with provenance
-        run: npm publish --provenance --access public --tag "$DIST_TAG"
+      - name: Install pinned npm
+        run: |
+          tarball="$(npm pack "npm@$NPM_VERSION" --pack-destination "$RUNNER_TEMP" --silent)"
+          actual="sha512-$(openssl dgst -sha512 -binary "$RUNNER_TEMP/$tarball" | base64 -w0)"
+          if [ "$actual" != "$NPM_INTEGRITY" ]; then
+            echo "npm $NPM_VERSION tarball integrity $actual doesn't match the pinned $NPM_INTEGRITY" >&2
+            exit 1
+          fi
+          npm install --global --ignore-scripts "$RUNNER_TEMP/$tarball"
+      - name: Check npm and Node versions
+        run: |
+          node -e '
+            const [maj, min] = process.versions.node.split(".").map(Number);
+            if (maj < 22 || (maj === 22 && min < 14)) { console.error(`Node ${process.version} < 22.14.0`); process.exit(1); }
+          '
+          if [ "$(npm --version)" != "$NPM_VERSION" ]; then
+            echo "npm is $(npm --version), expected $NPM_VERSION" >&2
+            exit 1
+          fi
+          echo "node $(node --version), npm $(npm --version)"
+      - name: Publish to npm (trusted publishing)
+        run: npm publish --access public --tag "$DIST_TAG"
         env:
           DIST_TAG: ${{ needs.verify.outputs.dist_tag }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
