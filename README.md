@@ -169,8 +169,13 @@ are still running; the next attempt goes through. The exact rules are in
 `npx cadence-orchestrator dora` reports [DORA's five delivery metrics](https://dora.dev/guides/dora-metrics/) for a
 repo, read-only, with each metric's definition, source and sample size:
 
-- **Deploys** are release tags `v*` by default, or changes landing on `main` with `--deploys merges`.
-- **Change lead time** runs from each commit to the first deploy that contains it.
+- **Deploys** are release tags `v*` by default, changes landing on `main` with `--deploys merges`, or versions
+  published to npm with `--deploys npm`. Prefer `npm` for a published package (it asks the registry, so it's
+  opt-in): tag mode counts a tag even when its release failed, and a lightweight tag only has its commit's date.
+- **Deployment frequency** is deploys per week from `--since` (or the first deploy) to now, plus the median
+  interval between deploys.
+- **Change lead time** runs from each commit to the first deploy that contains it, counted once. Commits from before
+  the window are the baseline and aren't measured. It uses the committer date, which a rebase or squash resets.
 - **Change fail rate, rework and recovery time** come only from explicit records: CHANGELOG
   `### Fixed (regression from X.Y.Z)` entries and tasks.json tasks with `kind: "fix"`. Without them it prints
   "not measurable" rather than guess.

@@ -142,7 +142,7 @@ function fail(message, code = 1) {
 const USAGE = `usage: cadence-orchestrator --target <${Object.keys(TARGETS).sort().join("|")}|all> [--repo <path>] [--catalog <file.md>]...
        cadence-orchestrator doctor --target <...|all> [--repo <path>]
        cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
-       cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges] [--json]
+       cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges|npm] [--json]
 
 Vendors the tpm skill and its guard hooks into a git repository. Re-running is safe.
 \`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
@@ -163,7 +163,7 @@ function parseArgs(argv, mode) {
       if (Number.isNaN(opts.since.getTime())) fail(`--since needs a date like 2026-01-31\n${USAGE}`, 2);
     } else if (flag === "--deploys" && mode === "dora") {
       opts.deploys = value();
-      if (!["tags", "merges"].includes(opts.deploys)) fail(`--deploys is tags or merges\n${USAGE}`, 2);
+      if (!["tags", "merges", "npm"].includes(opts.deploys)) fail(`--deploys is tags, merges or npm\n${USAGE}`, 2);
     } else if (flag === "--json" && mode === "dora") opts.json = true;
     else if (flag === "--hours" && mode === "status") {
       opts.hours = Number(value());

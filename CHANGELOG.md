@@ -4,14 +4,18 @@ A fix for something an earlier release broke goes under `### Fixed (regression f
 ships it, naming the release that broke it. `npx cadence-orchestrator dora` reads these to measure change fail
 rate, rework and recovery time.
 
-## Unreleased
+## 0.1.4
 
-- Releases are published by CI from a `vX.Y.Z` tag on `main` (`.github/workflows/release.yml`), with npm
-  provenance, so each npm version links back to its commit and tag.
-- `cadence-orchestrator dora [--since] [--deploys tags|merges] [--json]` reports DORA's five delivery metrics from
-  git, and from explicit failure records only; without them it says "not measurable".
-- tasks.json: optional `committed_at`, `merged_at`, `deployed_at` (ISO 8601, ordered) and `kind: planned|fix` with
-  `fixes`; `tasks_check.py` validates them. Workstream docs get a "Deployed when:" line, and the report step gives
+- Releases are published by CI from a `vX.Y.Z` tag on `main` (`.github/workflows/release.yml`): a `verify` job
+  without publishing rights checks the tag, `main`, that the version isn't on npm yet, and runs the tests; a
+  `publish` job in the `npm-release` environment publishes with npm provenance (prereleases to `next`).
+- `cadence-orchestrator dora [--since] [--deploys tags|merges|npm] [--json]` reports DORA's five delivery metrics:
+  deploys from annotated tags, main, or npm publish times; lead time counted once per commit against the first
+  deploy containing it, with older commits as the baseline; failures only from CHANGELOG and tasks.json records,
+  de-duplicated per failed version, and "not measurable" (never 0%) when there are none or they don't match.
+- tasks.json: optional `committed_at`, `merged_at`, `deployed_at` (ISO 8601 with a timezone, ordered; one rule shared
+  with `dora`) and `kind: planned|fix` with `fixes` (a version or another task's id); `tasks_check.py` validates
+  them. Workstream docs get a "Deployed when:" line, and the report step gives
   the merge SHA and deployed version.
 
 ## 0.1.3

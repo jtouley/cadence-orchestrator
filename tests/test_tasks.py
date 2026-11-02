@@ -419,3 +419,12 @@ def test_delivery_times_and_kind_are_validated():
     assert tasks_check.validate(
         doc(dict(base, committed_at="2026-11-02T00:00:00Z", deployed_at="2026-11-01T00:00:00Z"))
     )
+
+
+def test_fixes_must_be_a_version_or_another_task_in_the_file():
+    fix = dict(CLAIMED, id="fix-1", kind="fix")
+    for ok in ("0.1.0", "v0.2.0", "1.0.0-rc.1", "review"):  # "review" is CLAIMED's id
+        assert tasks_check.validate(doc(CLAIMED, dict(fix, fixes=ok))) == [], ok
+    for bad in ("0.1", "latest", "missing-task", "fix-1", None, 3):  # fix-1 would fix itself
+        errors = tasks_check.validate(doc(CLAIMED, dict(fix, fixes=bad)))
+        assert any("a fix must say what it fixes" in e for e in errors), bad

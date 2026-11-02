@@ -13,6 +13,7 @@ CLI: tasks_check.py FILE...   exit 0 if every file is valid, 1 otherwise.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime
 
@@ -21,15 +22,21 @@ KINDS = {"planned", "fix"}
 TIMES = ("committed_at", "merged_at", "deployed_at")  # optional, in this order
 
 
+# The one ISO 8601 rule for task times, shared with bin/dora.mjs (a test keeps the two patterns identical):
+# extended format, seconds optional, fraction of 3 or 6 digits, and a timezone (Z or +hh:mm).
+ISO8601 = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3}|\.\d{6})?)?(Z|[+-]\d{2}:\d{2})$"
+# A version as `fixes` names it, shared with bin/dora.mjs too.
+SEMVER = r"^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
+
+
 def parse_time(value):
-    """An ISO 8601 timestamp with a timezone (Z or +hh:mm), or None if it isn't one."""
-    if not isinstance(value, str):
+    """An ISO 8601 timestamp matching ISO8601, as an aware datetime, or None."""
+    if not isinstance(value, str) or not re.match(ISO8601, value):
         return None
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
-    return parsed if parsed.tzinfo else None
 
 
 SUFFIX = ".tasks.json"
@@ -74,8 +81,13 @@ def validate(data) -> list[str]:
                 errors.append(f"{where}: {b} is before {a}")
         if "kind" in task and task["kind"] not in KINDS:
             errors.append(f"{where}: kind must be one of {sorted(KINDS)}, not {task['kind']!r}")
-        if task.get("kind") == "fix" and not (isinstance(task.get("fixes"), str) and task["fixes"]):
-            errors.append(f"{where}: a fix must say what it fixes (fixes: a version or task id)")
+        if task.get("kind") == "fix":
+            fixes = task.get("fixes")
+            ids = {t.get("id") for t in data["tasks"] if isinstance(t, dict)}
+            if not (isinstance(fixes, str) and (re.match(SEMVER, fixes) or (fixes in ids and fixes != tid))):
+                errors.append(
+                    f"{where}: a fix must say what it fixes: a version like 0.1.0 or another task's id, not {fixes!r}"
+                )
         if state == "done":
             if not task.get("evidence"):
                 errors.append(f"{where}: done without evidence")

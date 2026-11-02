@@ -82,10 +82,15 @@ def dora(repo, *args):
 def test_throughput_from_tags():
     report = dora(synthetic())
     m = report["metrics"]
-    assert m["deployment_frequency"]["count"] == 3
-    assert m["deployment_frequency"]["median_seconds_between"] == 2 * DAY
-    assert m["change_lead_time"]["sample"] == 4  # a, b, changelog, c
+    f = m["deployment_frequency"]
+    assert f["count"] == 3 and f["median_seconds_between"] == 2 * DAY
+    # n deploys over [first deploy, now], not n over the n-1 gaps between them.
+    weeks = (f["window"]["end"] - f["window"]["start"]) / (7 * DAY)
+    assert f["window"]["start"] == T0 + DAY and abs(f["per_week"] - 3 / weeks) < 1e-9
+    # Commit a predates the first deploy: baseline, not measured. b, changelog and c each took a day.
+    assert m["change_lead_time"]["sample"] == 3 and m["change_lead_time"]["baseline_commits"] == 1
     assert m["change_lead_time"]["median_seconds"] == DAY
+    assert "committer date" in m["change_lead_time"]["source"]
     assert "committed to version control to deployed" in m["change_lead_time"]["definition"]
     assert any("too few" in w for w in report["warnings"])
 
@@ -123,7 +128,7 @@ def test_task_records_and_since():
     json.dump(tasks, open(os.path.join(repo, "workstreams", "w.tasks.json"), "w"))
     m = dora(repo)["metrics"]
     assert m["change_fail_rate"]["failed"] == ["0.1.1"]
-    assert m["deployment_rework_rate"]["rework"] == []  # task records name the failure, not a fixing release
+    assert m["deployment_rework_rate"]["rework"] == ["0.1.2"]  # the deploy that shipped the task's fix
     assert m["failed_deployment_recovery_time"]["median_seconds"] == 6 * 3600
     since = dora(repo, "--since", iso(T0 + 4 * DAY))  # only v0.1.2 (T0 + 5 days) is after this
     assert since["metrics"]["deployment_frequency"]["count"] == 1
@@ -168,3 +173,175 @@ def test_this_repos_changelog_records_the_0_1_0_regression():
     text = open(os.path.join(ROOT, "CHANGELOG.md")).read()
     section = text.split("## 0.1.1", 1)[1].split("\n## ", 1)[0]
     assert "### Fixed (regression from 0.1.0)" in section and "__pycache__" in section
+
+
+# ------------------------------------------------------------- PR #8 review fixes
+
+
+def test_failures_from_both_sources_are_deduplicated_and_unmatched_records_reported():
+    repo = synthetic()  # CHANGELOG: 0.1.1 fixes 0.1.0
+    os.makedirs(os.path.join(repo, "workstreams"))
+    tasks = {
+        "tasks": [
+            {
+                "id": "same",
+                "state": "done",
+                "kind": "fix",
+                "fixes": "0.1.0",
+                "deployed_at": iso(T0 + 4 * DAY + 3600),
+            },
+            {
+                "id": "ghost",
+                "state": "done",
+                "kind": "fix",
+                "fixes": "0.0.9",
+                "deployed_at": iso(T0 + 4 * DAY),
+            },
+        ]
+    }
+    json.dump(tasks, open(os.path.join(repo, "workstreams", "w.tasks.json"), "w"))
+    m = dora(repo)["metrics"]
+    assert m["change_fail_rate"]["failed"] == ["0.1.0"]  # one failure, recorded twice
+    assert (
+        m["change_fail_rate"]["value"].startswith("1/3 deploys") and "0.0.9" in m["change_fail_rate"]["value"]
+    )
+    assert m["deployment_rework_rate"]["rework"] == ["0.1.1"]  # the earlier of the two fixes
+    assert m["failed_deployment_recovery_time"]["median_seconds"] == 2 * DAY
+    only_ghost = synthetic(changelog="")
+    os.makedirs(os.path.join(only_ghost, "workstreams"))
+    json.dump(
+        {"tasks": [tasks["tasks"][1]]}, open(os.path.join(only_ghost, "workstreams", "w.tasks.json"), "w")
+    )
+    m = dora(only_ghost)["metrics"]
+    assert m["change_fail_rate"]["value"].startswith("not measurable: failure records don't match any deploy")
+    assert "%" not in m["change_fail_rate"]["value"]
+
+
+def test_lead_time_counts_each_commit_once_with_out_of_order_tags():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    commit(repo, "base", T0)
+    tag(repo, "0.1.0", T0 + DAY)
+    commit(repo, "feature", T0 + 2 * DAY)
+    tag(repo, "0.2.0", T0 + 3 * DAY)
+    git(repo, "switch", "-q", "-c", "maint", "v0.1.0")
+    commit(repo, "backport", T0 + 4 * DAY)
+    tag(repo, "0.1.5", T0 + 5 * DAY)  # maintenance release, tagged after 0.2.0
+    git(repo, "switch", "-q", "main")
+    commit(repo, "next", T0 + 6 * DAY)
+    tag(repo, "0.2.1", T0 + 7 * DAY)
+    lt = dora(repo, "--since", iso(T0 - DAY))["metrics"]["change_lead_time"]
+    # base, feature, backport, next: four commits, each counted once (the old prev..cur range counted
+    # "feature" again under 0.2.1).
+    assert lt["sample"] == 4 and lt["baseline_commits"] == 0
+    assert lt["median_seconds"] == DAY
+
+
+def test_annotated_tags_use_the_tagger_date_and_lightweight_tags_warn():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    commit(repo, "a", T0)
+    tag(repo, "0.1.0", T0 + 5 * DAY)  # annotated, tagged five days after the commit
+    commit(repo, "b", T0 + 6 * DAY)
+    git(repo, "tag", "v0.1.1", at=T0 + 9 * DAY)  # lightweight: carries the commit's date
+    report = dora(repo, "--since", iso(T0 - DAY))
+    lt = report["metrics"]["change_lead_time"]
+    assert lt["sample"] == 2
+    assert any("lightweight tag" in w for w in report["warnings"])
+    assert any("even one whose release failed" in w for w in report["warnings"])
+    assert lt["p90_seconds"] == 5 * DAY  # a -> v0.1.0's tagger date; b -> v0.1.1 at b's own commit date (0)
+
+
+def test_npm_mode_uses_publish_times_and_maps_versions_to_commits():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    for version, at in (("0.1.0", T0), ("0.1.1", T0 + 2 * DAY)):
+        open(os.path.join(repo, "package.json"), "w").write(
+            json.dumps({"name": "demo", "version": version}, indent=2)
+        )
+        git(repo, "add", "package.json")
+        git(repo, "commit", "-q", "-m", version, at=at)
+        if version == "0.1.0":
+            tag(repo, "0.1.0", T0 + 3600)
+    git(repo, "tag", "-a", "v0.9.9", "-m", "never published", at=T0 + 3 * DAY)  # a tag npm doesn't have
+    times = {
+        "created": iso(T0),
+        "modified": iso(T0 + 3 * DAY),
+        "0.1.0": iso(T0 + 2 * 3600),
+        "0.1.1": iso(T0 + 2 * DAY + 3600),
+        "0.1.2": iso(T0 + 4 * DAY),
+    }
+    path = os.path.join(tempfile.mkdtemp(), "times.json")
+    json.dump(times, open(path, "w"))
+    env = dict(os.environ, CADENCE_DORA_NPM_TIMES=path)
+    out = subprocess.run(
+        [CLI, "dora", "--repo", repo, "--json", "--deploys", "npm", "--since", iso(T0 - DAY)],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    report = json.loads(out.stdout)
+    m = report["metrics"]
+    assert m["deployment_frequency"]["count"] == 3  # published versions only; v0.9.9 isn't one
+    assert any("0.1.2" in w and "no matching commit" in w for w in report["warnings"])
+    # 0.1.0 via its tag (published 2 h after its commit), 0.1.1 via package.json history (1 h).
+    assert m["change_lead_time"]["sample"] == 2 and m["change_lead_time"]["p90_seconds"] == 2 * 3600
+
+
+def test_bad_task_files_and_times_warn_and_changelog_resets_on_other_headings():
+    repo = synthetic(
+        changelog="# Changelog\n\n## 0.1.1\n\n- planned\n\n## Notes\n\n### Fixed (regression from 0.1.0)\n"
+    )
+    os.makedirs(os.path.join(repo, "workstreams"))
+    open(os.path.join(repo, "workstreams", "broken.tasks.json"), "w").write("{not json")
+    json.dump(
+        {
+            "tasks": [
+                {"id": "x", "state": "done", "kind": "fix", "fixes": "0.1.0", "deployed_at": "2026-06-01"}
+            ]
+        },
+        open(os.path.join(repo, "workstreams", "w.tasks.json"), "w"),
+    )
+    report = dora(repo)
+    assert any("broken.tasks.json isn't valid JSON" in w for w in report["warnings"])
+    assert any("isn't ISO 8601" in w for w in report["warnings"])
+    m = report["metrics"]
+    assert m["deployment_rework_rate"]["rework"] == []  # "## Notes" isn't a release
+    assert "no fix time" in m["failed_deployment_recovery_time"]["value"]
+
+
+ISO_CASES = {
+    "2026-11-02T09:30:00Z": True,
+    "2026-11-02T09:30Z": True,
+    "2026-11-02T09:30:00.123+02:00": True,
+    "2026-11-02T09:30:00.123456-05:00": True,
+    "2026-11-02T09:30:00": False,  # no timezone
+    "2026-11-02": False,
+    "20261102T093000Z": False,  # basic format
+    "2026-11-02 09:30:00Z": False,
+    "2026-11-02T09:30:00.1Z": False,
+    "yesterday": False,
+}
+
+
+def test_dora_and_tasks_check_share_one_iso8601_rule():
+    import re
+    import sys
+
+    sys.path.insert(0, os.path.join(ROOT, "skills", "tpm", "scripts"))
+    import tasks_check
+
+    js = open(os.path.join(ROOT, "bin", "dora.mjs")).read()
+    assert re.search(r"const ISO8601 = /(.+)/;", js).group(1) == tasks_check.ISO8601
+    assert re.search(r"const SEMVER = /(.+)/;", js).group(1) == tasks_check.SEMVER
+    script = (
+        f"import {{ parseTime }} from {json.dumps(os.path.join(ROOT, 'bin', 'dora.mjs'))};"
+        f"console.log(JSON.stringify({json.dumps(list(ISO_CASES))}.map((v) => parseTime(v) !== null)));"
+    )
+    node = json.loads(
+        subprocess.run(
+            ["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=True
+        ).stdout
+    )
+    python = [tasks_check.parse_time(v) is not None for v in ISO_CASES]
+    assert node == python == list(ISO_CASES.values())

@@ -25,7 +25,8 @@ say which version broke it. The release that fixes it lists the fix under `### F
 
 1. Bump `package.json` (and the skill's `metadata.version`, which a test keeps equal) and move the CHANGELOG's
    Unreleased entries under the new version, in a pull request.
-2. After it merges, the owner tags the merge commit on `main` and pushes the tag. Pushing the tag is the approval:
+2. After it merges, the owner tags the merge commit on `main` with an annotated tag (its date is the release time
+   `dora` uses) and pushes it:
 
    ```sh
    git switch main && git pull
@@ -33,9 +34,18 @@ say which version broke it. The release that fixes it lists the fix under `### F
    git push origin v0.1.4
    ```
 
-3. `.github/workflows/release.yml` checks that the tag matches `package.json` and is on `main`, runs the tests and
-   the package check, and runs `npm publish --provenance --access public`. It needs the repository secret
-   `NPM_TOKEN` (an npm automation or granular token with publish rights).
+3. `.github/workflows/release.yml` runs two jobs:
+   - `verify`, with no publishing rights: the tag matches `package.json` and is on `main`, the version isn't on
+     npm yet (so a re-tag fails early), then the tests and the package check.
+   - `publish`, in the `npm-release` environment: `npm publish --provenance --access public`, with prereleases
+     (`1.2.3-rc.1`) going to the `next` dist-tag.
+
+Pushing the tag is the approval only if nobody else can push one or publish. Set up once:
+
+- **Environment** `npm-release` (Settings → Environments): add the secret `NPM_TOKEN` there, not as a repository
+  secret, add the owner as a required reviewer, and limit its deployment tags to `v*`.
+- **Tag ruleset** (Settings → Rules → Rulesets, target tags `v*`): restrict creation, update and deletion to the
+  owner.
 
 ## Repository settings (maintainers)
 
