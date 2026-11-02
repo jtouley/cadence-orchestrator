@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-      - run: pip install pre-commit==4.7.0
+      - run: pip install --require-hashes -r requirements-dev.txt
       # no-commit-to-branch guards local commits to main; CI isn't committing, so it's skipped here.
       - run: SKIP=no-commit-to-branch pre-commit run --all-files --show-diff-on-failure
 
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
-      - run: pip install pytest==9.1.1
+      - run: pip install --require-hashes -r requirements-dev.txt
       - run: pytest
 
   installer:

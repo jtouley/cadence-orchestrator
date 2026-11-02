@@ -6,11 +6,14 @@ Issues and pull requests are welcome at
 ## Before you open a pull request
 
 ```sh
-pip install pre-commit==4.7.0 pytest==9.1.1
+pip install --require-hashes -r requirements-dev.txt
 pre-commit install
 pre-commit run --all-files
 pytest
 ```
+
+`requirements-dev.txt` pins pytest, pre-commit and their dependencies by hash, as CI installs them; pre-commit
+needs Python 3.11 or later (on 3.10 the file installs pytest only). Regenerate it with the command in its header.
 
 `main` changes only through pull requests: the `no-commit-to-branch` hook refuses local commits to it. If you
 change what the guard allows, update `skills/tpm/references/guard.md` in the same change.
@@ -27,3 +30,12 @@ default branch, with:
 
 The `orchestration` branch used by the skill needs its own pre-commit setup; see
 [`skills/tpm/references/workstream.md`](skills/tpm/references/workstream.md).
+
+## OpenSSF Scorecard
+
+`.github/workflows/scorecard.yml` runs [OpenSSF Scorecard](https://github.com/ossf/scorecard) on pushes to `main`,
+weekly and when branch protection changes, and uploads its findings to the repository's code scanning (Security
+tab). It isn't a required check: it doesn't run on pull requests. Results aren't published yet
+(`publish_results: false`); publishing them and adding the Scorecard badge is deferred until the repository is
+90 days old (around 2027-01-29). Dependabot (`.github/dependabot.yml`) proposes weekly updates to the pinned
+actions.

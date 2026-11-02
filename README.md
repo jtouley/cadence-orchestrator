@@ -214,7 +214,7 @@ The install finishes, but the guard can't run until `python3` is installed. Mean
 ## Development
 
 ```sh
-pip install pre-commit==4.7.0 pytest==9.1.1    # the versions CI uses
+pip install --require-hashes -r requirements-dev.txt    # the versions CI uses, pinned by hash
 pre-commit install    # ruff, gitleaks, leak check, JSON/YAML, `node --check`; refuses commits to main
 pytest
 ```
