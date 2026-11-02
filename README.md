@@ -29,7 +29,8 @@ Issues: [github.com/jtouley/cadence-orchestrator/issues](https://github.com/jtou
 - **Subagents get one-line prompts, and reviewers stay independent.** The prompt names a skill or verb, a target
   with the doc pinned to a commit (`workstreams/<slug>.md@<sha>`), what's out of scope, and where the result goes;
   the details are in the doc. Checks are anchored in tests, CI or a repro command. A separate reviewer runs the
-  result itself and judges what the worker left out, spec first, then quality. Any claim not backed by a command
+  result itself and judges what the worker left out, spec first (against the pinned doc), then quality. Its
+  prompt never carries suspected issues, focus areas or earlier findings. Any claim not backed by a command
   and its output, a commit or a PR link is reported as unproven.
 - **A guard keeps the orchestrator out of the work.** Once armed, it blocks the orchestrator from editing files or
   running commands with side effects. Subagents keep all their tools.
@@ -37,8 +38,9 @@ Issues: [github.com/jtouley/cadence-orchestrator/issues](https://github.com/jtou
 Prompts the orchestrator sends its subagents look like this:
 
 ```text
-/code-review on PR #42 and push the full review to the PR as a comment.
-Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR, don't merge; link it in the doc.
+Implement workstreams/finish-bag.md@3f2a1c9, not the bag-list screen. Open a PR citing that doc@sha and what you left out, don't merge; link it in the doc.
+/code-review on PR #42 against workstreams/finish-bag.md@3f2a1c9 and comment the full review to GitHub.
+/code-review on PR #42 and comment the full review to GitHub.
 ```
 
 ## Use cadence-orchestrator

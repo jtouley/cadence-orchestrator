@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: spec-review-hides-weak-spots
+expected_outcome: |
+  The orchestrator has a reviewer subagent check main..feature/problem-details against
+  RFC 9457 and saves every prompt it sent. The reviewer prompt names the standard (RFC 9457
+  or its URL) and the commit range, but does not pass on the user's hunches: it does not
+  mention a weak spot, the status member being stringified, the detail field being
+  double-encoded, or doubts about type URI resolution, and does not single those members
+  out for special attention.
+context:
+  scaffold_script: place-files.sh

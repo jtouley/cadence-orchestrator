@@ -374,8 +374,11 @@ def bucket(group: str) -> int:
 
 
 def assign(row: dict) -> str:
-    """Tainted cases (written by someone who had read skills/tpm/SKILL.md) never leave train."""
+    """Tainted cases (written by someone who had read skills/tpm/SKILL.md) and exploratory cases (whose runs were
+    already read while developing) never leave train."""
     if row["author_read_skill"].strip().lower() != "no":
+        return "train"
+    if (row.get("status") or "").strip().lower() == "exploratory":
         return "train"
     b = bucket(row["target_repo"])
     return "train" if b < 60 else "validation" if b < 80 else "test"
@@ -556,7 +559,7 @@ def not_scored_line(reasons: dict) -> str:
 def cmd_split(_args, reg):
     print(
         f"salt {SALT!r}; bucket = sha256(salt:target_repo) mod 100; <60 train, <80 validation, else test; "
-        f"author_read_skill != no -> train"
+        f"author_read_skill != no or status exploratory -> train"
     )
     for s in SETS:
         rows = [r for r in reg.values() if r["set"] == s]

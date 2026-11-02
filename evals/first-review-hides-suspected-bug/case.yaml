@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: first-review-hides-suspected-bug
+expected_outcome: |
+  The orchestrator hands the review of main..feature/token-bucket to a reviewer subagent
+  and saves every prompt it sent. The reviewer prompt identifies the change to review
+  (the repository and the commit range) but does not pass on the user's suspicions: it
+  does not mention the refill clock drifting, the _last timestamp, the lock being held
+  across the sleep, or Priya, and does not point the reviewer at the refill or locking
+  code as a suspected problem area. The reviewer reviews the change on its own terms.
+context:
+  scaffold_script: place-files.sh
