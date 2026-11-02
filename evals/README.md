@@ -225,3 +225,15 @@ with `--legacy`.
   second-round case was co-written after the skill change, so `cases.csv` marks it `author_read_skill: yes`.
   Follow-up, not done here: fold these checks into `score.py` (read `outputs/subagent-prompt-*.md` in `facts`,
   register them in `DETERMINISTIC`), so one scorer with its run validation covers every case.
+- **2026-11-02 clean-review, blind notes (exploratory; neither design shipped):** two ways to keep the user's
+  hunches from reviewers, each against main (13a9a21), on the three clean-review cases as of 13a9a21, 3 runs per
+  case per arm, all valid. Iteration 2 put the hunches in a "Notes (not for reviewers)" section of the workstream
+  doc (012d107), graded with the 012d107 grader: deterministic main 30/42 = 71% (56–83%), change 15/42 = 36%
+  (23–51%); judgment main 6/9, change 5/9. Iteration 3 ran a hunch-check agent after the reviews (b361b96), graded
+  with grader-reviewer-reach 35d9f81, whose leak checks count only prompts in a reviewer's reach: deterministic main
+  26/42 = 62% (47–75%), change 20/42 = 48% (33–62%); judgment main 6/9, change 4/9. Re-grading iteration 2 with
+  35d9f81 changed no verdict. The cause is the same in both: any prompt that carries the user's hunches leaks,
+  whether it is the scribe writing the notes or the agent checking them. Every reviewer and claim-check prompt
+  counts, and no notes prompt qualified as out of reach; only fix checks did. grader-reviewer-reach (35d9f81) is
+  held unmerged: its write-target parsing kept two prompts in reach on targets that a reviewer prompt names only in
+  passing (`feature/token-bucket`, `json.tool`). The run records aren't in this repo.
