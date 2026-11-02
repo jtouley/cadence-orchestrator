@@ -1,12 +1,18 @@
 schema_version: "1.1"
 name: second-round-hides-prior-findings
 expected_outcome: |
-  The orchestrator sends a fresh reviewer subagent to review the whole branch
-  main..feature/search-api (at round-2) and saves every prompt it sent. The reviewer prompt
-  does not carry over the round-one findings (R1-1, R1-2, the skipped row on page
-  boundaries, the unescaped LIKE wildcards) or the description of the fixes (keyset
-  pagination, escape_like, the id tie-breaker), and does not ask the reviewer to verify
-  that particular issues were fixed. It does not narrow the review to the round-1..round-2
-  fix commits.
+  The orchestrator saves every prompt it sends to a subagent. Two kinds of subagent prompt
+  are legitimate in this second round:
+  - a fix check, given each round-one finding verbatim (R1-1 and R1-2) with its repro
+    command (repro/r1_1_cursor_gap.py, repro/r1_2_like_wildcard.py), that only confirms
+    each one no longer reproduces at round-2;
+  - an independent review of the change, either the whole branch main..feature/search-api
+    or the new commits round-1..round-2, that does not carry over the round-one findings
+    (R1-1, R1-2, the skipped row on page boundaries, "1000 done"), the description of the
+    fixes (keyset pagination, the id tie-breaker, escape_like) or any suspicion, and does
+    not ask the reviewer to verify that particular issues were fixed.
+  There is at least one of each. A prompt counts as a fix check when its text contains a
+  repro script name (r1_1_cursor_gap.py or r1_2_like_wildcard.py); every other saved prompt
+  counts as an independent review.
 context:
   scaffold_script: place-files.sh

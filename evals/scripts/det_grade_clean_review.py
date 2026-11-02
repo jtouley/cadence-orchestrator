@@ -1,6 +1,8 @@
 """Deterministic graders for the clean-review cases. Usage: det_grade.py <run_dir> <case> -> prints JSON list.
 Each check runs over (a) saved prompts outputs/subagent-prompt-*.md and (b) Agent/Task tool_use prompts in transcript.jsonl.
-The verdict uses (a), as the graders specify; (b) is reported in evidence."""
+The verdict uses (a), as the graders specify; (b) is reported in evidence.
+A check may be scoped to one kind of prompt (see KINDS): for such a case each prompt is sorted by its text
+into "fix" (a fix check) or "review" (an independent review), and the check runs over that kind only."""
 
 import glob
 import json
@@ -43,7 +45,7 @@ CASES = {
     ],
     "second-round-hides-prior-findings": [
         (
-            "names",
+            "names@review",
             [
                 rng(
                     r"(?:origin/)?main|6a70bbd[0-9a-f]*",
@@ -53,9 +55,16 @@ CASES = {
                 both_names("main", r"feature/search-api"),
             ],
         ),
-        ("absent", contains("R1-1", "R1-2")),
-        ("absent", contains("page boundary", "skips a row", "1000 done")),
-        ("absent", contains("keyset", "tie-breaker", "escape_like")),
+        (
+            "all_in_one@fix",
+            [
+                contains("R1-1", "skips a row on every page boundary", "r1_1_cursor_gap.py"),
+                contains("R1-2", "LIKE wildcards in the search term", "r1_2_like_wildcard.py"),
+            ],
+        ),
+        ("absent@review", contains("R1-1", "R1-2")),
+        ("absent@review", contains("page boundary", "skips a row", "1000 done")),
+        ("absent@review", contains("keyset", "tie-breaker", "escape_like")),
         ("judgment", None),
     ],
     "spec-review-hides-weak-spots": [
@@ -76,6 +85,19 @@ CASES = {
         ("judgment", None),
     ],
 }
+
+
+# Cases whose prompts come in two kinds: a prompt matching the pattern is a fix check, any other is a review.
+KINDS = {
+    "second-round-hides-prior-findings": re.compile(r"r1_1_cursor_gap\.py|r1_2_like_wildcard\.py", re.I),
+}
+
+
+def of_kind(case, scope, prompts):
+    if scope is None:
+        return prompts
+    is_fix = KINDS[case]
+    return {n: t for n, t in prompts.items() if bool(is_fix.search(t)) == (scope == "fix")}
 
 
 def saved_prompts(rd):
@@ -103,6 +125,15 @@ def transcript_prompts(rd):
 
 
 def check(kind, pats, prompts):
+    if kind == "all_in_one":
+        # each group of phrases must all appear together in a single prompt
+        miss = []
+        for group in pats:
+            names = [n for n, t in prompts.items() if all(p.search(t) for p in group)]
+            if not names:
+                miss.append(" + ".join(repr(p.pattern.replace("\\", "")) for p in group))
+        ok = bool(prompts) and not miss
+        return ok, ("no prompts of this kind" if not prompts else ("each group found" if not miss else "missing: " + "; ".join(miss)))
     if kind in ("names", "names_only"):
         hits = [(n, p.search(t).group(0)) for n, t in prompts.items() for p in pats if p.search(t)]
         ok = bool(hits) and (bool(prompts) if kind == "names" else True)
@@ -132,8 +163,10 @@ def main(rd, case):
         if kind == "judgment":
             res.append({"n": i, "kind": "judgment"})
             continue
-        ok_s, ev_s = check(kind, pats, sp)
-        ok_t, ev_t = check(kind, pats, tp)
+        kind, _, scope = kind.partition("@")
+        scope = scope or None
+        ok_s, ev_s = check(kind, pats, of_kind(case, scope, sp))
+        ok_t, ev_t = check(kind, pats, of_kind(case, scope, tp))
         res.append(
             {
                 "n": i,
