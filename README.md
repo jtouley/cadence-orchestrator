@@ -26,12 +26,13 @@ Issues: [github.com/jtouley/cadence-orchestrator/issues](https://github.com/jtou
   evidence, tokens, the `doc_sha` the task was given and the worker's `left_out` list). A scribe subagent writes
   both. The skill tells the orchestrator a task is done only with evidence and a left-out list the reviewer
   accepted; the guard and a pre-commit hook on the orchestration branch reject a `done` task without them.
-- **Subagents get one-line prompts, and reviewers stay independent.** The prompt names a skill or verb, a target
-  with the doc pinned to a commit (`workstreams/<slug>.md@<sha>`), what's out of scope, and where the result goes;
-  the details are in the doc. Checks are anchored in tests, CI or a repro command. A separate reviewer runs the
-  result itself and judges what the worker left out, spec first (against the pinned doc), then quality. Its
-  prompt never carries suspected issues, focus areas or earlier findings. Any claim not backed by a command
-  and its output, a commit or a PR link is reported as unproven.
+- **Subagents get one-line prompts, and reviewers stay independent.** A builder's or investigator's prompt names
+  a skill or verb, a target with the doc pinned to a commit (`workstreams/<slug>.md@<sha>`), what's out of scope,
+  and where the result goes; the details are in the doc. Checks are anchored in tests, CI or a repro command. A
+  separate reviewer runs the result itself and judges what the worker left out, spec first (against the pinned
+  doc), then quality. A reviewer's prompt has no out-of-scope line and no other limit on where to look (the
+  skill's step 5 says what it holds). Any claim not backed by a command and its output, a commit or a PR link is
+  reported as unproven.
 - **A guard keeps the orchestrator out of the work.** Once armed, it blocks the orchestrator from editing files or
   running commands with side effects. Subagents keep all their tools.
 
