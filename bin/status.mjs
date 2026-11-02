@@ -4,7 +4,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { hasGuard, hookEntries, installed, resolveStateDir } from "./doctor.mjs";
+import { guiPathNote, hasGuard, hookEntries, installed, resolveStateDir } from "./doctor.mjs";
 
 const ago = (seconds) =>
   seconds < 90 ? `${Math.round(seconds)} s ago` : seconds < 5400 ? `${Math.round(seconds / 60)} min ago` : `${(seconds / 3600).toFixed(1)} h ago`;
@@ -44,8 +44,22 @@ function leftovers(repo, spec, TARGETS) {
   return found;
 }
 
-export function status(repo, TARGETS, hours, stateDir = "") {
+// The version a skill folder was installed from: its install manifest, or SKILL.md's metadata for older installs.
+function installedVersion(repo, skill) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(repo, skill, ".cadence-install.json"), "utf8")).version ?? "";
+  } catch {}
+  try {
+    const m = fs.readFileSync(path.join(repo, skill, "SKILL.md"), "utf8").match(/^\s+version:\s*"?([^"\n]+)"?/m);
+    return m ? m[1] : "";
+  } catch {
+    return "";
+  }
+}
+
+export function status(repo, TARGETS, hours, stateDir = "", version = "") {
   const lines = [];
+  const data = { targets: [] };
   let anyInstalled = false;
   let anyLive = false;
   let anyHooked = false;
@@ -65,15 +79,22 @@ export function status(repo, TARGETS, hours, stateDir = "") {
         broken = true;
         lines.push(`${target}: hook config and shim missing (found ${left.join(", ")}); ${reinstall(target)}`);
       } else lines.push(`${target}: not installed`);
+      data.targets.push({ target, installed: false, guard: hasGuard(spec), complete: !left.length, leftovers: left });
       continue;
     }
     anyInstalled = true;
     owned.add(spec.skill);
+    const entry = { target, installed: true, guard: hasGuard(spec), complete: true, version: installedVersion(repo, spec.skill) };
+    data.targets.push(entry);
+    if (version && entry.version && entry.version !== version) {
+      lines.push(`${target}: installed ${entry.version}, this is ${version}; ${reinstall(target)} to update`);
+    }
     if (!hasGuard(spec)) {
       const skill = fs.existsSync(path.join(repo, spec.skill, "SKILL.md"));
       lines.push(`${target}: instructions only, no guard hooks on this platform; skill ${skill ? "found" : "missing"} (${spec.skill})`);
       if (!skill) {
         broken = true;
+        entry.complete = false;
         lines.push(`${target}: ${reinstall(target)}`);
       }
       continue;
@@ -90,8 +111,10 @@ export function status(repo, TARGETS, hours, stateDir = "") {
         (missing.length ? `; missing ${missing.join(", ")}` : "") +
         (hooks.error ? `; can't read it (${hooks.error})` : ""),
     );
+    entry.missing_events = missing;
     if (!skillFiles || missing.length || hooks.error) {
       broken = true;
+      entry.complete = false;
       lines.push(`${target}: incomplete install; ${reinstall(target)}`);
     }
     const resolved = stateDir
@@ -104,6 +127,14 @@ export function status(repo, TARGETS, hours, stateDir = "") {
     }
     if (!states.has(dir)) states.set(dir, source);
     const seen = sessions(dir, repo, hours).filter((s) => s.platform === target);
+    entry.state_dir = dir;
+    entry.sessions = seen.map((s) => ({
+      session: s.session,
+      armed: !!s.armed && !s.switched_off,
+      switched_off: !!s.switched_off,
+      last_event: s.last_event,
+      age_s: Math.round(s.age),
+    }));
     if (seen.length) {
       anyLive = true;
       const armed = seen.filter((s) => s.armed && !s.switched_off).length;
@@ -129,6 +160,8 @@ export function status(repo, TARGETS, hours, stateDir = "") {
       lines.push(`note: ${skill}/ has a tpm skill, but no target here is installed with it`);
     }
   }
+  const note = anyHooked ? guiPathNote() : "";
+  if (note) lines.push(`note: ${note}.`);
   if (!anyInstalled) lines.push("No target is installed in this repo.");
   else if (anyHooked && !anyLive) {
     lines.push(
@@ -137,5 +170,5 @@ export function status(repo, TARGETS, hours, stateDir = "") {
         "that session (so it sees the agent's environment), or pass --state-dir.",
     );
   }
-  return { lines, ok: !broken && (anyLive || (anyInstalled && !anyHooked)) };
+  return { lines, ok: !broken && (anyLive || (anyInstalled && !anyHooked)), data };
 }

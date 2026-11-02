@@ -8,11 +8,12 @@
 // Python, so the target machine needs python3 for the hooks to run.
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { hasGuard } from "./doctor.mjs";
+import { SCRIPTS, hasGuard, installed } from "./doctor.mjs";
 
 // No raw stack traces: one line with the cause (the full stack with DEBUG set). A refused write is usually an
 // agent's sandbox.
@@ -95,103 +96,265 @@ const read = (p) => fs.readFileSync(p, "utf8");
 const exists = (p) => fs.existsSync(p);
 const template = (rel, skill) => read(path.join(ADAPTERS, rel)).replaceAll("__SKILL__", skill);
 
-function write(p, text) {
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, text);
+// Installs and uninstalls are planned first, in memory: `plan` maps a repo-relative path to its new text (null
+// deletes it). Every file the run touches is read and checked while planning, so an invalid hook file or a broken
+// managed block stops the run before anything is written.
+const BEGIN = "<!-- cadence-orchestrator:tpm begin -->";
+const END = "<!-- cadence-orchestrator:tpm end -->";
+const MANIFEST = ".cadence-install.json"; // in each skill folder: the version and a hash of each file we wrote
+const PKG_VERSION = JSON.parse(read(path.join(ROOT, "package.json"))).version;
+const sha = (text) => createHash("sha256").update(text).digest("hex");
+
+function current(plan, rel) {
+  if (plan.has(rel)) return plan.get(rel);
+  const file = path.join(repo, rel);
+  return exists(file) && fs.statSync(file).isFile() ? read(file) : null;
 }
 
-function copyDir(src, dest) {
-  fs.mkdirSync(dest, { recursive: true });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const from = path.join(src, entry.name);
-    const to = path.join(dest, entry.name);
-    entry.isDirectory() ? copyDir(from, to) : fs.copyFileSync(from, to);
+function parseJson(rel, text) {
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    fail(`${rel} isn't valid JSON (${e.message}); fix it and run again. Nothing was changed.`);
   }
 }
 
-function copySkill(repo, target, skill) {
-  const dest = path.join(repo, skill);
+function checkMarkers(rel, text) {
+  const begins = text.split(BEGIN).length - 1;
+  const ends = text.split(END).length - 1;
+  if (begins !== ends || (text.match(BLOCK) ?? []).length !== begins) {
+    fail(`${rel} has a cadence-orchestrator begin marker without a matching end marker (or the reverse); fix it and run again. Nothing was changed.`);
+  }
+}
+
+function listFiles(src, rel = "") {
+  return fs.readdirSync(path.join(src, rel), { withFileTypes: true }).flatMap((e) => {
+    const r = rel ? `${rel}/${e.name}` : e.name;
+    return e.isDirectory() ? listFiles(src, r) : [r];
+  });
+}
+
+// The skill folder's files, relative to the folder: SKILL.md, references/, the shared scripts.
+function skillFiles(target) {
   let text = read(path.join(CORE, "SKILL.md"));
   if (target === "claude") {
     // Claude Code only: the user, not the model, starts it (the guard arms on that).
     text = text.replace("\n---\n", "\ndisable-model-invocation: true\n---\n");
   }
-  write(path.join(dest, "SKILL.md"), text);
-  copyDir(path.join(CORE, "references"), path.join(dest, "references"));
-  // 0.1.0 hooks left bytecode caches next to the vendored scripts; remove them (only inside the skill dir).
-  fs.rmSync(path.join(dest, "scripts", "__pycache__"), { recursive: true, force: true });
-  fs.mkdirSync(path.join(dest, "scripts"), { recursive: true });
-  for (const name of ["guard.py", "runtime.py", "tasks_check.py"]) {
-    fs.copyFileSync(path.join(CORE, "scripts", name), path.join(dest, "scripts", name));
-  }
+  const files = { "SKILL.md": text };
+  for (const f of listFiles(path.join(CORE, "references"))) files[`references/${f}`] = read(path.join(CORE, "references", f));
+  for (const name of SCRIPTS) files[`scripts/${name}`] = read(path.join(CORE, "scripts", name));
+  return files;
 }
 
-function mergeHooks(repo, rel, ours) {
-  const file = path.join(repo, rel);
-  let current = {};
-  try {
-    if (exists(file)) current = JSON.parse(read(file));
-  } catch (e) {
-    fail(`${rel} isn't valid JSON (${e.message}); fix it and run the installer again`);
-  }
+function planHooks(plan, rel, ours) {
+  const text = current(plan, rel);
+  const cur = text === null ? {} : parseJson(rel, text);
   for (const [key, value] of Object.entries(ours)) {
-    if (key !== "hooks" && !(key in current)) current[key] = value;
+    if (key !== "hooks" && !(key in cur)) cur[key] = value;
   }
-  current.hooks ??= {};
+  cur.hooks ??= {};
   for (const [event, entries] of Object.entries(ours.hooks)) {
-    const kept = (current.hooks[event] ?? []).filter((e) => !JSON.stringify(e).includes(MARK));
-    current.hooks[event] = [...kept, ...entries];
+    const kept = (cur.hooks[event] ?? []).filter((e) => !JSON.stringify(e).includes(MARK));
+    cur.hooks[event] = [...kept, ...entries];
   }
-  write(file, JSON.stringify(current, null, 2) + "\n");
+  plan.set(rel, JSON.stringify(cur, null, 2) + "\n");
 }
 
-function addBlock(file, block) {
-  const text = (exists(file) ? read(file) : "").replace(BLOCK, "").replace(/\n+$/, "");
-  write(file, (text ? text + "\n\n" : "") + block);
+function planBlock(plan, rel, block) {
+  const text = current(plan, rel) ?? "";
+  checkMarkers(rel, text);
+  const rest = text.replace(BLOCK, "").replace(/\n+$/, "");
+  plan.set(rel, (rest ? rest + "\n\n" : "") + block);
 }
 
-function addGitignore(repo) {
+const GITIGNORE = ["# tpm off switch (user-local)", ".cadence/tpm.off"];
+
+function planGitignore(plan) {
   // Ignore only the off switch: .cadence/catalog/ is meant to be committed.
-  const file = path.join(repo, ".gitignore");
-  let lines = exists(file) ? read(file).split("\n") : [];
+  let lines = (current(plan, ".gitignore") ?? "").split("\n");
   lines = lines.map((l) => (l === ".cadence/" ? ".cadence/tpm.off" : l)); // older installs
   if (!lines.includes(".cadence/tpm.off")) {
     while (lines.length && lines.at(-1) === "") lines.pop();
-    lines.push("# tpm off switch (user-local)", ".cadence/tpm.off");
+    lines.push(...GITIGNORE);
   }
-  write(file, lines.join("\n").replace(/\n+$/, "") + "\n");
+  plan.set(".gitignore", lines.join("\n").replace(/^\n+/, "").replace(/\n+$/, "") + "\n");
 }
 
-function addCatalogs(repo, files) {
-  const dest = path.join(repo, ".cadence", "catalog");
-  fs.mkdirSync(dest, { recursive: true });
-  return files.map((f) => {
-    if (!f.endsWith(".md")) fail(`catalog ${f} must be a .md file`);
-    fs.copyFileSync(f, path.join(dest, path.basename(f)));
-    return ".cadence/catalog/" + path.basename(f);
-  });
-}
-
-// Per target: the shim and the target's own files. The skill folders are copied before this, once each.
-function install(repo, target) {
+// Per target: its shim and its own files. Skill folders are planned separately, once each.
+function planTarget(plan, target) {
   const spec = TARGETS[target];
-  if (hasGuard(spec)) {
-    fs.copyFileSync(path.join(ADAPTERS, target, "shim.py"), path.join(repo, spec.skill, "scripts", `shim_${target}.py`));
-  }
   const touched = [spec.skill + "/"];
+  if (hasGuard(spec)) plan.set(`${spec.skill}/scripts/shim_${target}.py`, read(path.join(ADAPTERS, target, "shim.py")));
   for (const [src, dst] of spec.hooks ?? []) {
-    mergeHooks(repo, dst, JSON.parse(template(src, spec.skill)));
+    planHooks(plan, dst, JSON.parse(template(src, spec.skill)));
     touched.push(dst);
   }
   for (const [src, dst] of spec.files ?? []) {
-    write(path.join(repo, dst), template(src, spec.skill));
+    plan.set(dst, template(src, spec.skill));
     touched.push(dst);
   }
   for (const [src, dst] of spec.blocks ?? []) {
-    addBlock(path.join(repo, dst), template(src, spec.skill));
+    planBlock(plan, dst, template(src, spec.skill));
     touched.push(dst);
   }
   return touched;
+}
+
+function planSkill(plan, target, skill, targets) {
+  const files = skillFiles(target);
+  for (const [rel, text] of Object.entries(files)) plan.set(`${skill}/${rel}`, text);
+  for (const t of targets.filter((t) => TARGETS[t].skill === skill && hasGuard(TARGETS[t]))) {
+    files[`scripts/shim_${t}.py`] = read(path.join(ADAPTERS, t, "shim.py"));
+  }
+  const hashes = Object.fromEntries(Object.entries(files).sort().map(([rel, text]) => [rel, sha(text)]));
+  // Keep hashes of shims other targets installed into this shared folder earlier.
+  const old = readManifest(skill);
+  for (const [rel, h] of Object.entries(old?.files ?? {})) if (!(rel in hashes) && rel.startsWith("scripts/shim_")) hashes[rel] = h;
+  plan.set(`${skill}/${MANIFEST}`, JSON.stringify({ version: PKG_VERSION, files: sortKeys(hashes) }, null, 2) + "\n");
+}
+
+const sortKeys = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => (a < b ? -1 : 1)));
+
+function readManifest(skill) {
+  const file = path.join(repo, skill, MANIFEST);
+  try {
+    return JSON.parse(read(file));
+  } catch {
+    return null;
+  }
+}
+
+// JSON files compare by value, so a reformatted but equal file isn't a change.
+function same(rel, a, b) {
+  if (a === b) return true;
+  if (a === null || b === null || !rel.endsWith(".json")) return false;
+  try {
+    return JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b));
+  } catch {
+    return false;
+  }
+}
+
+function changes(plan) {
+  const out = [];
+  for (const [rel, text] of plan) {
+    const file = path.join(repo, rel);
+    const disk = exists(file) && fs.statSync(file).isFile() ? read(file) : null;
+    if (!same(rel, disk, text)) out.push({ rel, text, action: text === null ? "remove" : disk === null ? "create" : "update" });
+  }
+  return out.sort((a, b) => (a.rel < b.rel ? -1 : 1));
+}
+
+// Write the plan. A skill file whose text no longer matches the hash we recorded was edited by hand: it is
+// backed up under .cadence/backups/ before being overwritten.
+function apply(plan) {
+  const backups = [];
+  const manifests = new Map();
+  for (const { rel, text } of changes(plan)) {
+    const file = path.join(repo, rel);
+    const skill = Object.values(TARGETS).map((s) => s.skill).find((s) => rel.startsWith(s + "/"));
+    if (skill && exists(file) && !rel.endsWith(MANIFEST)) {
+      if (!manifests.has(skill)) manifests.set(skill, readManifest(skill));
+      const recorded = manifests.get(skill)?.files?.[rel.slice(skill.length + 1)];
+      if (recorded && recorded !== sha(read(file))) {
+        const dest = path.join(repo, ".cadence", "backups", rel);
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(file, dest);
+        backups.push(rel);
+      }
+    }
+    if (text === null) fs.rmSync(file, { force: true });
+    else {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, text);
+    }
+  }
+  return backups;
+}
+
+function addCatalogs(plan, files) {
+  return files.map((f) => {
+    if (!f.endsWith(".md")) fail(`catalog ${f} must be a .md file`);
+    const rel = ".cadence/catalog/" + path.basename(f);
+    plan.set(rel, read(f));
+    return rel;
+  });
+}
+
+// Uninstall: only what the installer adds. Hook entries carrying our marker, our managed block, our files, our
+// shim, the skill folder once no remaining target uses it, and the .gitignore lines once nothing is left.
+function planUninstall(plan, targets, remaining) {
+  const removed = [];
+  for (const t of targets) {
+    const spec = TARGETS[t];
+    for (const [src, dst] of spec.hooks ?? []) {
+      const text = current(plan, dst);
+      if (text === null) continue;
+      const cur = parseJson(dst, text);
+      const ours = JSON.parse(template(src, spec.skill));
+      let hit = false;
+      for (const event of Object.keys(cur.hooks ?? {})) {
+        const kept = (cur.hooks[event] ?? []).filter((e) => !JSON.stringify(e).includes(MARK));
+        if (kept.length !== cur.hooks[event].length) hit = true;
+        if (kept.length) cur.hooks[event] = kept;
+        else delete cur.hooks[event];
+      }
+      if (!hit) continue;
+      if (cur.hooks && !Object.keys(cur.hooks).length) delete cur.hooks;
+      // Keys we added only when missing (like Cursor's "version") go too if nothing else is left.
+      const left = Object.entries(cur).filter(([k, v]) => !(k in ours && JSON.stringify(v) === JSON.stringify(ours[k])));
+      plan.set(dst, left.length ? JSON.stringify(cur, null, 2) + "\n" : null);
+      removed.push(`${dst} (hook entries)`);
+    }
+    for (const [, dst] of spec.blocks ?? []) {
+      const text = current(plan, dst);
+      if (text === null || !text.includes(BEGIN)) continue;
+      checkMarkers(dst, text);
+      const rest = text.replace(BLOCK, "").replace(/\n{3,}/g, "\n\n").replace(/\n+$/, "");
+      plan.set(dst, rest ? rest + "\n" : null);
+      removed.push(`${dst} (tpm block)`);
+    }
+    for (const [, dst] of spec.files ?? []) {
+      if (current(plan, dst) === null) continue;
+      plan.set(dst, null);
+      removed.push(dst);
+    }
+    const shim = `${spec.skill}/scripts/shim_${t}.py`;
+    if (hasGuard(spec) && current(plan, shim) !== null) {
+      plan.set(shim, null);
+      removed.push(shim);
+    }
+  }
+  for (const skill of new Set(targets.map((t) => TARGETS[t].skill))) {
+    if (remaining.some((t) => TARGETS[t].skill === skill) || current(plan, `${skill}/SKILL.md`) === null) continue;
+    const ours = [...Object.keys(skillFiles("codex")), MANIFEST];
+    for (const rel of ours) if (current(plan, `${skill}/${rel}`) !== null) plan.set(`${skill}/${rel}`, null);
+    removed.push(`${skill}/`);
+  }
+  if (!remaining.length) {
+    const text = current(plan, ".gitignore");
+    if (text !== null && text.split("\n").includes(".cadence/tpm.off")) {
+      const rest = text.split("\n").filter((l) => !GITIGNORE.includes(l)).join("\n").replace(/\n+$/, "");
+      plan.set(".gitignore", rest ? rest + "\n" : null);
+      removed.push(".gitignore (tpm off-switch lines)");
+    }
+  }
+  return removed;
+}
+
+// Remove folders the uninstall left empty, up to (not including) the repo root.
+function pruneEmpty(rels) {
+  for (const rel of rels) {
+    for (let dir = path.dirname(path.join(repo, rel)); dir.startsWith(repo + path.sep); dir = path.dirname(dir)) {
+      try {
+        if (fs.readdirSync(dir).length) break;
+        fs.rmdirSync(dir);
+      } catch {
+        break;
+      }
+    }
+  }
 }
 
 function fail(message, code = 1) {
@@ -200,13 +363,16 @@ function fail(message, code = 1) {
 }
 
 const NAMES = Object.keys(TARGETS).sort().join("|");
-const USAGE = `usage: cadence-orchestrator [--target <${NAMES}|all>] [--repo <path>] [--catalog <file.md>]...
-       cadence-orchestrator doctor --target <...|all> [--repo <path>]
-       cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>]
+const USAGE = `usage: cadence-orchestrator [--target <${NAMES}|all>] [--repo <path>] [--catalog <file.md>]... [--dry-run|--check]
+       cadence-orchestrator uninstall [--target <...|all>] [--repo <path>] [--dry-run]
+       cadence-orchestrator doctor --target <...|all> [--repo <path>] [--json]
+       cadence-orchestrator status [--repo <path>] [--hours <n>] [--state-dir <path>] [--json]
        cadence-orchestrator dora [--repo <path>] [--since <date>] [--deploys tags|merges|npm] [--include-prereleases] [--json]
 
 Vendors the tpm skill and its guard hooks into the git repository you're in (or the one at --repo), for --target
 or, without it, every editor the repo has config for (or else the agent running it). Re-running is safe.
+\`--dry-run\` prints what would change and writes nothing; \`--check\` exits 1 if the installed files differ from what
+this version would write. \`uninstall\` removes only what the installer added (default: every installed target).
 \`doctor\` checks an installed target (files, hook config, python3, simulated hook events) and changes nothing.
 \`dora\` computes DORA's delivery metrics from git (read-only).
 \`status\` reports what's installed and whether hooks have been seen firing in a live session (default: last 24 h).`;
@@ -231,7 +397,9 @@ function parseArgs(argv, mode) {
     } else if (flag === "--deploys" && mode === "dora") {
       opts.deploys = value();
       if (!["tags", "merges", "npm"].includes(opts.deploys)) fail(`--deploys is tags, merges or npm\n${USAGE}`, 2);
-    } else if (flag === "--json" && mode === "dora") opts.json = true;
+    } else if (flag === "--json" && ["dora", "status", "doctor"].includes(mode)) opts.json = true;
+    else if (flag === "--dry-run" && ["install", "uninstall"].includes(mode)) opts.dryRun = true;
+    else if (flag === "--check" && mode === "install") opts.check = true;
     else if (flag === "--include-prereleases" && mode === "dora") opts.includePrereleases = true;
     else if (flag === "--hours" && mode === "status") {
       opts.hours = Number(value());
@@ -240,21 +408,22 @@ function parseArgs(argv, mode) {
     else if (flag === "-h" || flag === "--help") {
       console.log(USAGE);
       process.exit(0);
-    } else if (["--catalog", "--hours", "--target", "--state-dir", "--since", "--deploys", "--json", "--include-prereleases"].includes(flag)) {
-      fail(`${mode === "install" ? "install" : mode} doesn't take ${flag}\n${USAGE}`, 2);
+    } else if (["--catalog", "--hours", "--target", "--state-dir", "--since", "--deploys", "--json", "--include-prereleases", "--dry-run", "--check"].includes(flag)) {
+      fail(`${mode} doesn't take ${flag}\n${USAGE}`, 2);
     } else fail(`unknown argument ${argv[i]}\n${USAGE}`, 2);
   }
   if (mode === "status" || mode === "dora") {
     if (opts.target) fail(`${mode} doesn't take --target\n${USAGE}`, 2);
     return opts;
   }
+  if (opts.dryRun && opts.check) fail(`--dry-run and --check don't go together\n${USAGE}`, 2);
   if (!opts.target && mode === "doctor") fail(`--target is required\n${USAGE}`, 2);
   if (opts.target && opts.target !== "all" && !(opts.target in TARGETS)) fail(`unknown target ${opts.target}\n${USAGE}`, 2);
   return opts;
 }
 
 const argv = process.argv.slice(2);
-const mode = ["doctor", "status", "dora"].includes(argv[0]) ? argv[0] : "install";
+const mode = ["doctor", "status", "dora", "uninstall"].includes(argv[0]) ? argv[0] : "install";
 const isDoctor = mode === "doctor";
 const opts = parseArgs(mode === "install" ? argv : argv.slice(1), mode);
 // --repo <path> must be a repository root. Without it, the repository containing the current folder (the nearest
@@ -269,7 +438,7 @@ function findRepo(explicit) {
   }
   for (let dir = process.cwd(); ; dir = path.dirname(dir)) {
     if (exists(path.join(dir, ".git"))) {
-      if (mode === "install" && real(dir) === home) {
+      if (["install", "uninstall"].includes(mode) && real(dir) === home) {
         fail(`${dir} is your home directory; run this inside a project's repository, or pass --repo`);
       }
       return dir;
@@ -286,12 +455,13 @@ if (mode === "dora") {
 }
 if (mode === "status") {
   const { status } = await import("./status.mjs");
-  const { lines, ok } = status(repo, TARGETS, opts.hours, opts.stateDir);
-  for (const l of lines) console.log(l);
+  const { lines, ok, data } = status(repo, TARGETS, opts.hours, opts.stateDir, PKG_VERSION);
+  if (opts.json) console.log(JSON.stringify({ ok, repo, version: PKG_VERSION, ...data, lines }, null, 2));
+  else for (const l of lines) console.log(l);
   process.exit(ok ? 0 : 1);
 }
 if (isDoctor) {
-  const { doctor, installed } = await import("./doctor.mjs");
+  const { doctor } = await import("./doctor.mjs");
   let targets = [opts.target];
   const results = [];
   if (opts.target === "all") {
@@ -308,12 +478,17 @@ if (isDoctor) {
     }
   }
   results.push(...targets.flatMap((t) => doctor(repo, t, TARGETS[t])));
+  const failed = results.filter((r) => !r.ok).length;
+  const ran = results.filter((r) => !r.skip).length;
+  if (opts.json) {
+    const checks = results.map(({ name, ok, skip, detail }) => ({ name, ok, skip: !!skip, detail: detail || "" }));
+    console.log(JSON.stringify({ ok: !failed, repo, failed, ran, checks }, null, 2));
+    process.exit(failed ? 1 : 0);
+  }
   for (const r of results) {
     const mark = r.skip ? "skip" : r.ok ? "ok  " : "FAIL";
     console.log(`${mark} ${r.name}${r.ok || !r.detail ? "" : `: ${r.detail}`}`);
   }
-  const failed = results.filter((r) => !r.ok).length;
-  const ran = results.filter((r) => !r.skip).length;
   console.log(failed ? `${failed} check(s) failed.` : `All ${ran} checks passed.`);
   if (!failed && targets.some((t) => hasGuard(TARGETS[t]))) {
     console.log(
@@ -332,22 +507,72 @@ function detect() {
   if (vars.length) return { targets: vars.map(([t]) => t), how: `running under it: ${vars.map(([, v]) => v).join(", ")}` };
   fail(`no editor config found in ${repo} and no supported agent detected; choose one with --target <${NAMES}|all>`, 2);
 }
-const chosen = opts.target ? { targets: opts.target === "all" ? Object.keys(TARGETS).sort() : [opts.target] } : detect();
+const installedNow = () => Object.keys(TARGETS).sort().filter((t) => installed(repo, t, TARGETS[t]).installed);
+const all = Object.keys(TARGETS).sort();
+
+if (mode === "uninstall") {
+  const before = installedNow();
+  const targets = opts.target ? (opts.target === "all" ? all : [opts.target]) : before;
+  const remaining = before.filter((t) => !targets.includes(t));
+  const plan = new Map();
+  const removed = planUninstall(plan, targets, remaining);
+  if (!removed.length) {
+    console.log(`Nothing to remove in ${repo}${opts.target ? ` for ${targets.join(", ")}` : ""}.`);
+    process.exit(0);
+  }
+  console.log(`${opts.dryRun ? "Would remove" : "Removing"} from ${repo}:`);
+  for (const r of removed) console.log(`  ${r}`);
+  if (opts.dryRun) {
+    console.log("Dry run: nothing was changed.");
+    process.exit(0);
+  }
+  apply(plan);
+  pruneEmpty([...plan.keys()]);
+  console.log("Done. Review and commit the changes.");
+  process.exit(0);
+}
+
+let chosen;
+if (opts.check && !opts.target) {
+  chosen = { targets: installedNow() };
+  if (!chosen.targets.length) fail(`no target is installed in ${repo}; nothing to check`);
+} else chosen = opts.target ? { targets: opts.target === "all" ? all : [opts.target] } : detect();
 const targets = chosen.targets;
 const guarded = targets.filter((t) => hasGuard(TARGETS[t]));
+
+// Plan everything first: invalid JSON or a broken block stops here, before any write.
+const plan = new Map();
+const folders = new Map(targets.map((t) => [TARGETS[t].skill, t])); // shared folders (.agents/skills/tpm) once
+for (const [skill, t] of folders) planSkill(plan, t, skill, targets);
+const touched = targets.map((t) => planTarget(plan, t));
+planGitignore(plan);
+const catalogs = addCatalogs(plan, opts.catalog);
+const diff = changes(plan);
+
+if (opts.check || opts.dryRun) {
+  const verb = opts.check ? "differs" : "would";
+  for (const c of diff) console.log(opts.check ? `${verb}: ${c.rel}` : `${verb} ${c.action} ${c.rel}`);
+  if (opts.check) {
+    console.log(diff.length ? `${diff.length} file(s) differ from what ${PKG_VERSION} would write; reinstall to update.` : `Up to date with ${PKG_VERSION} for ${targets.join(", ")}.`);
+    process.exit(diff.length ? 1 : 0);
+  }
+  console.log(`Dry run for ${targets.join(", ")} in ${repo}: ${diff.length} file(s) would change; nothing was written.`);
+  process.exit(0);
+}
+
 console.log(`Installing into ${repo}${chosen.how ? ` for ${targets.join(", ")} (${chosen.how})` : ""}`);
 const py = guarded.length ? spawnSync("python3", ["--version"], { stdio: "ignore" }) : { status: 0 };
 if (py.error || py.status !== 0) {
   console.error("warning: python3 is not on PATH. The guard hooks run python3 and will not work until it is installed.");
 }
-// Antigravity, Codex, Cursor and Gemini share .agents/skills/tpm: copy each skill folder once.
-const folders = new Map(targets.map((t) => [TARGETS[t].skill, t]));
-for (const [skill, t] of folders) copySkill(repo, t, skill);
-for (const t of targets) {
-  console.log(`${t}: ${install(repo, t).join(", ")}${hasGuard(TARGETS[t]) ? "" : " (instructions only, no guard)"}`);
-}
-addGitignore(repo);
-if (opts.catalog.length) console.log(`catalog: ${addCatalogs(repo, opts.catalog).join(", ")}`);
+// 0.1.0 hooks left bytecode caches next to the vendored scripts; remove them (only inside the skill dir).
+for (const skill of folders.keys()) fs.rmSync(path.join(repo, skill, "scripts", "__pycache__"), { recursive: true, force: true });
+const backups = apply(plan);
+targets.forEach((t, k) => {
+  console.log(`${t}: ${touched[k].join(", ")}${hasGuard(TARGETS[t]) ? "" : " (instructions only, no guard)"}`);
+});
+if (catalogs.length) console.log(`catalog: ${catalogs.join(", ")}`);
+for (const b of backups) console.log(`backed up hand-edited ${b} to .cadence/backups/${b}`);
 console.log("Done. Review and commit the changes; see README for per-platform notes.");
 if (guarded.length) console.log("Reload once: start a new chat or session in this repo, so the hooks load (approve them if asked).");
 for (const t of targets) {

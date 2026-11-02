@@ -6,10 +6,10 @@ cadence-orchestrator is a skill that makes your coding agent act as a technical 
 the work; the orchestrator plans it with you, hands every piece of it to subagents, has separate reviewers check
 what comes back, and reports with evidence. A guard stops the orchestrator from doing the work itself.
 
-It works with Claude Code, GitHub Copilot, Codex, Cursor, Gemini CLI and (instructions only) Google Antigravity.
-It is an offshoot of [cadence-core](https://github.com/jtouley/cadence-core). The skill in
-[`skills/tpm/`](skills/tpm/) follows the [Agent Skills open standard](https://agentskills.io/specification), so any
-client that reads Agent Skills can use it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
+It works with Claude Code, GitHub Copilot, Codex, Cursor, Gemini CLI and (instructions only) Google Antigravity. It is
+an offshoot of [cadence-core](https://github.com/jtouley/cadence-core). The skill in [`skills/tpm/`](skills/tpm/)
+follows the [Agent Skills open standard](https://agentskills.io/specification), so any client that reads Agent Skills
+can use it as instructions (`npx skills add jtouley/cadence-orchestrator`); the guard needs this repo's installer.
 
 > [!NOTE]
 > Experimental (0.1.x). The skill's behaviour has not been evaluated yet (see `evals/`). macOS and Linux
@@ -98,10 +98,16 @@ You need Node 18 or later to run the installer, and `python3` for the guard hook
 warns if `python3` is missing. To install from source instead of npm, use
 `npx github:jtouley/cadence-orchestrator`.
 
-`--repo <path>` installs into the repository whose root is that path; without it, into the one you're in, at its
-top level (but not your home directory, if that's a git repository). Re-running is safe: the installer replaces only its own entries in the
-files it touches. It also adds `.cadence/tpm.off` to `.gitignore`. From a clone of this repository,
+`--repo <path>` installs into the repository whose root is that path; without it, into the one you're in, at its top
+level (but not your home directory, if that's a git repository). Re-running is safe: the installer replaces only its own
+entries in the files it touches. It also adds `.cadence/tpm.off` to `.gitignore`. From a clone of this repository,
 `./install.sh` takes the same options.
+
+`--dry-run` lists the files a run would create or update and writes nothing. `--check` exits 1 if the installed
+files differ from what this version would write (for CI). If you edited a vendored skill file, a reinstall backs it
+up to `.cadence/backups/` first and says so. `npx cadence-orchestrator uninstall` removes only what the installer
+added: its hook entries, its block in `AGENTS.md` or `GEMINI.md`, its files and skill folders, and its `.gitignore`
+lines (`--target <name>` for one platform, `--dry-run` to preview). Your own hooks and text stay.
 
 To check an install, run `npx cadence-orchestrator doctor --target claude` (`all` checks every target that's
 installed). It checks that the files and hook config are in place and point at existing scripts, that `python3`
@@ -110,7 +116,8 @@ advisory on Codex, Cursor and Gemini), a subagent write (allowed) and, on Claude
 per check, exits 1 if any fail, and changes nothing in the repo. A passing `doctor` doesn't show that the hooks
 fire in a real session; `npx cadence-orchestrator status` does. It lists, separately, the skill files, the hook
 config, the sessions whose hooks have fired in the last 24 hours (`--hours <n>`) and whether each is armed, and the
-advisory log path. It exits 1 when an install is incomplete (it says what to reinstall) or when a guarded target
+advisory log path. It also shows the installed version, and `--json` (on `status` and `doctor`) prints one JSON object
+instead. It exits 1 when an install is incomplete (it says what to reinstall) or when a guarded target
 is installed but no live hook activity has been seen; instructions-only targets such as Antigravity exit 0. Run it
 from inside the agent's session (ask the agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as
 the hooks, or pass `--state-dir <path>`; it prints where the state dir came from. To test in a real session, follow
@@ -152,11 +159,11 @@ treats it as a format example unless you confirm it fits.
 
 ### Start and Stop
 
-Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Codex, begin
-the message with `$tpm`: Codex mentions skills with `$` (or the `/skills` picker), and `/tpm` isn't a Codex
-command. On Copilot, Cursor and Gemini, begin it with `/tpm` or `$tpm`; on Antigravity, `/tpm` (instructions
-only). That arms the guard for this session only; a model loading the skill by itself doesn't arm it. On Claude Code the hook reports it, and an edit by the
-orchestrator is then refused (exit code 2, message shortened here):
+Start the session by typing `/tpm` and the work (`/cadence-orchestrator:tpm` with the plugin). On Codex, begin the
+message with `$tpm`: Codex mentions skills with `$` (or the `/skills` picker), and `/tpm` isn't a Codex command. On
+Copilot, Cursor and Gemini, begin it with `/tpm` or `$tpm`; on Antigravity, `/tpm` (instructions only). That arms the
+guard for this session only; a model loading the skill by itself doesn't arm it. On Claude Code the hook reports it, and
+an edit by the orchestrator is then refused (exit code 2, message shortened here):
 
 ```text
 TPM guard armed (session 4f1c…, log /tmp/cadence-orchestrator/advisory.log)
@@ -235,14 +242,15 @@ npm_config_cache=/tmp/npm-cache npx cadence-orchestrator --target codex
 
 ### The installer stops with "isn't valid JSON"
 
-The hook file it merges into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
+A hook file it would merge into, such as `.claude/settings.json`, has `//` comments or other non-JSON text:
 
 ```console
-cadence-orchestrator: .claude/settings.json isn't valid JSON (Expected property name or '}' in JSON at position 4 (line 2 column 3)); fix it and run the installer again
+cadence-orchestrator: .claude/settings.json isn't valid JSON (Expected property name or '}' in JSON at position 4 (line 2 column 3)); fix it and run again. Nothing was changed.
 ```
 
-The skill files were copied but no hooks were added, and the file is unchanged. Remove the comments and run the
-installer again. Errors print one line; set `DEBUG=1` to also print the full stack trace.
+Every file the run would touch is checked before anything is written, so the repo is unchanged. Remove the
+comments and run the installer again. A managed block in `AGENTS.md` or `GEMINI.md` whose begin or end marker
+was deleted stops the run the same way. Errors print one line; set `DEBUG=1` to also print the full stack trace.
 
 ### `warning: python3 is not on PATH`
 

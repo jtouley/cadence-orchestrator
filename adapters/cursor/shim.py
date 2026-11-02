@@ -79,6 +79,14 @@ def session_context(session: str) -> str:
     )
 
 
+def is_session_start(p: dict) -> bool:
+    # hook_event_name is a documented base field. Without it, sessionStart is the only event this config registers
+    # whose input has session_id and is_background_agent (sessionEnd has them too, plus reason; it isn't registered).
+    if "hook_event_name" in p:
+        return p.get("hook_event_name") == "sessionStart"
+    return "session_id" in p and "is_background_agent" in p and "reason" not in p and "prompt" not in p
+
+
 def main() -> int:
     # sessionStart's session_id equals conversation_id, and its additional_context is added to the chat's
     # context (https://cursor.com/docs/agent/hooks). Every other event goes to the shared runtime.
@@ -87,7 +95,7 @@ def main() -> int:
         payload = json.loads(raw)
     except ValueError:
         payload = None
-    if isinstance(payload, dict) and payload.get("hook_event_name") == "sessionStart":
+    if isinstance(payload, dict) and is_session_start(payload):
         session = str(payload.get("session_id") or payload.get("conversation_id") or "")
         print(json.dumps({"additional_context": session_context(session)} if session else {}))
         try:

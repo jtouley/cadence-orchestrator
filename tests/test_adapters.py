@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -776,12 +777,14 @@ def test_permission_error_is_one_line_naming_the_path():
 
 
 def test_invalid_hook_json_names_the_file_and_debug_keeps_the_stack():
-    repo = _with_markers(".claude/")
+    repo = _with_markers(".claude/", ".cursor/")
     open(os.path.join(repo, ".claude/settings.json"), "w").write("{\n  // mine\n}\n")
-    proc = cli([], repo)
-    assert proc.returncode == 1 and len(proc.stderr.splitlines()) == 1, proc.stderr
+    before = snapshot(repo)
+    proc = cli([], repo)  # cursor would be fine, but nothing is written for either
+    assert proc.returncode == 1 and len(proc.stderr.splitlines()) == 1 and proc.stdout == "", proc.stderr
     assert proc.stderr.startswith("cadence-orchestrator: .claude/settings.json isn't valid JSON (")
-    assert proc.stderr.endswith("); fix it and run the installer again\n")
+    assert proc.stderr.endswith("); fix it and run again. Nothing was changed.\n")
+    assert snapshot(repo) == before
     assert open(os.path.join(repo, ".claude/settings.json")).read() == "{\n  // mine\n}\n"
     readme = open(os.path.join(ROOT, "README.md")).read()
     assert (
@@ -946,3 +949,273 @@ def test_bare_repo_before_any_double_dash_argument_keeps_typos_visible():
         "cadence-orchestrator: unknown argument --tagret"
     ), proc.stderr
     assert "FLAGS" not in open(INSTALL).read()
+
+
+# ---------------------------------------------------------------- uninstall, dry run, check, JSON, version
+
+
+def _user_content(repo):
+    """A repo with the user's own hooks, AGENTS.md text and .gitignore lines, before any install."""
+    os.makedirs(os.path.join(repo, ".claude"))
+    mine = {
+        "permissions": {"allow": ["Bash(npm test)"]},
+        "hooks": {
+            "PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "./mine.sh"}]}]
+        },
+    }
+    json.dump(mine, open(os.path.join(repo, ".claude/settings.json"), "w"))
+    open(os.path.join(repo, "AGENTS.md"), "w").write("# Rules\n\nBe nice.\n")
+    open(os.path.join(repo, ".gitignore"), "w").write("node_modules/\n")
+    os.makedirs(os.path.join(repo, ".cursor"))
+    open(os.path.join(repo, ".cursor/mcp.json"), "w").write("{}\n")
+    return mine
+
+
+def test_uninstall_removes_only_what_the_installer_added_and_is_safe_to_rerun():
+    repo = os.path.realpath(scratch_repo())
+    mine = _user_content(repo)
+    before = snapshot(repo)
+    for t in ("claude", "codex", "cursor", "gemini", "copilot", "antigravity"):
+        install(repo, t)
+    out = cli(["uninstall"], repo)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.startswith(f"Removing from {repo}:\n")
+    for line in (
+        "  .claude/settings.json (hook entries)",
+        "  AGENTS.md (tpm block)",
+        "  .cursor/hooks.json (hook entries)",
+        "  .agents/skills/tpm/",
+        "  .claude/skills/tpm/",
+        "  .gitignore (tpm off-switch lines)",
+    ):
+        assert line in out.stdout.splitlines(), (line, out.stdout)
+    after = snapshot(repo)
+    assert after.keys() == before.keys()
+    assert {k: v for k, v in after.items() if k != ".claude/settings.json"} == {
+        k: v for k, v in before.items() if k != ".claude/settings.json"
+    }
+    assert (
+        json.load(open(os.path.join(repo, ".claude/settings.json"))) == mine
+    )  # same value; JSON is re-indented
+    for gone in (
+        ".agents",
+        ".claude/skills",
+        ".codex",
+        ".gemini",
+        ".github",
+        "GEMINI.md",
+        ".cursor/hooks.json",
+    ):
+        assert not os.path.exists(os.path.join(repo, gone)), gone
+    again = cli(["uninstall"], repo)
+    assert again.returncode == 0 and again.stdout == f"Nothing to remove in {repo}.\n"
+
+
+def test_uninstall_one_target_keeps_a_shared_skill_folder_and_dry_run_changes_nothing():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    install(repo, "codex")
+    snap = snapshot(repo)
+    dry = cli(["uninstall", "--target", "cursor", "--dry-run"], repo)
+    assert dry.returncode == 0 and "Dry run: nothing was changed." in dry.stdout and snapshot(repo) == snap
+    out = cli(["uninstall", "--target", "cursor"], repo)
+    assert out.returncode == 0, out.stderr
+    assert os.path.exists(os.path.join(repo, ".agents/skills/tpm/SKILL.md"))  # codex still uses it
+    assert os.path.exists(os.path.join(repo, ".agents/skills/tpm/scripts/shim_codex.py"))
+    assert not os.path.exists(os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py"))
+    assert ".cadence/tpm.off" in open(os.path.join(repo, ".gitignore")).read()
+    assert cli(["status"], repo).stdout.count("cursor: not installed") == 1
+
+
+def test_validation_happens_before_any_write():
+    repo = _with_markers(".cursor/", ".gemini/")
+    open(os.path.join(repo, ".gemini/settings.json"), "w").write("{,}")
+    before = snapshot(repo)
+    proc = cli([], repo)
+    assert proc.returncode == 1 and ".gemini/settings.json isn't valid JSON" in proc.stderr
+    assert snapshot(repo) == before and not os.path.exists(os.path.join(repo, ".agents"))
+    readme = open(os.path.join(ROOT, "README.md")).read()
+    assert "The skill files were copied but no hooks were added" not in readme
+    assert "Every file the run would touch is checked before anything is written" in readme
+
+
+def test_unmatched_block_marker_is_an_error_naming_the_file():
+    repo = _with_markers(".codex/")
+    open(os.path.join(repo, "AGENTS.md"), "w").write(
+        "# Rules\n\n<!-- cadence-orchestrator:tpm begin -->\nold\n"
+    )
+    before = snapshot(repo)
+    proc = cli([], repo)
+    assert proc.returncode == 1 and proc.stderr.startswith(
+        "cadence-orchestrator: AGENTS.md has a cadence-orchestrator begin marker without a matching end marker"
+    ), proc.stderr
+    assert snapshot(repo) == before
+    open(os.path.join(repo, "AGENTS.md"), "w").write("x\n<!-- cadence-orchestrator:tpm end -->\n")
+    assert cli([], repo).returncode == 1
+
+
+def test_dry_run_lists_changes_and_writes_nothing():
+    repo = _with_markers(".cursor/")
+    before = snapshot(repo)
+    dry = cli(["--dry-run"], repo)
+    assert dry.returncode == 0 and snapshot(repo) == before, dry.stderr
+    lines = dry.stdout.splitlines()
+    assert "would create .cursor/hooks.json" in lines and "would create .agents/skills/tpm/SKILL.md" in lines
+    assert lines[-1].startswith(f"Dry run for cursor in {repo}: ") and lines[-1].endswith(
+        "nothing was written."
+    )
+    cli([], repo)
+    again = cli(["--dry-run"], repo)
+    assert (
+        again.stdout.splitlines()[-1]
+        == f"Dry run for cursor in {repo}: 0 file(s) would change; nothing was written."
+    )
+
+
+def test_check_exits_1_when_installed_files_differ():
+    repo = scratch_repo()
+    assert cli(["--check"], repo).returncode == 1  # nothing installed
+    install(repo, "cursor")
+    ok = cli(["--check"], repo)
+    assert ok.returncode == 0 and ok.stdout.startswith("Up to date with "), ok.stdout
+    open(os.path.join(repo, ".agents/skills/tpm/SKILL.md"), "a").write("\nlocal edit\n")
+    os.remove(os.path.join(repo, ".cursor/rules/tpm.mdc"))
+    bad = cli(["--check"], repo)
+    assert bad.returncode == 1
+    assert (
+        "differs: .agents/skills/tpm/SKILL.md" in bad.stdout
+        and "differs: .cursor/rules/tpm.mdc" in bad.stdout
+    )
+    before = snapshot(repo)
+    assert snapshot(repo) == before  # --check writes nothing
+    # A reformatted but equal hook file isn't drift.
+    path = os.path.join(repo, ".cursor/hooks.json")
+    json.dump(json.load(open(path)), open(path, "w"))
+    install(repo, "cursor")
+    json.dump(json.load(open(path)), open(path, "w"))
+    assert cli(["--check"], repo).returncode == 0
+
+
+def test_status_and_doctor_json():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    st = cli(["status", "--json"], repo)
+    data = json.loads(st.stdout)
+    assert data["ok"] is False and data["repo"] and data["version"]
+    cursor = next(t for t in data["targets"] if t["target"] == "cursor")
+    assert cursor["installed"] and cursor["guard"] and cursor["complete"] and cursor["sessions"] == []
+    assert isinstance(data["lines"], list)
+    doc = cli(["doctor", "--target", "cursor", "--json"], repo)
+    d = json.loads(doc.stdout)
+    assert (
+        doc.returncode == 0
+        and d["ok"]
+        and d["failed"] == 0
+        and all({"name", "ok", "skip", "detail"} <= set(c) for c in d["checks"])
+    )
+
+
+def test_status_reports_the_installed_version():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    version = json.load(open(os.path.join(ROOT, "package.json")))["version"]
+    data = json.loads(cli(["status", "--json"], repo).stdout)
+    assert next(t for t in data["targets"] if t["target"] == "cursor")["version"] == version
+    manifest = os.path.join(repo, ".agents/skills/tpm/.cadence-install.json")
+    m = json.load(open(manifest))
+    m["version"] = "0.1.4"
+    json.dump(m, open(manifest, "w"))
+    st = cli(["status"], repo)
+    assert (
+        f"cursor: installed 0.1.4, this is {version}; reinstall with `npx cadence-orchestrator --target cursor` to update"
+        in st.stdout
+    )
+
+
+def test_hand_edited_skill_files_are_backed_up_before_overwrite():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    skill = os.path.join(repo, ".agents/skills/tpm/SKILL.md")
+    open(skill, "a").write("\nmy note\n")
+    out = install(repo, "cursor")
+    assert (
+        "backed up hand-edited .agents/skills/tpm/SKILL.md to .cadence/backups/.agents/skills/tpm/SKILL.md"
+        in out
+    )
+    assert (
+        open(os.path.join(repo, ".cadence/backups/.agents/skills/tpm/SKILL.md")).read().endswith("my note\n")
+    )
+    assert not open(skill).read().endswith("my note\n")
+    assert "backed up" not in install(repo, "cursor")  # unchanged files aren't backed up
+
+
+def test_doctor_and_status_report_a_missing_cursor_session_start():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    path = os.path.join(repo, ".cursor/hooks.json")
+    cfg = json.load(open(path))
+    del cfg["hooks"]["sessionStart"]
+    json.dump(cfg, open(path, "w"))
+    st = cli(["status"], repo)
+    assert st.returncode == 1 and "missing sessionStart" in st.stdout, st.stdout
+    doc = cli(["doctor", "--target", "cursor"], repo)
+    assert doc.returncode == 1 and "FAIL cursor: sessionStart hook points at" in doc.stdout, doc.stdout
+    install(repo, "cursor")
+    assert (
+        "ok   cursor: sessionStart puts the chat id in context"
+        in cli(["doctor", "--target", "cursor"], repo).stdout
+    )
+
+
+def test_cursor_shim_recognises_session_start_without_hook_event_name():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_cursor.py")
+    out = run(
+        shim_path,
+        {"session_id": "c9", "is_background_agent": False, "composer_mode": "agent"},
+        tempfile.mkdtemp(),
+    )
+    assert json.loads(out.stdout)["additional_context"].startswith("tpm: this Cursor chat's id is c9.")
+    prompt = run(shim_path, {"conversation_id": "c9", "prompt": "hi"}, tempfile.mkdtemp())
+    assert json.loads(prompt.stdout) == {"continue": True}
+
+
+def test_python3_outside_the_default_path_gets_a_note():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    node = subprocess.run(["bash", "-c", "command -v node"], capture_output=True, text=True).stdout.strip()
+    py = subprocess.run(["bash", "-c", "command -v python3"], capture_output=True, text=True).stdout.strip()
+    bare = tempfile.mkdtemp()
+    for name, target in (
+        ("node", node),
+        ("python3", py),
+        ("git", shutil.which("git")),
+        ("bash", shutil.which("bash")),
+    ):
+        os.symlink(target, os.path.join(bare, name))
+    env = {"PATH": bare, "HOME": os.environ.get("HOME", "/")}
+    has_default = (
+        subprocess.run(
+            ["/bin/sh", "-c", "command -v python3"],
+            env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin"},
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+    st = subprocess.run(
+        [os.path.join(bare, "node"), INSTALL, "status", "--repo", repo],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    doc = subprocess.run(
+        [os.path.join(bare, "node"), INSTALL, "doctor", "--target", "cursor", "--repo", repo],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    note = "not on the default PATH (/usr/bin:/bin:/usr/sbin:/sbin)"
+    assert (note in st.stdout) == (not has_default) and (note in doc.stdout) == (not has_default), st.stdout
+    # The committed hook command is unchanged: it still looks python3 up on PATH.
+    assert "command -v python3" in open(os.path.join(repo, ".cursor/hooks.json")).read()

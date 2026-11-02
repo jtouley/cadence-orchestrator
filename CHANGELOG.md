@@ -29,6 +29,19 @@ rate, rework and recovery time.
 - `status` also exits 1 when a guarded target's hook config and shim are gone but its own files remain, even if an
   instructions-only target shares its skill folder.
 - Shared skill folders are copied once per run, and `.gitignore` is updated once.
+- `npx cadence-orchestrator uninstall [--target …] [--dry-run]` removes only what the installer added (marked hook
+  entries, the managed block, its files, the shim, a skill folder no remaining target uses, the `.gitignore` lines)
+  and prints what it removed; re-running is safe.
+- Every file a run touches is parsed and checked before anything is written: invalid JSON, or a managed block whose
+  begin or end marker is missing, stops the run with the repo unchanged.
+- `--dry-run` lists what an install would change and writes nothing; `--check` exits 1 when installed files differ
+  from what this version would write.
+- `status --json` and `doctor --json` print one JSON object. `status` shows the installed version and says to
+  reinstall when it differs. Each skill folder gets a `.cadence-install.json` with the version and file hashes.
+- A vendored skill file edited by hand is backed up to `.cadence/backups/` before a reinstall overwrites it.
+- `doctor` and `status` report a missing Cursor `sessionStart` entry, and note when python3 isn't on the default
+  PATH an editor started from the desktop may get. The Cursor shim recognises `sessionStart` input without
+  `hook_event_name`.
 
 ## 0.1.6
 

@@ -194,8 +194,10 @@ def test_text_output_and_arguments():
     ):
         out = subprocess.run([CLI, "dora", "--repo", repo, *bad], capture_output=True, text=True)
         assert out.returncode == 2, bad
-    out = subprocess.run([CLI, "status", "--repo", repo, "--json"], capture_output=True, text=True)
-    assert out.returncode == 2  # --json belongs to dora
+    out = subprocess.run(
+        [CLI, "status", "--repo", repo, "--since", "2026-01-01"], capture_output=True, text=True
+    )
+    assert out.returncode == 2  # --since belongs to dora
 
 
 def test_this_repos_changelog_records_the_0_1_0_regression():
