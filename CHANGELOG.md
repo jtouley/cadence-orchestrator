@@ -62,12 +62,15 @@ Changes:
 - `doctor` and `status` report a missing Cursor `sessionStart` entry, and note when python3 isn't on the default
   PATH an editor started from the desktop may get. The Cursor shim recognises `sessionStart` input without
   `hook_event_name`.
-- `dora`: deployment frequency gives the real count and span ("6 deploys in 2.1 days"), a per-week rate only over a
-  window of 4 weeks or more, and with fewer than 10 deploys the actual intervals (min, median, max). In npm mode it
-  warns about `v*` tags that were never published ("v0.1.4 is tagged but was never published to npm; not
-  counted"). Each run carries DORA's caution against using the metrics as targets, comparing teams or repos, or
-  reading one alone, first when the sample is small. `--json` adds `per_week_shown`, `min_rate_window_days`,
-  `span_seconds`, `intervals_seconds`, `caution`, `small_sample` and `unpublished_tags`; no field is renamed.
+- `dora`: deployment frequency counts deploys over the window the rate uses (`--since` or the first deploy, to now),
+  adds the first-to-last span and the intervals (min, median and max with fewer than 10 deploys), and shows a
+  per-week rate only over a window of 4 weeks or more (`per_week` is `null` in `--json` otherwise). In npm mode it
+  warns about `v*` tags in the window that were never published ("v0.1.4 is tagged but was never published to npm;
+  not counted"). Each run carries a caution drawn from DORA's guide (read the five together, as your team's trend
+  over time; not as targets, not to rank teams or compare very different apps), placed first when there are fewer
+  than 10 deploys or 3 recorded failures (this tool's thresholds); it replaces the "Only N deploys" warning.
+  `--json` adds `per_week_shown`, `min_rate_window_days`, `span_seconds`, `intervals_seconds`, `caution`,
+  `small_sample` and `unpublished_tags`; no field is renamed.
 
 ## 0.1.6
 

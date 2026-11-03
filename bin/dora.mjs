@@ -24,19 +24,24 @@ const FEW_DEPLOYS = 10;
 // A per-week rate is shown only over a window of at least 4 weeks: over a few days it extrapolates a burst of
 // releases into a weekly figure that changes with the time the command runs.
 const MIN_RATE_DAYS = 28;
+const MIN_FAILURES = 3; // fewer recorded failures make fail rate, rework and recovery time anecdotes
 const GUIDE = "https://dora.dev/guides/dora-metrics/";
-// From the DORA guide: compare a team with its own past ("over time, not to compete against other teams"), don't
-// make them targets (that "increases the likelihood that teams will try to game the metrics"), and use all five
-// together, not "only one metric".
+// Paraphrases DORA's guide, which says: "The goal is to improve your team’s performance over time, not to compete
+// against other teams or organizations."; broad targets increase "the likelihood that teams will try to game the
+// metrics."; "Comparing metrics between vastly different applications (for example, a mobile app and a mainframe
+// system) can be misleading."; and warns against "Attempting to measure complex systems with the idea that only one
+// metric matters." The small-sample rules (FEW_DEPLOYS, MIN_FAILURES, MIN_RATE_DAYS) are this tool's, not the guide's.
 const CAUTION =
-  "Read these together, as one team's trend over time: not as targets, and not to compare teams or repos " +
-  `(${GUIDE}).`;
+  `Per DORA's guide (${GUIDE}): read the five together, as your team's trend over time; ` +
+  "not as targets, and not to rank teams or compare very different apps.";
 // Shared with skills/tpm/scripts/tasks_check.py (ISO8601, SEMVER); a test keeps the patterns identical.
 const ISO8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3}|\.\d{6})?)?(Z|[+-]\d{2}:\d{2})$/;
 const SEMVER = /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 const bare = (v) => v.replace(/^v/, "");
 const isPlaceholder = (v) => /^0\.0\.0(-|$)/.test(v);
 const isPrerelease = (v) => v.includes("-");
+// The one production-deploy rule: placeholders (0.0.0*) never count; prereleases only with --include-prereleases.
+const countsAsDeploy = (v, includePrereleases) => !isPlaceholder(v) && (includePrereleases || !isPrerelease(v));
 
 export function parseTime(value) {
   // Seconds since the epoch, or null when the value doesn't follow the shared ISO 8601 rule or names an
@@ -57,26 +62,33 @@ const git = (repo, args) =>
   execFileSync("git", ["-C", repo, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 const lines = (s) => (s ? s.split("\n") : []);
 
-function deploysFromTags(repo, warnings) {
+// Release tags v*, listed once: name, version, commit, time (the tagger date, or the commit's for a lightweight tag).
+function listTags(repo) {
   const out = git(repo, [
     "for-each-ref",
     "refs/tags/v*",
     "--format=%(refname:short)\t%(objecttype)\t%(*objectname)\t%(objectname)\t%(taggerdate:unix)\t%(creatordate:unix)",
   ]);
-  let lightweight = 0;
-  const deploys = [];
+  const tags = [];
   for (const l of lines(out)) {
     const [name, type, peeled, obj, taggerDate, creatorDate] = l.split("\t");
     if (!SEMVER.test(name)) continue;
     const annotated = type === "tag";
-    if (!annotated) lightweight += 1;
-    deploys.push({
+    tags.push({
       name,
       version: bare(name),
       commit: annotated ? peeled : obj,
       time: Number(annotated ? taggerDate : creatorDate),
+      annotated,
     });
   }
+  return tags;
+}
+
+function deploysFromTags(repo, warnings) {
+  const tags = listTags(repo);
+  const lightweight = tags.filter((t) => !t.annotated).length;
+  const deploys = tags.map(({ name, version, commit, time }) => ({ name, version, commit, time }));
   if (lightweight) {
     warnings.push(
       `${lightweight} lightweight tag(s): their commit's date is used as the deploy time. Use annotated tags ` +
@@ -122,38 +134,29 @@ function npmTimes(repo, warnings) {
   return JSON.parse(r.stdout);
 }
 
-function deploysFromNpm(repo, warnings, includePrereleases, unpublished) {
+// Returns the published versions as deploys, and the release tags (listed once) for the unpublished-tag check.
+function deploysFromNpm(repo, warnings) {
   const times = npmTimes(repo, warnings);
+  const tags = listTags(repo);
+  const tagged = new Map(tags.map((t) => [t.version, t.commit]));
   const deploys = [];
   const unmapped = [];
   for (const [version, iso] of Object.entries(times)) {
     if (!SEMVER.test(version)) continue; // skips "created" and "modified"
     const time = Date.parse(iso) / 1000;
-    let commit = "";
-    try {
-      commit = git(repo, ["rev-list", "-n", "1", `v${version}`]);
-    } catch {
+    let commit = tagged.get(version) ?? "";
+    if (!commit) {
       // No tag: the first commit whose package.json has this version.
       const hits = lines(git(repo, ["log", "--format=%H", "--reverse", "-S", `"version": "${version}"`, "--", "package.json"]));
       commit = hits[0] ?? "";
     }
-    if (!commit && !isPlaceholder(version) && !isPrerelease(version)) unmapped.push(version);
+    if (!commit && countsAsDeploy(version, false)) unmapped.push(version);
     deploys.push({ name: version, version, commit: commit || null, time });
   }
   if (unmapped.length) {
     warnings.push(`npm versions with no matching commit (no tag or package.json change): ${unmapped.join(", ")}`);
   }
-  // The other direction: release tags with no npm version (a failed publish, say) aren't deploys in this mode.
-  if (Object.keys(times).length) {
-    const tags = lines(git(repo, ["tag", "--list", "v*"])).filter((t) => SEMVER.test(t));
-    for (const t of tags.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
-      const v = bare(t);
-      if (v in times || isPlaceholder(v) || (isPrerelease(v) && !includePrereleases)) continue;
-      unpublished.push(t);
-      warnings.push(`${t} is tagged but was never published to npm; not counted.`);
-    }
-  }
-  return deploys;
+  return { deploys, tags, published: Object.keys(times).length > 0 };
 }
 
 function changelogFixes(repo) {
@@ -202,6 +205,13 @@ function taskFixes(repo, warnings) {
   return out;
 }
 
+// Min, median and max from one sorted copy (no argument spreading, which overflows the stack on huge arrays).
+export function intervalStats(gaps) {
+  if (!gaps.length) return null;
+  const s = [...gaps].sort((a, b) => a - b);
+  return { min: s[0], median: median(s), max: s.at(-1) };
+}
+
 const median = (xs) => {
   if (!xs.length) return null;
   const s = [...xs].sort((a, b) => a - b);
@@ -221,18 +231,14 @@ export function dora(
   { since = null, deploys: mode = "tags", includePrereleases = false, now = Date.now() / 1000 } = {},
 ) {
   const warnings = [];
-  const unpublished = [];
   const source = {
     tags: "git: release tags v* (annotated: tagger date)",
     merges: "git: first-parent commits on main (origin/main if present; each change landing on main)",
     npm: "npm registry: publish time of each version (npm view <package> time)",
   }[mode];
-  const loaded =
-    mode === "merges" ? deploysFromMerges(repo) : mode === "npm" ? deploysFromNpm(repo, warnings, includePrereleases, unpublished) : deploysFromTags(repo, warnings);
-  // Production deploys only: placeholders (0.0.0*) never count; prereleases only with --include-prereleases.
-  const excluded = loaded.filter(
-    (d) => d.version && (isPlaceholder(d.version) || (!includePrereleases && isPrerelease(d.version))),
-  );
+  const npm = mode === "npm" ? deploysFromNpm(repo, warnings) : null;
+  const loaded = mode === "merges" ? deploysFromMerges(repo) : npm ? npm.deploys : deploysFromTags(repo, warnings);
+  const excluded = loaded.filter((d) => d.version && !countsAsDeploy(d.version, includePrereleases));
   if (excluded.length) {
     warnings.push(
       `Not counted as deploys: ${excluded.map((d) => d.version).join(", ")} (0.0.0 placeholders` +
@@ -246,13 +252,21 @@ export function dora(
   const start = since ? since.getTime() / 1000 : all.length ? all[0].time : now;
   const inWindow = all.filter((d) => d.time >= start && d.time <= now);
   const metrics = {};
+  // npm mode, the other direction: release tags in the window with no npm version (a failed publish, say).
+  const npmVersions = new Set(loaded.map((d) => d.version));
+  const unpublished = npm?.published
+    ? npm.tags
+        .filter((t) => !npmVersions.has(t.version) && countsAsDeploy(t.version, includePrereleases))
+        .filter((t) => t.time >= start && t.time <= now)
+        .sort((a, b) => a.time - b.time)
+        .map((t) => t.name)
+    : [];
+  for (const t of unpublished) warnings.push(`${t} is tagged but was never published to npm; not counted.`);
 
   if (!inWindow.length) {
     warnings.push(
       { tags: "No release tags (v*) in this window. Tag releases, or use --deploys merges or npm.", merges: "No commits on main in this window.", npm: "No published versions in this window." }[mode],
     );
-  } else if (inWindow.length < FEW_DEPLOYS) {
-    warnings.push(`Only ${inWindow.length} deploys: too few for stable numbers (DORA metrics need a trend).`);
   }
 
   // Deployment frequency: the actual count and the span they cover. A per-week rate only over a window of at least
@@ -260,16 +274,20 @@ export function dora(
   const weeks = Math.max(now - start, 3600) / (7 * 86400);
   const windowDays = (now - start) / 86400;
   const gaps = inWindow.slice(1).map((d, i) => d.time - inWindow[i].time);
-  const span = inWindow.length ? inWindow.at(-1).time - inWindow[0].time : 0;
+  const span = inWindow.length > 1 ? inWindow.at(-1).time - inWindow[0].time : null;
   const rateShown = windowDays >= MIN_RATE_DAYS;
-  const intervals = gaps.length ? { min: Math.min(...gaps), median: median(gaps), max: Math.max(...gaps) } : null;
+  const intervals = intervalStats(gaps);
+  // The guide: "The number of deployments over a given period or the time between deployments." The period is the
+  // window the rate uses: --since (or the first deploy) to now.
   let value = "not measurable: no deploys";
   if (inWindow.length) {
+    const from = since ? "--since" : "first deploy";
     value =
-      `${inWindow.length} deploys in ${human(span)}` +
+      `${inWindow.length === 1 ? "1 deploy" : `${inWindow.length} deploys`} in ${human(now - start)} (${from} to now)` +
+      (span !== null ? `; first to last deploy ${human(span)}` : "") +
       (rateShown
-        ? `; ${(inWindow.length / weeks).toFixed(1)}/week over ${windowDays.toFixed(0)} days`
-        : `; no weekly rate: the window is ${windowDays.toFixed(1)} days, under ${MIN_RATE_DAYS / 7} weeks`);
+        ? `; ${(inWindow.length / weeks).toFixed(1)}/week`
+        : `; no weekly rate (this tool shows one only over ${MIN_RATE_DAYS / 7} weeks or more)`);
     if (intervals) {
       value +=
         inWindow.length < FEW_DEPLOYS
@@ -280,7 +298,7 @@ export function dora(
   metrics.deployment_frequency = {
     value,
     count: inWindow.length,
-    per_week: inWindow.length / weeks,
+    per_week: rateShown ? inWindow.length / weeks : null,
     per_week_shown: rateShown,
     min_rate_window_days: MIN_RATE_DAYS,
     span_seconds: span,
@@ -289,8 +307,8 @@ export function dora(
     window: { start, end: now },
     sample: inWindow.length,
     source:
-      `${source}; window from ${since ? "--since" : "the first deploy"} to now; a weekly rate needs a window of ` +
-      `${MIN_RATE_DAYS} days or more`,
+      `${source}; window from ${since ? "--since" : "the first deploy"} to now; this tool shows a weekly rate only ` +
+      `over a window of ${MIN_RATE_DAYS} days or more`,
   };
 
   // Change lead time: each commit counts against the first deploy containing it, and no earlier deploy (by
@@ -331,6 +349,7 @@ export function dora(
   const records = [...changelogFixes(repo), ...taskFixes(repo, warnings)];
   const recordSources = 'CHANGELOG.md "### Fixed (regression from X.Y.Z)"; tasks.json kind "fix" with a version in fixes';
   const keys = ["change_fail_rate", "deployment_rework_rate", "failed_deployment_recovery_time"];
+  let failures = 0; // recorded failures matched to deploys in the window
   const unmeasurable = (why) => ({ value: `not measurable: ${why}`, sample: 0, source: recordSources });
   if (!records.length) {
     for (const k of keys) metrics[k] = unmeasurable("no failure records");
@@ -369,6 +388,7 @@ export function dora(
       else unmatchedFixes.push(v);
     }
     const n = inWindow.length;
+    failures = failedVersions.length;
     if (!n) {
       for (const k of keys) metrics[k] = unmeasurable("no deploys in the window");
     } else if (!failedVersions.length && unmatchedFailures.length) {
@@ -414,10 +434,19 @@ export function dora(
     }
   }
   for (const k of Object.keys(metrics)) metrics[k].definition = DEFINITIONS[k];
-  // Small samples: any metric with fewer than FEW_DEPLOYS deploys, or recovery time from fewer than 3 failures.
-  const smallSample = inWindow.length < FEW_DEPLOYS;
+  // Small samples: fewer than FEW_DEPLOYS deploys, or instability (fail rate, rework, recovery time) from 1 or 2
+  // recorded failures. With no failures recorded, those metrics say "not measurable" or 0%, not a number from one
+  // data point.
+  const fewDeploys = inWindow.length < FEW_DEPLOYS;
+  const fewFailures = failures > 0 && failures < MIN_FAILURES;
+  const smallSample = fewDeploys || fewFailures;
+  const why = [
+    ...(fewDeploys ? [`${inWindow.length} deploy${inWindow.length === 1 ? "" : "s"}`] : []),
+    ...(fewFailures ? [`${failures} recorded failure${failures === 1 ? "" : "s"}`] : []),
+  ].join(" and ");
   const caution = smallSample
-    ? `CAUTION: ${inWindow.length} deploy(s) is a snapshot, not a trend. ${CAUTION}`
+    ? `CAUTION: only ${why}, a snapshot rather than a trend (this tool's threshold: fewer than ${FEW_DEPLOYS} ` +
+      `deploys or ${MIN_FAILURES} recorded failures). ${CAUTION}`
     : CAUTION;
   return {
     deploys: mode,
@@ -426,7 +455,7 @@ export function dora(
     metrics,
     caution,
     small_sample: smallSample,
-    unpublished_tags: mode === "npm" ? unpublished : [],
+    unpublished_tags: unpublished,
   };
 }
 

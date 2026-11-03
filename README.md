@@ -201,9 +201,10 @@ repo, read-only, with each metric's definition, source and sample size:
   opt-in): tag mode counts a tag even when its release failed, and a lightweight tag only has its commit's date.
   Prereleases and `0.0.0` placeholders aren't production deploys and don't count (`--include-prereleases` counts
   prereleases). In npm mode it warns about `v*` tags that were never published, which aren't counted.
-- **Deployment frequency** is the number of deploys and the time they span. A per-week rate appears only when the
-  window (from `--since` or the first deploy, to now) is at least 4 weeks. With fewer than 10 deploys it shows
-  the real intervals (min, median, max) rather than a median alone.
+- **Deployment frequency** is the number of deploys over the window (from `--since` or the first deploy, to now),
+  with the first-to-last span and the intervals between deploys. This tool shows a per-week rate only when that
+  window is at least 4 weeks, and with fewer than 10 deploys it gives the intervals' min, median and max. In
+  `--json`, `per_week` is `null` when no rate is shown.
 - **Change lead time** runs from each commit to the first deploy that contains it, counted once. Commits from before
   the window are the baseline and aren't measured. It uses the committer date, which a rebase or squash resets.
 - **Change fail rate, rework and recovery time** come only from explicit records: CHANGELOG
@@ -211,9 +212,10 @@ repo, read-only, with each metric's definition, source and sample size:
   `fixed_in`, or the latest deploy at or before `deployed_at`, within 48 h). Without them it prints
   "not measurable" rather than guess.
 
-`--since 2026-10-01` limits the window and `--json` gives machine-readable output. Each run ends with DORA's caution:
-read the metrics together, as one team's trend over time, not as targets or to compare teams or repos. With fewer
-than 10 deploys that caution comes first, since a handful of releases is a snapshot, not a trend.
+`--since 2026-10-01` limits the window and `--json` gives machine-readable output. Each run ends with a caution
+drawn from the guide: read the five together, as your team's trend over time, not as targets, and not to rank teams
+or compare very different apps. With fewer than 10 deploys or 3 recorded failures (this tool's thresholds, not
+DORA's), the caution comes first and calls the result a snapshot rather than a trend.
 
 ## Threat Model
 
