@@ -92,7 +92,10 @@ def test_throughput_from_tags():
     assert m["change_lead_time"]["median_seconds"] == DAY
     assert "committer date" in m["change_lead_time"]["source"]
     assert "committed to version control to deployed" in m["change_lead_time"]["definition"]
-    assert any("too few" in w for w in report["warnings"])
+    # Few deploys: said once, in the caution, not again as a warning.
+    assert "a snapshot rather than a trend" in report["caution"] and not any(
+        "too few" in w for w in report["warnings"]
+    )
 
 
 def test_instability_from_changelog_records():
@@ -381,3 +384,183 @@ def test_dora_and_tasks_check_share_one_iso8601_rule():
     )
     python = [tasks_check.parse_time(v) is not None for v in ISO_CASES]
     assert node == python == list(ISO_CASES.values())
+
+
+def test_frequency_reports_count_and_span_and_no_rate_for_a_short_window():
+    repo = synthetic()  # 3 deploys, 2 days apart; the window runs from the first deploy to now (years)
+    f = dora(repo, "--since", iso(T0))["metrics"]["deployment_frequency"]
+    assert f["span_seconds"] == 4 * DAY and f["count"] == 3
+    assert f["intervals_seconds"] == {"min": 2 * DAY, "median": 2 * DAY, "max": 2 * DAY}
+    assert f["min_rate_window_days"] == 28
+    # A long window (from T0 to now) shows the weekly rate.
+    assert f["per_week_shown"] is True and "/week" in f["value"]
+    days = (f["window"]["end"] - f["window"]["start"]) / DAY  # the count is over the window the rate uses
+    assert f["value"].startswith(
+        f"3 deploys in {days:.1f} days (--since to now); first to last deploy 4.0 days; "
+    )
+    # A short window: count and span, no weekly rate, and the real intervals.
+    report = run_at(repo, T0 + 6 * DAY)
+    g = report["metrics"]["deployment_frequency"]
+    assert g["per_week_shown"] is False and "/week" not in g["value"]
+    assert g["value"].startswith(
+        "3 deploys in 5.0 days (first deploy to now); first to last deploy 4.0 days; "
+    )
+    assert "no weekly rate (this tool shows one only over 4 weeks or more)" in g["value"]
+    assert "intervals min 2.0 days, median 2.0 days, max 2.0 days" in g["value"]
+    assert g["per_week"] is None and "median_seconds_between" in g  # older fields stay; no rate, no number
+
+
+def test_intervals_show_min_median_max_when_gaps_differ():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    for k, at in enumerate((T0, T0 + 1800, T0 + 3600, T0 + 30 * 3600)):
+        commit(repo, f"f{k}", at - 60)
+        tag(repo, f"0.2.{k}", at)
+    g = run_at(repo, T0 + 2 * DAY)["metrics"]["deployment_frequency"]
+    assert "intervals min 0.5 h, median 0.5 h, max 29.0 h" in g["value"], g["value"]
+
+
+def run_at(repo, now):
+    """The report as if run at `now` (epoch seconds), through the module directly."""
+    script = (
+        "import('" + os.path.join(ROOT, "bin", "dora.mjs") + "').then(m => "
+        f"console.log(JSON.stringify(m.dora(process.argv[1], {{ now: {now} }}))))"
+    )
+    out = subprocess.run(["node", "-e", script, repo], capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
+
+
+def test_npm_mode_warns_about_tags_never_published():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    open(os.path.join(repo, "package.json"), "w").write(json.dumps({"name": "demo", "version": "0.1.0"}))
+    git(repo, "add", "package.json")
+    git(repo, "commit", "-q", "-m", "v", at=T0)
+    tag(repo, "0.1.0", T0 + 60)
+    for v in ("0.1.4", "0.2.0-rc.1"):  # tagged after the first publish, inside the window
+        tag(repo, v, T0 + DAY)
+    path = os.path.join(tempfile.mkdtemp(), "times.json")
+    json.dump({"created": iso(T0), "0.1.0": iso(T0 + 120)}, open(path, "w"))
+    env = dict(os.environ, CADENCE_DORA_NPM_TIMES=path)
+    run = lambda *a: subprocess.run(  # noqa: E731
+        [CLI, "dora", "--repo", repo, "--deploys", "npm", *a], capture_output=True, text=True, env=env
+    )
+    report = json.loads(run("--json").stdout)
+    assert report["unpublished_tags"] == ["v0.1.4"]  # the prerelease isn't a deploy either way
+    assert "v0.1.4 is tagged but was never published to npm; not counted." in report["warnings"]
+    assert "warning: v0.1.4 is tagged but was never published to npm; not counted." in run().stdout
+    assert json.loads(run("--json", "--include-prereleases").stdout)["unpublished_tags"] == [
+        "v0.1.4",
+        "v0.2.0-rc.1",
+    ]
+    assert dora(repo)["unpublished_tags"] == []  # tag mode counts tags; nothing to warn about
+
+
+def test_caution_against_misuse_is_in_text_and_json_and_first_when_small():
+    small = synthetic()
+    report = dora(small)
+    assert report["small_sample"] is True
+    assert report["caution"].startswith(
+        "CAUTION: only 3 deploys and 1 recorded failure, a snapshot rather than a trend "
+        "(this tool's threshold: fewer than 10 deploys or 3 recorded failures). "
+    )
+    for words in (
+        "together",
+        "trend over time",
+        "not as targets",
+        "not to rank teams or compare very different apps",
+        "Per DORA's guide (https://dora.dev/guides/dora-metrics/)",
+        "https://dora.dev/guides/dora-metrics/",
+    ):
+        assert words in report["caution"], words
+    text = subprocess.run([CLI, "dora", "--repo", small], capture_output=True, text=True).stdout.splitlines()
+    assert text[1] == report["caution"]  # right after the header when the sample is small
+    big = tempfile.mkdtemp()
+    git(big, "init", "-q", "-b", "main")
+    for k in range(12):
+        commit(big, f"g{k}", T0 + k * DAY)
+        tag(big, f"1.0.{k}", T0 + k * DAY + 60)
+    report = dora(big)
+    assert report["small_sample"] is False and report["caution"].startswith("Per DORA's guide")
+    text = subprocess.run([CLI, "dora", "--repo", big], capture_output=True, text=True).stdout.splitlines()
+    assert text[-1] == report["caution"] and not text[1].startswith("CAUTION")
+
+
+def test_interval_stats_handle_huge_inputs():
+    script = (
+        "import('" + os.path.join(ROOT, "bin", "dora.mjs") + "').then(m => {"
+        "const gaps = Array.from({ length: 250000 }, (_, i) => (i * 7919) % 100000 + 1);"
+        "console.log(JSON.stringify(m.intervalStats(gaps))); })"
+    )
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    stats = json.loads(out.stdout)
+    assert stats["min"] == 1 and stats["max"] == 100000 and 1 <= stats["median"] <= 100000
+
+
+def test_unpublished_tags_are_limited_to_the_window():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    open(os.path.join(repo, "package.json"), "w").write(json.dumps({"name": "demo", "version": "1.0.0"}))
+    git(repo, "add", "package.json")
+    git(repo, "commit", "-q", "-m", "v", at=T0)
+    tag(repo, "0.0.9", T0 + 60)  # old, never published, before the window
+    tag(repo, "1.0.0", T0 + 30 * DAY)
+    tag(repo, "1.0.1", T0 + 31 * DAY)  # in the window, never published
+    path = os.path.join(tempfile.mkdtemp(), "times.json")
+    json.dump({"created": iso(T0), "1.0.0": iso(T0 + 30 * DAY + 60)}, open(path, "w"))
+    env = dict(os.environ, CADENCE_DORA_NPM_TIMES=path)
+    out = subprocess.run(
+        [CLI, "dora", "--repo", repo, "--json", "--deploys", "npm", "--since", iso(T0 + 29 * DAY)],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    report = json.loads(out.stdout)
+    assert report["unpublished_tags"] == ["v1.0.1"], report["unpublished_tags"]
+    assert not any("v0.0.9" in w for w in report["warnings"])
+    full = json.loads(
+        subprocess.run(
+            [CLI, "dora", "--repo", repo, "--json", "--deploys", "npm", "--since", iso(T0 - DAY)],
+            capture_output=True,
+            text=True,
+            env=env,
+        ).stdout
+    )
+    assert full["unpublished_tags"] == ["v0.0.9", "v1.0.1"]
+
+
+def test_few_recorded_failures_make_a_small_sample_even_with_many_deploys():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    open(os.path.join(repo, "CHANGELOG.md"), "w").write(
+        "# Changelog\n\n## 1.0.1\n\n### Fixed (regression from 1.0.0)\n\n- x\n"
+    )
+    git(repo, "add", "CHANGELOG.md")
+    for k in range(12):
+        commit(repo, f"g{k}", T0 + k * DAY)
+        tag(repo, f"1.0.{k}", T0 + k * DAY + 60)
+    report = dora(repo)
+    assert report["small_sample"] is True
+    assert report["caution"].startswith("CAUTION: only 1 recorded failure, a snapshot rather than a trend")
+    text = subprocess.run([CLI, "dora", "--repo", repo], capture_output=True, text=True).stdout.splitlines()
+    assert text[1] == report["caution"]
+
+
+def test_one_deploy_prints_no_span():
+    repo = tempfile.mkdtemp()
+    git(repo, "init", "-q", "-b", "main")
+    commit(repo, "a", T0)
+    tag(repo, "0.1.0", T0 + 60)
+    f = run_at(repo, T0 + DAY)["metrics"]["deployment_frequency"]
+    assert f["value"].startswith("1 deploy in 24.0 h (first deploy to now); no weekly rate")
+    assert "first to last" not in f["value"]
+    assert f["span_seconds"] is None and f["intervals_seconds"] is None and f["per_week"] is None
+    report = run_at(repo, T0 + DAY)
+    assert report["caution"].startswith("CAUTION: only 1 deploy, a snapshot")
+
+
+def test_deploy_rule_is_shared_between_deploys_and_unpublished_tags():
+    src = open(os.path.join(ROOT, "bin", "dora.mjs")).read()
+    assert src.count("countsAsDeploy(") >= 3 and "isPrerelease(d.version)" not in src
+    assert src.count('"for-each-ref"') == 1 and "rev-list" not in src  # tags listed once, for both directions
