@@ -200,9 +200,10 @@ repo, read-only, with each metric's definition, source and sample size:
   published to npm with `--deploys npm`. Prefer `npm` for a published package (it asks the registry, so it's
   opt-in): tag mode counts a tag even when its release failed, and a lightweight tag only has its commit's date.
   Prereleases and `0.0.0` placeholders aren't production deploys and don't count (`--include-prereleases` counts
-  prereleases).
-- **Deployment frequency** is deploys per week from `--since` (or the first deploy) to now, plus the median
-  interval between deploys.
+  prereleases). In npm mode it warns about `v*` tags that were never published, which aren't counted.
+- **Deployment frequency** is the number of deploys and the time they span. A per-week rate appears only when the
+  window (from `--since` or the first deploy, to now) is at least 4 weeks. With fewer than 10 deploys it shows
+  the real intervals (min, median, max) rather than a median alone.
 - **Change lead time** runs from each commit to the first deploy that contains it, counted once. Commits from before
   the window are the baseline and aren't measured. It uses the committer date, which a rebase or squash resets.
 - **Change fail rate, rework and recovery time** come only from explicit records: CHANGELOG
@@ -210,8 +211,9 @@ repo, read-only, with each metric's definition, source and sample size:
   `fixed_in`, or the latest deploy at or before `deployed_at`, within 48 h). Without them it prints
   "not measurable" rather than guess.
 
-`--since 2026-10-01` limits the window and `--json` gives machine-readable output. It warns when there are fewer than
-about 10 deploys, since a handful of releases says little.
+`--since 2026-10-01` limits the window and `--json` gives machine-readable output. Each run ends with DORA's caution:
+read the metrics together, as one team's trend over time, not as targets or to compare teams or repos. With fewer
+than 10 deploys that caution comes first, since a handful of releases is a snapshot, not a trend.
 
 ## Threat Model
 

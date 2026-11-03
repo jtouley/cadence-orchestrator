@@ -62,6 +62,12 @@ Changes:
 - `doctor` and `status` report a missing Cursor `sessionStart` entry, and note when python3 isn't on the default
   PATH an editor started from the desktop may get. The Cursor shim recognises `sessionStart` input without
   `hook_event_name`.
+- `dora`: deployment frequency gives the real count and span ("6 deploys in 2.1 days"), a per-week rate only over a
+  window of 4 weeks or more, and with fewer than 10 deploys the actual intervals (min, median, max). In npm mode it
+  warns about `v*` tags that were never published ("v0.1.4 is tagged but was never published to npm; not
+  counted"). Each run carries DORA's caution against using the metrics as targets, comparing teams or repos, or
+  reading one alone, first when the sample is small. `--json` adds `per_week_shown`, `min_rate_window_days`,
+  `span_seconds`, `intervals_seconds`, `caution`, `small_sample` and `unpublished_tags`; no field is renamed.
 
 ## 0.1.6
 

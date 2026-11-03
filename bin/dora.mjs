@@ -21,6 +21,16 @@ const DEFINITIONS = {
     "The time it takes to recover from a deployment that fails and requires immediate intervention.",
 };
 const FEW_DEPLOYS = 10;
+// A per-week rate is shown only over a window of at least 4 weeks: over a few days it extrapolates a burst of
+// releases into a weekly figure that changes with the time the command runs.
+const MIN_RATE_DAYS = 28;
+const GUIDE = "https://dora.dev/guides/dora-metrics/";
+// From the DORA guide: compare a team with its own past ("over time, not to compete against other teams"), don't
+// make them targets (that "increases the likelihood that teams will try to game the metrics"), and use all five
+// together, not "only one metric".
+const CAUTION =
+  "Read these together, as one team's trend over time: not as targets, and not to compare teams or repos " +
+  `(${GUIDE}).`;
 // Shared with skills/tpm/scripts/tasks_check.py (ISO8601, SEMVER); a test keeps the patterns identical.
 const ISO8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3}|\.\d{6})?)?(Z|[+-]\d{2}:\d{2})$/;
 const SEMVER = /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
@@ -112,7 +122,7 @@ function npmTimes(repo, warnings) {
   return JSON.parse(r.stdout);
 }
 
-function deploysFromNpm(repo, warnings) {
+function deploysFromNpm(repo, warnings, includePrereleases, unpublished) {
   const times = npmTimes(repo, warnings);
   const deploys = [];
   const unmapped = [];
@@ -132,6 +142,16 @@ function deploysFromNpm(repo, warnings) {
   }
   if (unmapped.length) {
     warnings.push(`npm versions with no matching commit (no tag or package.json change): ${unmapped.join(", ")}`);
+  }
+  // The other direction: release tags with no npm version (a failed publish, say) aren't deploys in this mode.
+  if (Object.keys(times).length) {
+    const tags = lines(git(repo, ["tag", "--list", "v*"])).filter((t) => SEMVER.test(t));
+    for (const t of tags.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+      const v = bare(t);
+      if (v in times || isPlaceholder(v) || (isPrerelease(v) && !includePrereleases)) continue;
+      unpublished.push(t);
+      warnings.push(`${t} is tagged but was never published to npm; not counted.`);
+    }
   }
   return deploys;
 }
@@ -201,13 +221,14 @@ export function dora(
   { since = null, deploys: mode = "tags", includePrereleases = false, now = Date.now() / 1000 } = {},
 ) {
   const warnings = [];
+  const unpublished = [];
   const source = {
     tags: "git: release tags v* (annotated: tagger date)",
     merges: "git: first-parent commits on main (origin/main if present; each change landing on main)",
     npm: "npm registry: publish time of each version (npm view <package> time)",
   }[mode];
   const loaded =
-    mode === "merges" ? deploysFromMerges(repo) : mode === "npm" ? deploysFromNpm(repo, warnings) : deploysFromTags(repo, warnings);
+    mode === "merges" ? deploysFromMerges(repo) : mode === "npm" ? deploysFromNpm(repo, warnings, includePrereleases, unpublished) : deploysFromTags(repo, warnings);
   // Production deploys only: placeholders (0.0.0*) never count; prereleases only with --include-prereleases.
   const excluded = loaded.filter(
     (d) => d.version && (isPlaceholder(d.version) || (!includePrereleases && isPrerelease(d.version))),
@@ -234,20 +255,42 @@ export function dora(
     warnings.push(`Only ${inWindow.length} deploys: too few for stable numbers (DORA metrics need a trend).`);
   }
 
-  // Deployment frequency: deploys per week over [start, now], and the median interval between deploys.
+  // Deployment frequency: the actual count and the span they cover. A per-week rate only over a window of at least
+  // MIN_RATE_DAYS (counted from the window start to now); with few deploys, the real intervals (min, median, max).
   const weeks = Math.max(now - start, 3600) / (7 * 86400);
+  const windowDays = (now - start) / 86400;
   const gaps = inWindow.slice(1).map((d, i) => d.time - inWindow[i].time);
+  const span = inWindow.length ? inWindow.at(-1).time - inWindow[0].time : 0;
+  const rateShown = windowDays >= MIN_RATE_DAYS;
+  const intervals = gaps.length ? { min: Math.min(...gaps), median: median(gaps), max: Math.max(...gaps) } : null;
+  let value = "not measurable: no deploys";
+  if (inWindow.length) {
+    value =
+      `${inWindow.length} deploys in ${human(span)}` +
+      (rateShown
+        ? `; ${(inWindow.length / weeks).toFixed(1)}/week over ${windowDays.toFixed(0)} days`
+        : `; no weekly rate: the window is ${windowDays.toFixed(1)} days, under ${MIN_RATE_DAYS / 7} weeks`);
+    if (intervals) {
+      value +=
+        inWindow.length < FEW_DEPLOYS
+          ? `; intervals min ${human(intervals.min)}, median ${human(intervals.median)}, max ${human(intervals.max)}`
+          : `; median interval ${human(intervals.median)}`;
+    }
+  }
   metrics.deployment_frequency = {
-    value: inWindow.length
-      ? `${inWindow.length} deploys in ${(weeks * 7).toFixed(1)} days (${(inWindow.length / weeks).toFixed(1)}/week)` +
-        (gaps.length ? `; median interval ${human(median(gaps))}` : "")
-      : "not measurable: no deploys",
+    value,
     count: inWindow.length,
     per_week: inWindow.length / weeks,
+    per_week_shown: rateShown,
+    min_rate_window_days: MIN_RATE_DAYS,
+    span_seconds: span,
     median_seconds_between: median(gaps),
+    intervals_seconds: intervals,
     window: { start, end: now },
     sample: inWindow.length,
-    source: `${source}; window from ${since ? "--since" : "the first deploy"} to now`,
+    source:
+      `${source}; window from ${since ? "--since" : "the first deploy"} to now; a weekly rate needs a window of ` +
+      `${MIN_RATE_DAYS} days or more`,
   };
 
   // Change lead time: each commit counts against the first deploy containing it, and no earlier deploy (by
@@ -371,7 +414,20 @@ export function dora(
     }
   }
   for (const k of Object.keys(metrics)) metrics[k].definition = DEFINITIONS[k];
-  return { deploys: mode, since: since ? since.toISOString() : null, warnings, metrics };
+  // Small samples: any metric with fewer than FEW_DEPLOYS deploys, or recovery time from fewer than 3 failures.
+  const smallSample = inWindow.length < FEW_DEPLOYS;
+  const caution = smallSample
+    ? `CAUTION: ${inWindow.length} deploy(s) is a snapshot, not a trend. ${CAUTION}`
+    : CAUTION;
+  return {
+    deploys: mode,
+    since: since ? since.toISOString() : null,
+    warnings,
+    metrics,
+    caution,
+    small_sample: smallSample,
+    unpublished_tags: mode === "npm" ? unpublished : [],
+  };
 }
 
 export function formatDora(report) {
@@ -380,6 +436,7 @@ export function formatDora(report) {
     `DORA software delivery metrics (definitions: https://dora.dev/guides/dora-metrics/); deploys = ${report.deploys}` +
       (report.since ? ` since ${report.since.slice(0, 10)}` : ""),
   );
+  if (report.small_sample) out.push(report.caution);
   for (const w of report.warnings) out.push(`warning: ${w}`);
   const names = {
     deployment_frequency: "Deployment frequency",
@@ -393,6 +450,10 @@ export function formatDora(report) {
     out.push(`${names[k]}: ${m.value} (n=${m.sample})`);
     out.push(`  definition: ${m.definition}`);
     out.push(`  source: ${m.source}`);
+  }
+  if (!report.small_sample) {
+    out.push("");
+    out.push(report.caution);
   }
   return out;
 }
