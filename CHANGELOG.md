@@ -6,6 +6,28 @@ rate, rework and recovery time.
 
 ## Unreleased
 
+## 0.1.8
+
+Upgrading from 0.1.7: reinstall (`npx cadence-orchestrator@latest`) so the hooks use the new state folder. Until
+then they keep writing to the old shared one, which `status` still reads.
+
+- The guard's state (arming markers, session heartbeats, `advisory.log`) moves from the shared
+  `$TMPDIR/cadence-orchestrator` to a per-user folder: `$XDG_STATE_HOME/cadence-orchestrator` or
+  `~/.local/state/cadence-orchestrator` on Linux (XDG Base Directory spec), `~/Library/Application
+  Support/cadence-orchestrator` on macOS. Missing folders, parents included, are created with mode 0700; an existing
+  one keeps its mode. When that location can't be used (HOME=/, a read-only or missing home, a symlink or another
+  user's folder there), the hooks use `cadence-orchestrator-<uid>` in the temp folder, under the same checks, instead
+  of failing open; `doctor` applies the same rule. `CADENCE_STATE_DIR`, `CLAUDE_PLUGIN_DATA` and `status --state-dir`
+  still override it and are followed as given. Sessions armed under 0.1.7 stay armed after the upgrade (arming
+  markers in the old folder still count), and `status` also reads the old folder's heartbeats, but only files the
+  current user owns.
+- Bytecode cleanup also removes Python's optimized bytecode (`<script>.<tag>.opt-N.pyc`, PEP 488) for tpm's own
+  scripts, under the same rule.
+- The release workflow installs its pinned npm with `npm ci` from `.github/npm/package-lock.json`, whose sha512
+  integrity must match `NPM_INTEGRITY`; Scorecard's Pinned-Dependencies check accepts `npm ci`.
+- The README's install step is `npx cadence-orchestrator@latest`: without a version, `npx` runs whatever version the
+  project already has installed.
+
 ## 0.1.7
 
 Upgrading from 0.1.6:

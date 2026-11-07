@@ -449,11 +449,12 @@ def test_claude_plugin_hooks_point_at_bundled_shim():
 
 
 def test_shim_crash_fails_open():
-    # Arming with a state "dir" that is a regular file raises inside the runtime;
-    # the shim must still exit 0 and say so, not block.
+    # A state "dir" that is a regular file can't be used: the hook still exits 0 (never blocks) and the /tpm
+    # prompt says the guard is instructions only, instead of failing silently.
     bad_state = tempfile.mkstemp()[1]
     proc = arm("s-crash", state=bad_state)
-    assert proc.returncode == ALLOW and "allowing" in proc.stderr
+    assert proc.returncode == ALLOW and "can't use its state folder" in proc.stdout + proc.stderr
+    assert "instructions only" in proc.stdout + proc.stderr
 
 
 def test_skill_has_no_frontmatter_hooks():

@@ -67,7 +67,8 @@ There are two ways to use it, and only the second enforces anything.
 
 From anywhere inside the git repository you want to use it in:
 
-1. Run `npx cadence-orchestrator`.
+1. Run `npx cadence-orchestrator@latest`. The `@latest` matters: without a version, `npx` runs whatever version the
+   project already has installed ([npm exec](https://docs.npmjs.com/cli/v11/commands/npm-exec)).
 2. Review and commit the result, so everyone working in the repo, including cloud sessions, gets it.
 3. Reload once: start a **new** chat or session in the repo; hooks load when a session starts. Approve the hooks
    if asked: on Codex, review and trust them in `/hooks`.
@@ -116,7 +117,7 @@ entries in the files it touches, and adds `.cadence/tpm.off` to `.gitignore`. Fr
 | `… status [--hours <n>] [--state-dir <path>] [--json]` | Installed targets and version, and live hook activity | 1: an install is incomplete, nothing is installed, or a guarded target has no live activity |
 
 A passing `doctor` doesn't show that the hooks fire in a real session; `status` does. Run `status` from inside the
-agent's session (ask the agent to run it), so it sees the same `CADENCE_STATE_DIR` and temp dir as the hooks, or pass
+agent's session (ask the agent to run it), so it sees the same `CADENCE_STATE_DIR` and home as the hooks, or pass
 `--state-dir <path>`. To test in a real session, follow [`docs/live-testing.md`](docs/live-testing.md).
 
 A reinstall backs up a vendored skill file you edited to `.cadence/backups/<time>/` before replacing it, for installs
@@ -137,8 +138,10 @@ folders the installer created, never a `skills` or `hooks` folder. Your own hook
 Claude Code and Copilot mark tool calls made by subagents, so the guard can block the orchestrator and let
 subagents through. Codex, Cursor and Gemini don't, and blocking there would stop the subagents too. On those
 three the guard only shows a "tpm advisory" warning, which the skill tells the orchestrator to treat as a denial,
-and logs it to `advisory.log` in `$CADENCE_STATE_DIR` (default: `cadence-orchestrator/` in the system temp
-directory), not in the repo or `.cadence/`. `doctor` prints the exact path.
+and logs it to `advisory.log` in `$CADENCE_STATE_DIR`, not in the repo or `.cadence/`. By default that's a per-user
+folder, created with mode 0700: `$XDG_STATE_HOME/cadence-orchestrator` (or `~/.local/state/cadence-orchestrator`) on
+Linux, `~/Library/Application Support/cadence-orchestrator` on macOS, else a per-user folder in the temp directory.
+`doctor` prints the exact path.
 
 ### Or as a Claude Code Plugin
 
@@ -168,7 +171,7 @@ guard for this session only; a model loading the skill by itself doesn't arm it.
 an edit by the orchestrator is then refused (exit code 2, message shortened here):
 
 ```text
-TPM guard armed (session 4f1c…, log /tmp/cadence-orchestrator/advisory.log)
+TPM guard armed (session 4f1c…, log /home/you/.local/state/cadence-orchestrator/advisory.log)
 TPM mode is on: the main thread doesn't do core work (Edit). Delegate it to a subagent: …
 ```
 

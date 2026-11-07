@@ -240,8 +240,10 @@ def test_status_state_dir_flag_and_source():
     # The terminal doesn't have the agent's CADENCE_STATE_DIR: nothing found...
     env = {k: v for k, v in os.environ.items() if k != "CADENCE_STATE_DIR"}
     env["TMPDIR"] = tempfile.mkdtemp()
+    env["HOME"] = tempfile.mkdtemp()
+    env.pop("XDG_STATE_HOME", None)
     out = subprocess.run([CLI, "status", "--repo", repo], capture_output=True, text=True, env=env)
-    assert out.returncode == 1 and "(from temp dir)" in out.stdout
+    assert out.returncode == 1 and "(from per-user default)" in out.stdout
     # ...until it's pointed at the agent's state dir.
     out = subprocess.run(
         [CLI, "status", "--repo", repo, "--state-dir", state], capture_output=True, text=True, env=env

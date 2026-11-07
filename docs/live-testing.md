@@ -52,8 +52,9 @@ codex: hooks seen firing: none in the last 24 h (not running in a live session h
 copilot: not installed
 cursor: not installed
 gemini: not installed
-state dir: /tmp/cadence-orchestrator (from temp dir)
-advisory log: /tmp/cadence-orchestrator/advisory.log
+state dir: /home/you/.local/state/cadence-orchestrator (from per-user default)
+advisory log: /home/you/.local/state/cadence-orchestrator/advisory.log
+also read: /tmp/cadence-orchestrator (where 0.1.7 and earlier kept state)
 No live hook activity: the files are installed, but the guard hasn't been seen running. Start a new session in this repo, approve its hooks if asked, start with /tpm ($tpm on Codex), then run status again from inside that session (so it sees the agent's environment), or pass --state-dir.
 ```
 
