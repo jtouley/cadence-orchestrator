@@ -66,6 +66,7 @@ export function status(repo, TARGETS, hours, stateDir = "", version = "") {
   const reinstall = (t) => `reinstall with \`npx cadence-orchestrator --target ${t}\``;
   const owned = new Set(); // skill folders an installed target accounts for
   const states = new Map();
+  const legacies = new Set();
   for (const target of Object.keys(TARGETS).sort()) {
     const spec = TARGETS[target];
     const inst = installed(repo, target, spec);
@@ -122,13 +123,18 @@ export function status(repo, TARGETS, hours, stateDir = "", version = "") {
     const resolved = stateDir
       ? { dir: path.resolve(stateDir), error: "", source: "--state-dir" }
       : resolveStateDir(repo, target, spec);
-    const { dir, error, source } = resolved;
+    const { dir, error, source, legacy } = resolved;
     if (!dir) {
       lines.push(`${target}: hooks seen firing: unknown (${error})`);
       continue;
     }
     if (!states.has(dir)) states.set(dir, source);
-    const seen = sessions(dir, repo, hours).filter((s) => s.platform === target);
+    // During the move to per-user state, sessions from the old shared folder count too (newest record wins).
+    const both = [...sessions(dir, repo, hours), ...(legacy ? sessions(legacy, repo, hours) : [])];
+    const newest = new Map();
+    for (const s of both) if (!newest.has(s.session) || newest.get(s.session).age > s.age) newest.set(s.session, s);
+    const seen = [...newest.values()].sort((a, b) => a.age - b.age).filter((s) => s.platform === target);
+    if (legacy) legacies.add(legacy);
     entry.state_dir = dir;
     entry.sessions = seen.map((s) => ({
       session: s.session,
@@ -157,6 +163,7 @@ export function status(repo, TARGETS, hours, stateDir = "", version = "") {
     lines.push(`state dir: ${dir} (from ${source})`);
     lines.push(`advisory log: ${path.join(dir, "advisory.log")}`);
   }
+  for (const old of legacies) lines.push(`also read: ${old} (where 0.1.7 and earlier kept state)`);
   for (const skill of new Set(Object.values(TARGETS).map((s) => s.skill))) {
     if (!owned.has(skill) && fs.existsSync(path.join(repo, skill, "SKILL.md"))) {
       lines.push(`note: ${skill}/ has a tpm skill, but no target here is installed with it`);

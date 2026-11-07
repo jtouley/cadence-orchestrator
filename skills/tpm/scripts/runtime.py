@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import stat as _stat
 import sys
 import tempfile
 import time
@@ -127,11 +128,61 @@ def canonical_args(args, aliases: dict | None = None) -> dict:
     return out
 
 
+STATE_NAME = "cadence-orchestrator"
+
+
+def default_state_dir() -> str:
+    """The per-user state folder when no override variable is set.
+
+    macOS: ~/Library/Application Support/cadence-orchestrator (Apple's File System Programming Guide: app data
+    goes in a subfolder of Application Support that the app creates). Other POSIX systems: $XDG_STATE_HOME, or
+    ~/.local/state when it is unset, empty or relative (XDG Base Directory spec). Otherwise, or with no usable
+    home: a per-user subfolder of the temp dir.
+    """
+    home = os.path.expanduser("~")
+    has_home = os.path.isabs(home)
+    if sys.platform == "darwin" and has_home:
+        return os.path.join(home, "Library", "Application Support", STATE_NAME)
+    if os.name == "posix" and sys.platform != "darwin":
+        xdg = os.environ.get("XDG_STATE_HOME", "")
+        if os.path.isabs(xdg):
+            return os.path.join(xdg, STATE_NAME)
+        if has_home:
+            return os.path.join(home, ".local", "state", STATE_NAME)
+    user = (
+        str(os.getuid())
+        if hasattr(os, "getuid")
+        else re.sub(r"[^A-Za-z0-9_-]", "_", os.environ.get("USERNAME", "user"))
+    )
+    return os.path.join(tempfile.gettempdir(), f"{STATE_NAME}-{user}")
+
+
+def legacy_state_dir() -> str:
+    """Where 0.1.7 and earlier kept state: one shared folder in the temp dir. Read by `status`, never written."""
+    return os.path.join(tempfile.gettempdir(), STATE_NAME)
+
+
 def state_dir(platform: Platform) -> str:
     for name in ("CADENCE_STATE_DIR",) + platform.state_env:
         if os.environ.get(name):
             return os.environ[name]
-    return os.path.join(tempfile.gettempdir(), "cadence-orchestrator")
+    return default_state_dir()
+
+
+def ensure_state(state: str) -> None:
+    """Create the state folder with mode 0700 if it's missing; an existing one keeps its mode (XDG spec).
+
+    A folder that is a symlink or belongs to another user is refused: the hooks then fail open, never writing
+    through someone else's folder.
+    """
+    if not os.path.lexists(state):
+        os.makedirs(state, mode=0o700, exist_ok=True)
+        os.chmod(state, 0o700)  # makedirs' mode is masked by the umask
+    st = os.lstat(state)
+    if _stat.S_ISLNK(st.st_mode) or not _stat.S_ISDIR(st.st_mode):
+        raise PermissionError(f"state dir {state} is not a plain directory")
+    if hasattr(os, "getuid") and st.st_uid != os.getuid():
+        raise PermissionError(f"state dir {state} belongs to another user")
 
 
 def marker_path(state: str, session_id: str) -> str | None:
@@ -191,6 +242,7 @@ def heartbeat(platform: Platform, state: str, ev: Event, payload: dict) -> None:
         "project": root,
         "cwd": cwd,
     }
+    ensure_state(state)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.json.{os.getpid()}"
     with open(tmp, "w") as f:
@@ -215,6 +267,7 @@ def _handle(platform: Platform, payload: dict, ev: Event, state: str) -> Outcome
         path = marker_path(state, ev.session_id) if ev.starts_tpm else None
         if not path:
             return platform.render_prompt("")
+        ensure_state(state)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         open(path, "w").close()
         if switched_off(ev.project_dir):
@@ -239,6 +292,7 @@ def _handle(platform: Platform, payload: dict, ev: Event, state: str) -> Outcome
         return platform.render_tool(ok, reason)
     if ok:
         return platform.render_advisory("")
+    ensure_state(state)
     with open(os.path.join(state, "advisory.log"), "a") as log:
         log.write(
             json.dumps(

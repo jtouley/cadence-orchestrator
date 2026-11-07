@@ -63,7 +63,7 @@ say which version broke it. The release that fixes it lists the fix under `### F
 3. `.github/workflows/release.yml` runs two jobs:
    - `verify`, with no publishing rights: the tag matches `package.json` and is on `main`, the version isn't on
      npm yet (so a re-tag fails early), then the tests and the package check.
-   - `publish`, in the `npm-release` environment: installs a pinned npm (checked against its sha512 integrity),
+   - `publish`, in the `npm-release` environment: installs a pinned npm with `npm ci` from `.github/npm/package-lock.json` (checked against its sha512 integrity),
      then `npm publish --access public` with [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
      (OIDC, `id-token: write`): no npm token is stored or passed, and npm adds provenance automatically.
      Prereleases (`1.2.3-rc.1`) go to the `next` dist-tag.

@@ -39,3 +39,19 @@ def test_ci_verifies_the_tarball_checksum():
     text = open(CI).read()
     assert 'GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"' in text
     assert "sha256sum -c -" in text and "go install" not in text and "setup-go" not in text
+
+
+def test_release_installs_npm_with_npm_ci_from_the_pinned_lockfile():
+    import json
+    import re
+
+    text = open(os.path.join(ROOT, ".github", "workflows", "release.yml")).read()
+    # Scorecard's Pinned-Dependencies accepts `npm ci`; `npm install`/`npm i` of a package is flagged.
+    assert "npm ci --ignore-scripts" in text
+    assert not re.search(r"\bnpm (install|i|update)\b", text)
+    lock = json.load(open(os.path.join(ROOT, ".github", "npm", "package-lock.json")))["packages"][
+        "node_modules/npm"
+    ]
+    version = re.search(r'NPM_VERSION: "([^"]+)"', text).group(1)
+    integrity = re.search(r'NPM_INTEGRITY: "([^"]+)"', text).group(1)
+    assert (lock["version"], lock["integrity"]) == (version, integrity)

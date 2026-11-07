@@ -1503,3 +1503,143 @@ def test_status_names_targets_installed_before_manifests():
     assert next(t for t in data["targets"] if t["target"] == "claude")["manifest"] is False
     install(repo, "claude")
     assert "installed by 0.1.6 or earlier" not in cli(["status"], repo).stdout
+
+
+# ------------------------------------------------------------------------------ 0.1.8: state dir, bytecode
+
+
+def _walk(root):
+    out = set()
+    for base, dirs, names in os.walk(root):
+        out |= {os.path.join(base, n) for n in dirs + names}
+    return out
+
+
+def test_state_goes_to_a_per_user_dir_and_nowhere_else():
+    repo = scratch_repo()
+    install(repo, "codex")
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_codex.py")
+    home, tmp, xdg = (os.path.realpath(tempfile.mkdtemp()) for _ in range(3))
+    env = {k: v for k, v in os.environ.items() if k not in ("CADENCE_STATE_DIR", "XDG_STATE_HOME")}
+    env.update(HOME=home, TMPDIR=tmp, TMP=tmp, TEMP=tmp)
+    before = {d: _walk(d) for d in (home, tmp, xdg, repo)}
+    events = [
+        {"hook_event_name": "UserPromptSubmit", "session_id": "s1", "prompt": "$tpm go", "cwd": repo},
+        {
+            "hook_event_name": "PreToolUse",
+            "session_id": "s1",
+            "tool_name": "apply_patch",
+            "tool_input": {"command": "x"},
+            "cwd": repo,
+        },
+    ]
+    for case, extra, chosen in (
+        ("xdg", {"XDG_STATE_HOME": xdg}, os.path.join(xdg, "cadence-orchestrator")),
+        ("home", {}, os.path.join(home, ".local/state/cadence-orchestrator")),
+    ):
+        for ev in events:
+            out = subprocess.run(
+                [sys.executable, shim_path],
+                input=json.dumps(ev),
+                capture_output=True,
+                text=True,
+                env=dict(env, **extra),
+                cwd=repo,
+            )
+            assert out.returncode == 0, (case, out.stderr)
+        assert os.path.isdir(chosen), case
+        assert oct(os.stat(chosen).st_mode & 0o777) == "0o700", case
+        assert os.path.exists(os.path.join(chosen, "advisory.log")) and os.path.isdir(
+            os.path.join(chosen, "sessions")
+        )
+    # Nothing was written anywhere but the two chosen folders (and the folders leading to them).
+    allowed = (os.path.join(xdg, "cadence-orchestrator"), os.path.join(home, ".local"))
+    for root, was in before.items():
+        new = _walk(root) - was
+        assert all(p.startswith(allowed) for p in new), (
+            root,
+            sorted(new - {p for p in new if p.startswith(allowed)}),
+        )
+    assert not os.path.exists(os.path.join(tmp, "cadence-orchestrator"))
+
+
+def test_existing_state_dir_keeps_its_mode_and_a_foreign_or_symlinked_one_is_refused():
+    repo = scratch_repo()
+    install(repo, "codex")
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_codex.py")
+    xdg = os.path.realpath(tempfile.mkdtemp())
+    target = os.path.join(xdg, "cadence-orchestrator")
+    os.makedirs(target, mode=0o755)
+    os.chmod(target, 0o755)
+    ev = {"hook_event_name": "UserPromptSubmit", "session_id": "s2", "prompt": "$tpm go", "cwd": repo}
+    env = {k: v for k, v in os.environ.items() if k != "CADENCE_STATE_DIR"}
+    run_ = lambda e: subprocess.run(  # noqa: E731
+        [sys.executable, shim_path], input=json.dumps(ev), capture_output=True, text=True, env=e, cwd=repo
+    )
+    assert run_(dict(env, XDG_STATE_HOME=xdg)).returncode == 0
+    assert (
+        oct(os.stat(target).st_mode & 0o777) == "0o755"
+    )  # the XDG spec: don't change an existing folder's mode
+    # A symlink planted where the state folder goes is refused; the hook fails open and writes nothing through it.
+    xdg2 = os.path.realpath(tempfile.mkdtemp())
+    elsewhere = os.path.realpath(tempfile.mkdtemp())
+    os.symlink(elsewhere, os.path.join(xdg2, "cadence-orchestrator"))
+    out = run_(dict(env, XDG_STATE_HOME=xdg2))
+    assert out.returncode == 0 and os.listdir(elsewhere) == [], out.stderr
+
+
+def test_state_dir_overrides_still_win():
+    repo = scratch_repo()
+    install(repo, "codex")
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_codex.py")
+    state = os.path.join(os.path.realpath(tempfile.mkdtemp()), "mine")
+    xdg = os.path.realpath(tempfile.mkdtemp())
+    ev = {"hook_event_name": "UserPromptSubmit", "session_id": "s3", "prompt": "$tpm go", "cwd": repo}
+    env = dict(os.environ, CADENCE_STATE_DIR=state, XDG_STATE_HOME=xdg)
+    out = subprocess.run(
+        [sys.executable, shim_path], input=json.dumps(ev), capture_output=True, text=True, env=env, cwd=repo
+    )
+    assert out.returncode == 0 and os.path.isdir(os.path.join(state, "sessions")) and os.listdir(xdg) == []
+    st = cli(["status", "--state-dir", state], repo)
+    assert "session s3: armed" in st.stdout and f"state dir: {state} (from --state-dir)" in st.stdout
+
+
+def test_status_reads_the_old_shared_temp_folder_too():
+    repo = scratch_repo()
+    install(repo, "codex")
+    shim_path = os.path.join(repo, ".agents/skills/tpm/scripts/shim_codex.py")
+    tmp, xdg = os.path.realpath(tempfile.mkdtemp()), os.path.realpath(tempfile.mkdtemp())
+    old = os.path.join(tmp, "cadence-orchestrator")
+    ev = {"hook_event_name": "UserPromptSubmit", "session_id": "old1", "prompt": "$tpm go", "cwd": repo}
+    # A 0.1.7 hook wrote here: simulate it with CADENCE_STATE_DIR pointing at the old shared folder.
+    subprocess.run(
+        [sys.executable, shim_path],
+        input=json.dumps(ev),
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, CADENCE_STATE_DIR=old),
+        cwd=repo,
+        check=True,
+    )
+    env = {k: v for k, v in os.environ.items() if k != "CADENCE_STATE_DIR"}
+    env.update(TMPDIR=tmp, XDG_STATE_HOME=xdg)
+    st = subprocess.run([INSTALL, "status"], capture_output=True, text=True, cwd=repo, env=env)
+    assert "session old1: armed" in st.stdout, st.stdout
+    assert f"state dir: {os.path.join(xdg, 'cadence-orchestrator')} (from per-user default)" in st.stdout
+    assert f"also read: {old} (where 0.1.7 and earlier kept state)" in st.stdout
+
+
+def test_bytecode_cleanup_includes_optimized_pyc_from_real_compileall():
+    repo = scratch_repo()
+    install(repo, "cursor")
+    scripts = os.path.join(repo, ".agents/skills/tpm/scripts")
+    open(os.path.join(scripts, "helper.py"), "w").write("x = 1\n")  # not tpm's: its bytecode stays
+    for flags in ([], ["-O"], ["-OO"]):
+        subprocess.run([sys.executable, *flags, "-m", "compileall", "-q", scripts], check=True)
+    cache = os.path.join(scripts, "__pycache__")
+    names = os.listdir(cache)
+    assert any(".opt-1.pyc" in n for n in names) and any(".opt-2.pyc" in n for n in names), names
+    install(repo, "cursor")
+    left = sorted(os.listdir(cache))
+    assert left and all(n.startswith("helper.") for n in left), left
+    assert len(left) == 3  # helper's plain, opt-1 and opt-2 bytecode

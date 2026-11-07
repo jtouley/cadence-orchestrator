@@ -71,7 +71,7 @@ jobs:
     env:
       # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0. Node 22 bundles npm 10, so the job installs npm;
       # the pin, 11.21.1, is above the 11.5.1 minimum only because it was the newest npm 11 release when pinned.
-      # Pinned by version and by the registry's sha512 integrity, checked before installing.
+      # Pinned by version and by the registry's sha512 integrity, in .github/npm/package-lock.json (`npm ci` checks it).
       NPM_VERSION: "11.21.1"
       NPM_INTEGRITY: "sha512-YTzL6QBEJXyHcTu0JiUc7RKMp+mzlJtl7rGLmERaXUQeFHIMc9atdr6G9M9C8vDWbv40epoTQAzNL2/PtZVDhQ=="
     steps:
@@ -88,15 +88,19 @@ jobs:
             const [maj, min] = process.versions.node.split(".").map(Number);
             if (maj < 22 || (maj === 22 && min < 14)) { console.error(`Node ${process.version} < 22.14.0`); process.exit(1); }
           '
+      # `npm ci` installs exactly what .github/npm/package-lock.json records and checks each tarball against the
+      # lockfile's sha512 integrity. Scorecard's Pinned-Dependencies check counts `npm ci` as pinned
+      # (ossf/scorecard checks/raw/shell_download_validate.go). The lockfile's npm entry must match NPM_VERSION and
+      # NPM_INTEGRITY above, so the pin is reviewed in one place.
       - name: Install pinned npm
         run: |
-          tarball="$(npm pack "npm@$NPM_VERSION" --pack-destination "$RUNNER_TEMP" --silent)"
-          actual="sha512-$(openssl dgst -sha512 -binary "$RUNNER_TEMP/$tarball" | base64 -w0)"
-          if [ "$actual" != "$NPM_INTEGRITY" ]; then
-            echo "npm $NPM_VERSION tarball integrity $actual doesn't match the pinned $NPM_INTEGRITY" >&2
+          locked="$(node -p 'const l = require("./.github/npm/package-lock.json").packages["node_modules/npm"]; l.version + " " + l.integrity')"
+          if [ "$locked" != "$NPM_VERSION $NPM_INTEGRITY" ]; then
+            echo "the lockfile pins npm $locked, expected $NPM_VERSION $NPM_INTEGRITY" >&2
             exit 1
           fi
-          npm install --global --ignore-scripts "$RUNNER_TEMP/$tarball"
+          npm ci --ignore-scripts --no-audit --no-fund --prefix .github/npm
+          echo "$GITHUB_WORKSPACE/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Check npm version
         run: |
           if [ "$(npm --version)" != "$NPM_VERSION" ]; then

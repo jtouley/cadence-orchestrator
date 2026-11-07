@@ -54,8 +54,10 @@ export function resolveStateDir(repo, target, spec) {
     "import runtime\n" +
     "import os\n" +
     "names = ('CADENCE_STATE_DIR',) + tuple(sys.argv[2:])\n" +
-    "print('SOURCE=' + next((n for n in names if os.environ.get(n)), 'temp dir'))\n" +
-    "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))";
+    "default = 'per-user default' if hasattr(runtime, 'default_state_dir') else 'temp dir'\n" +
+    "print('SOURCE=' + next((n for n in names if os.environ.get(n)), default))\n" +
+    "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))\n" +
+    "print('LEGACY=' + (runtime.legacy_state_dir() if hasattr(runtime, 'legacy_state_dir') else ''))";
   const scripts = path.join(repo, spec.skill, "scripts");
   if (!fs.existsSync(path.join(scripts, "runtime.py"))) {
     return { dir: "", error: `${spec.skill}/scripts/runtime.py is missing` };
@@ -73,7 +75,15 @@ export function resolveStateDir(repo, target, spec) {
     const last = (where.stderr || "no output").trim().split("\n").at(-1);
     return { dir: "", error: `couldn't load ${spec.skill}/scripts/runtime.py: ${last}` };
   }
-  return { dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir), error: "", source };
+  // 0.1.7 and earlier kept state in one shared temp folder; `status` still reads it when no override is set.
+  const legacy = (out.find((l) => l.startsWith("LEGACY=")) ?? "LEGACY=").slice("LEGACY=".length).trim();
+  const overridden = !["per-user default", "temp dir"].includes(source);
+  return {
+    dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir),
+    error: "",
+    source,
+    legacy: legacy && !overridden && legacy !== dir ? legacy : "",
+  };
 }
 
 // Editors started from the desktop (not a shell) may get only the system's default PATH, so a python3 found only
