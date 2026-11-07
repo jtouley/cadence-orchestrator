@@ -9,18 +9,31 @@ import { guiPathNote, hasGuard, hookEntries, installed, readManifest, resolveSta
 const ago = (seconds) =>
   seconds < 90 ? `${Math.round(seconds)} s ago` : seconds < 5400 ? `${Math.round(seconds / 60)} min ago` : `${(seconds / 3600).toFixed(1)} h ago`;
 
-function sessions(stateDir, repo, hours) {
+// `ownedOnly` (the shared legacy temp folder, which anyone can write): only a folder and plain files owned by the
+// current user count, so another user can't forge an "armed" heartbeat.
+const mine = (p) => {
+  try {
+    const st = fs.lstatSync(p);
+    return !st.isSymbolicLink() && (typeof process.getuid !== "function" || st.uid === process.getuid());
+  } catch {
+    return false;
+  }
+};
+
+function sessions(stateDir, repo, hours, ownedOnly = false) {
   const dir = path.join(stateDir, "sessions");
   const now = Date.now() / 1000;
   const real = fs.realpathSync(repo);
   const out = [];
   let names = [];
+  if (ownedOnly && !(mine(stateDir) && mine(dir))) return out;
   try {
     names = fs.readdirSync(dir).filter((n) => n.endsWith(".json"));
   } catch {
     return out;
   }
   for (const name of names) {
+    if (ownedOnly && !mine(path.join(dir, name))) continue;
     try {
       const s = JSON.parse(fs.readFileSync(path.join(dir, name), "utf8"));
       // Heartbeats record the git top level, so an exact match counts subdirectories but not nested repos.
@@ -66,6 +79,12 @@ export function status(repo, TARGETS, hours, stateDir = "", version = "") {
   const reinstall = (t) => `reinstall with \`npx cadence-orchestrator --target ${t}\``;
   const owned = new Set(); // skill folders an installed target accounts for
   const states = new Map();
+  // Heartbeats are read once per folder, not once per target.
+  const read = new Map();
+  const cached = (dir, ownedOnly) => {
+    if (!read.has(dir)) read.set(dir, sessions(dir, repo, hours, ownedOnly));
+    return read.get(dir);
+  };
   const legacies = new Set();
   for (const target of Object.keys(TARGETS).sort()) {
     const spec = TARGETS[target];
@@ -130,7 +149,7 @@ export function status(repo, TARGETS, hours, stateDir = "", version = "") {
     }
     if (!states.has(dir)) states.set(dir, source);
     // During the move to per-user state, sessions from the old shared folder count too (newest record wins).
-    const both = [...sessions(dir, repo, hours), ...(legacy ? sessions(legacy, repo, hours) : [])];
+    const both = [...cached(dir, false), ...(legacy ? cached(legacy, true) : [])];
     const newest = new Map();
     for (const s of both) if (!newest.has(s.session) || newest.get(s.session).age > s.age) newest.set(s.session, s);
     const seen = [...newest.values()].sort((a, b) => a.age - b.age).filter((s) => s.platform === target);

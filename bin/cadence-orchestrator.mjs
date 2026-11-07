@@ -321,10 +321,9 @@ function cleanPycache(skill, manifest) {
     : [...SCRIPTS.map((n) => `scripts/${n}`), ...Object.keys(TARGETS).map((t) => `scripts/shim_${t}.py`)];
   const stems = new Set(scripts.map((f) => path.basename(f, ".py")));
   // PEP 488 names: <stem>.<tag>.pyc, and <stem>.<tag>.opt-<level>.pyc for -O/-OO (https://peps.python.org/pep-0488/).
-  const bytecode = /^\.[^.]+(\.opt-[0-9]+)?\.pyc$/;
   for (const name of fs.readdirSync(dir)) {
-    const stem = [...stems].find((st) => name.startsWith(st + ".") && bytecode.test(name.slice(st.length)));
-    if (stem) fs.rmSync(path.join(dir, name), { force: true });
+    const m = name.match(/^(.+?)\.[^.]+(?:\.opt-\d+)?\.pyc$/);
+    if (m && stems.has(m[1])) fs.rmSync(path.join(dir, name), { force: true });
   }
   try {
     if (!fs.readdirSync(dir).length) fs.rmdirSync(dir);

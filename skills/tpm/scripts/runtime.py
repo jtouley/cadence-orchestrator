@@ -136,19 +136,23 @@ def default_state_dir() -> str:
 
     macOS: ~/Library/Application Support/cadence-orchestrator (Apple's File System Programming Guide: app data
     goes in a subfolder of Application Support that the app creates). Other POSIX systems: $XDG_STATE_HOME, or
-    ~/.local/state when it is unset, empty or relative (XDG Base Directory spec). Otherwise, or with no usable
-    home: a per-user subfolder of the temp dir.
+    ~/.local/state when it is unset, empty or relative (XDG Base Directory spec). When that home location can't be
+    used (HOME=/, a read-only or missing home, HOME pointing at a file, a symlinked or foreign folder there), or on
+    other systems: a per-user subfolder of the temp dir. Decided without writing, so doctor's resolver agrees.
     """
     home = os.path.expanduser("~")
     has_home = os.path.isabs(home)
+    preferred = ""
     if sys.platform == "darwin" and has_home:
-        return os.path.join(home, "Library", "Application Support", STATE_NAME)
-    if os.name == "posix" and sys.platform != "darwin":
+        preferred = os.path.join(home, "Library", "Application Support", STATE_NAME)
+    elif os.name == "posix" and sys.platform != "darwin":
         xdg = os.environ.get("XDG_STATE_HOME", "")
         if os.path.isabs(xdg):
-            return os.path.join(xdg, STATE_NAME)
-        if has_home:
-            return os.path.join(home, ".local", "state", STATE_NAME)
+            preferred = os.path.join(xdg, STATE_NAME)
+        elif has_home:
+            preferred = os.path.join(home, ".local", "state", STATE_NAME)
+    if preferred and not state_problem(preferred, strict=True):
+        return preferred
     user = (
         str(os.getuid())
         if hasattr(os, "getuid")
@@ -158,31 +162,76 @@ def default_state_dir() -> str:
 
 
 def legacy_state_dir() -> str:
-    """Where 0.1.7 and earlier kept state: one shared folder in the temp dir. Read by `status`, never written."""
+    """Where 0.1.7 and earlier kept state: one shared folder in the temp dir. Never written; arming markers there
+    still count (arming only tightens), and `status` reads its heartbeats only if the current user owns them."""
     return os.path.join(tempfile.gettempdir(), STATE_NAME)
 
 
-def state_dir(platform: Platform) -> str:
+def state_choice(platform: Platform) -> tuple[str, bool]:
+    """(folder, is_default). An override (CADENCE_STATE_DIR or the platform's variable) is the user's choice and is
+    followed as given; only the default location gets the symlink and owner checks."""
     for name in ("CADENCE_STATE_DIR",) + platform.state_env:
         if os.environ.get(name):
-            return os.environ[name]
-    return default_state_dir()
+            return os.environ[name], False
+    return default_state_dir(), True
 
 
-def ensure_state(state: str) -> None:
-    """Create the state folder with mode 0700 if it's missing; an existing one keeps its mode (XDG spec).
+def state_dir(platform: Platform) -> str:
+    return state_choice(platform)[0]
 
-    A folder that is a symlink or belongs to another user is refused: the hooks then fail open, never writing
-    through someone else's folder.
-    """
-    if not os.path.lexists(state):
-        os.makedirs(state, mode=0o700, exist_ok=True)
-        os.chmod(state, 0o700)  # makedirs' mode is masked by the umask
-    st = os.lstat(state)
-    if _stat.S_ISLNK(st.st_mode) or not _stat.S_ISDIR(st.st_mode):
-        raise PermissionError(f"state dir {state} is not a plain directory")
-    if hasattr(os, "getuid") and st.st_uid != os.getuid():
-        raise PermissionError(f"state dir {state} belongs to another user")
+
+def _nearest_existing(path: str) -> str:
+    parent = path
+    while not os.path.lexists(parent):
+        up = os.path.dirname(parent)
+        if up == parent:
+            break
+        parent = up
+    return parent
+
+
+def state_problem(state: str, strict: bool) -> str:
+    """Why `state` can't be used, or "" if it can. Reads only. strict (the default location): an existing folder
+    must be a plain directory (not a symlink) owned by the current user; overrides only need to be writable."""
+    state = os.path.abspath(state)  # a relative override is relative to where the hook runs (the project)
+    try:
+        if os.path.lexists(state):
+            st = os.lstat(state) if strict else os.stat(state)
+            if strict and _stat.S_ISLNK(st.st_mode):
+                return "it is a symlink"
+            if not _stat.S_ISDIR(st.st_mode):
+                return "it is not a directory"
+            if strict and hasattr(os, "getuid") and st.st_uid != os.getuid():
+                return "it belongs to another user"
+            return "" if os.access(state, os.W_OK | os.X_OK) else "it is not writable"
+        parent = _nearest_existing(state)
+        if not os.path.isdir(parent) or not os.access(parent, os.W_OK | os.X_OK):
+            return f"it can't be created ({parent} is not a writable directory)"
+        return ""
+    except OSError as e:
+        return str(e)
+
+
+def ensure_state(state: str, strict: bool = True) -> None:
+    """Check the state folder and create it if missing. The default location's missing folders are each created with
+    mode 0700, the parents included (XDG spec: "an attempt should be made to create it with permission 0700"); an
+    existing folder keeps its mode. Raises PermissionError with the reason when it can't be used."""
+    problem = state_problem(state, strict)
+    if problem:
+        raise PermissionError(f"state dir {state}: {problem}")
+    if os.path.lexists(state):
+        return
+    if not strict:
+        os.makedirs(state, exist_ok=True)
+        return
+    missing = []
+    probe = state
+    while not os.path.lexists(probe):
+        missing.append(probe)
+        probe = os.path.dirname(probe)
+    for folder in reversed(missing):
+        os.mkdir(folder, 0o700)
+        os.chmod(folder, 0o700)  # mkdir's mode is masked by the umask
 
 
 def marker_path(state: str, session_id: str) -> str | None:
@@ -191,8 +240,13 @@ def marker_path(state: str, session_id: str) -> str | None:
 
 
 def is_armed(state: str, session_id: str) -> bool:
-    path = marker_path(state, session_id)
-    return bool(path) and os.path.exists(path)
+    # Markers written by 0.1.7 and earlier to the shared temp folder still count, so a session armed before an
+    # upgrade stays armed. Reading more places can only arm, never disarm, so this is safe.
+    for folder in (state, legacy_state_dir()):
+        path = marker_path(folder, session_id)
+        if path and os.path.exists(path):
+            return True
+    return False
 
 
 SESSIONS_DIR = "sessions"
@@ -242,7 +296,6 @@ def heartbeat(platform: Platform, state: str, ev: Event, payload: dict) -> None:
         "project": root,
         "cwd": cwd,
     }
-    ensure_state(state)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.json.{os.getpid()}"
     with open(tmp, "w") as f:
@@ -252,7 +305,17 @@ def heartbeat(platform: Platform, state: str, ev: Event, payload: dict) -> None:
 
 def handle(platform: Platform, payload: dict) -> Outcome:
     ev = platform.parse(payload)
-    state = state_dir(platform)
+    state, is_default = state_choice(platform)
+    # One check of the state folder, before any state is read or written. If it can't be used, no state I/O
+    # happens: the guard can't arm, and a /tpm prompt says so instead of failing silently.
+    try:
+        ensure_state(state, strict=is_default)
+    except OSError as exc:
+        if ev.kind == "prompt" and ev.starts_tpm:
+            return platform.render_prompt(f"TPM guard can't use its state folder ({exc}): instructions only")
+        if ev.kind == "stop":
+            return platform.render_stop("")
+        return _allow(platform)
     try:
         return _handle(platform, payload, ev, state)
     finally:
@@ -267,7 +330,6 @@ def _handle(platform: Platform, payload: dict, ev: Event, state: str) -> Outcome
         path = marker_path(state, ev.session_id) if ev.starts_tpm else None
         if not path:
             return platform.render_prompt("")
-        ensure_state(state)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         open(path, "w").close()
         if switched_off(ev.project_dir):
@@ -292,7 +354,6 @@ def _handle(platform: Platform, payload: dict, ev: Event, state: str) -> Outcome
         return platform.render_tool(ok, reason)
     if ok:
         return platform.render_advisory("")
-    ensure_state(state)
     with open(os.path.join(state, "advisory.log"), "a") as log:
         log.write(
             json.dumps(

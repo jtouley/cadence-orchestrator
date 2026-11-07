@@ -57,7 +57,11 @@ export function resolveStateDir(repo, target, spec) {
     "default = 'per-user default' if hasattr(runtime, 'default_state_dir') else 'temp dir'\n" +
     "print('SOURCE=' + next((n for n in names if os.environ.get(n)), default))\n" +
     "print('STATE=' + runtime.state_dir(types.SimpleNamespace(state_env=tuple(sys.argv[2:]))))\n" +
-    "print('LEGACY=' + (runtime.legacy_state_dir() if hasattr(runtime, 'legacy_state_dir') else ''))";
+    "print('LEGACY=' + (runtime.legacy_state_dir() if hasattr(runtime, 'legacy_state_dir') else ''))\n" +
+    "if hasattr(runtime, 'state_choice'):\n" +
+    "    os.chdir(os.environ['CADENCE_DOCTOR_REPO'])  # hooks run in the project: relative overrides resolve there\n" +
+    "    d, strict = runtime.state_choice(types.SimpleNamespace(state_env=tuple(sys.argv[2:])))\n" +
+    "    print('PROBLEM=' + (runtime.state_problem(d, strict) or 'none'))";
   const scripts = path.join(repo, spec.skill, "scripts");
   if (!fs.existsSync(path.join(scripts, "runtime.py"))) {
     return { dir: "", error: `${spec.skill}/scripts/runtime.py is missing` };
@@ -65,6 +69,7 @@ export function resolveStateDir(repo, target, spec) {
   const where = spawnSync("python3", ["-I", "-B", "-c", resolver, scripts, ...(STATE_ENV[target] ?? [])], {
     encoding: "utf8",
     cwd: scripts,
+    env: { ...process.env, CADENCE_DOCTOR_REPO: repo },
   });
   if (where.error) return { dir: "", error: `python3 not found (${where.error.code})` };
   const out = (where.stdout ?? "").split("\n");
@@ -78,11 +83,16 @@ export function resolveStateDir(repo, target, spec) {
   // 0.1.7 and earlier kept state in one shared temp folder; `status` still reads it when no override is set.
   const legacy = (out.find((l) => l.startsWith("LEGACY=")) ?? "LEGACY=").slice("LEGACY=".length).trim();
   const overridden = !["per-user default", "temp dir"].includes(source);
+  // The hooks' own check (runtime.state_problem: the default location must be a plain folder owned by this user),
+  // so doctor never passes a folder the hooks would refuse. Absent for runtimes from 0.1.7 and earlier.
+  const problemLine = out.find((l) => l.startsWith("PROBLEM="));
+  const problem = problemLine === undefined ? null : problemLine.slice("PROBLEM=".length).trim();
   return {
     dir: path.isAbsolute(dir) ? dir : path.resolve(repo, dir),
     error: "",
     source,
     legacy: legacy && !overridden && legacy !== dir ? legacy : "",
+    problem: problem === "none" ? "" : problem,
   };
 }
 
@@ -194,9 +204,11 @@ export function doctor(repo, target, spec) {
   const py = spawnSync("python3", ["--version"], { encoding: "utf8" });
   check("python3 is on PATH", !py.error && py.status === 0, "the hooks run python3; without it they allow everything");
 
-  const { dir: realState, error: stateError } = resolveStateDir(repo, target, spec);
+  const { dir: realState, error: stateError, problem } = resolveStateDir(repo, target, spec);
   let writable = false;
-  if (realState) {
+  if (realState && problem !== null) {
+    writable = !problem; // the installed runtime's own rule
+  } else if (realState) {
     // Probe without creating anything: an existing dir gets a temporary file; otherwise the nearest
     // existing ancestor must be a writable directory (the runtime creates the rest when it arms).
     try {
@@ -213,7 +225,10 @@ export function doctor(repo, target, spec) {
       writable = true;
     } catch {}
   }
-  const why = stateError || "not writable: set CADENCE_STATE_DIR to a writable directory";
+  const why =
+    stateError ||
+    (problem ? `the hooks won't use it: ${problem}; set CADENCE_STATE_DIR to a folder you own` : "") ||
+    "not writable: set CADENCE_STATE_DIR to a writable directory";
   check(
     `state dir ${realState || "(unresolved)"} is writable; advisory log: ${realState ? path.join(realState, "advisory.log") : "?"}`,
     writable,
