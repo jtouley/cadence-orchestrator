@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: "22"
       # setup-uv's python-version sets UV_PYTHON, the one place a job picks its Python (.python-version can't move it).
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.11.32"
           python-version: "3.13"
@@ -73,7 +73,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       # python-version sets UV_PYTHON for sync and run; without it `uv run` followed .python-version (3.13) and
       # the 3.10 leg ran on 3.13.
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.11.32"
           python-version: ${{ matrix.python-version }}
